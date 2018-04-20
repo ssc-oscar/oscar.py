@@ -2,6 +2,8 @@
 import lzf
 from tokyocabinet import hash
 
+from functools import wraps
+
 INVALID = "compressed data corrupted (invalid length)"
 
 
@@ -81,16 +83,35 @@ def decomp(raw_data):
     :param raw_data: data compressed with Perl Compress::LZF
     :return: string of unpacked data
     """
+    if not raw_data:
+        return ""
+    elif raw_data[0] == '\x00':
+        return raw_data[1:]
     start, usize = lzf_length(raw_data)
     return lzf.decompress(raw_data[start:], usize)
 
 
+def cached_property(func):
+    """ Classic memoize with @property on top"""
+    @wraps(func)
+    def wrapper(self):
+        if not hasattr(self, "_cache"):
+            self._cache = {}
+        key = func.__name__
+        if key not in self._cache:
+            self._cache[key] = func(self)
+        return self._cache[key]
+    return property(wrapper)
+
+
 def slice_shas(raw_data):
+    """ Convenience method to slice raw_data into 20-byte chunks"""
     for i in range(0, len(raw_data), 20):
         yield raw_data[i:i + 20]
 
 
 def prefix(value, key_length):
+    """ Calculate 'filesystem sharding' prefix using bit magic """
     return ord(value[0]) & (2**key_length - 1)
 
 
@@ -134,10 +155,18 @@ class GitObject(object):
     type = None
 
     def __init__(self, sha):
-        if len(sha) == 20:
+        """
+        :param sha: either a 40 char hex or a 20 bytes binary SHA1 hash
+        >>> sha = '05cf84081b63cda822ee407e688269b494a642de'
+        >>> GithObject(sha.decode('hex')).sha == sha
+        True
+        >>> GithObject(sha).bin_sha == sha.decode('hex')
+        True
+        """
+        if len(sha) == 40:
             self.sha = sha
             self.bin_sha = sha.decode("hex")
-        elif len(sha) == 40:
+        elif len(sha) == 20:
             self.sha = sha.encode("hex")
             self.bin_sha = sha
         else:
@@ -186,14 +215,15 @@ class GitObject(object):
         fh.seek(offset)
         return decomp(fh.read(length))
 
-    @property
+    @cached_property
     def data(self):
-        # default implementation will only work for commits and trees
         if self.type is None:
             raise NotImplemented
-        if self._data is None:
-            self._data = decomp(self.read('/fast1/All.sha1c/{type}_{key}.tch'))
-        return self._data
+        # default implementation will only work for commits and trees
+        return decomp(self.read('/fast1/All.sha1c/{type}_{key}.tch'))
+
+    def __repr__(self):
+        return "<%s: %s>" % ((self.type or 'GitObject').capitalize(), self.sha)
 
     def __str__(self):
         """
@@ -212,13 +242,11 @@ class GitObject(object):
 class Blob(GitObject):
     type = 'blob'
 
-    @property
+    @cached_property
     def data(self):
-        if self._data is None:
-            offset, length = unber(
-                self.read('/data/All.sha1o/sha1.blob_{key}.tch'))
-            self._data = self.read_binary(offset, length)
-        return self._data
+        offset, length = unber(
+            self.read('/data/All.sha1o/sha1.blob_{key}.tch'))
+        return self.read_binary(offset, length)
 
     @property
     def commits(self):
@@ -256,14 +284,14 @@ class Tree(GitObject):
         ...     for line in Tree("954829887af5d9071aa92c427133ca2cdd0813cc"))
         True
         """
-        data = str(self)
+        data = self.data
         i = 0
         while i < len(data):
             # mode
             start = i
             while i < len(data) and data[i] != " ":
                 i += 1
-            mode = int(data[start:i])
+            mode = data[start:i]
             i += 1
             # file name
             start = i
@@ -274,6 +302,14 @@ class Tree(GitObject):
             start = i + 1
             i += 21
             yield mode, fname, data[start:i].encode('hex')
+
+    def traverse(self):
+        for mode, fname, sha in self:
+            yield mode, fname, sha
+            if mode == "40000":
+                yield mode, fname, sha
+                for mode2, fname2, sha2 in Tree(sha).traverse():
+                    yield mode2, fname + '/' + fname2, sha2
 
     @property
     def parents(self):
@@ -308,6 +344,9 @@ class Tree(GitObject):
 
 
 class Commit(GitObject):
+    """ A git commit object
+
+    """
     type = 'commit'
 
     @classmethod
@@ -336,19 +375,43 @@ class Commit(GitObject):
         """ Get all commits for the specified project
         :param project: project id <user>_<repo>, e.g. user2589_oscar.py
         :return: generator of commits
+
+        >>> cs = list(Commit.by_project('user2589_minicms'))
+        >>> len(cs) > 65
+        True
+        >>> all(isinstance(c, Commit) for c in cs)
+        True
         """
         return cls._map('/data/basemaps/Prj2CmtG.%d.tch' % prefix(project, 3),
                         project)
 
+    @cached_property
+    def projects(self):
+        return decomp(
+            self.read('/data/basemaps/Cmt2PrjG.{key}.tch', 3)).split(";")
+
     # TODO: author, committer, times, tree
 
+    @cached_property
     def children(self):
-        # TODO: test
-        return self.map('/data/basemaps/Cmt2Chld.tch.tch', 1, Commit)
+        # type: () -> tuple
+        """ Commit children
+        :return:
+        >>> cs = Commit('1e971a073f40d74a1e72e07c682e1cba0bae159b').children
+        >>> len(cs)
+        1
+        >>> isinstance(cs[0], Commit)
+        True
+        >>> cs[0].sha
+        '9bd02434b834979bb69d0b752a403228f2e385e8'
+        """
+        return tuple(self.map('/data/basemaps/Cmt2Chld.tch', 1, Commit))
 
+    @cached_property
     def blobs(self):
+        # type: () -> tuple
         # TODO: test
-        return self.map('/data/basemaps/c2bFullF.{0..15}.tch', 4, Blob)
+        return tuple(self.map('/data/basemaps/c2bFullF.{key}.tch', 4, Blob))
 
 
 class Tag(GitObject):

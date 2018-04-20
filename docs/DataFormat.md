@@ -5,9 +5,9 @@
 ### Sequential access:
 
 Read an index line from /data/All.blobs/{commit,blob,tag,tree}_{key}.idx
-to get offset and length. 
+to get offset and length.
 Note that the key, a 1..127 uint, is 7 least significant bits of the
-first byte of sha, and not 7 msb. 
+first byte of sha, and not 7 msb.
 So, to get the key, use `sha[0] & 7f`, NOT bit shift.
 
 Content of .idx files for commits, trees and tags:
@@ -70,6 +70,13 @@ Mappings are stored in `/data/basemaps/`:
     c2bFullF.{0..15}.tch
         Commit to blobs
         db[blob_sha] = commit_bin_shas
+        Looks to be incomplete, see docs/Bugreport1 for details
+    Prj2CmtG.{0..7}.tch
+        Project to Commits
+        Project is a user_repo string, e.g. user2589_minicms
+    Cmt2PrjG.{0..7}.tch
+        Commit to projects
+        data is lzf compressed, semicolon separated list of projects
     Cmt2Chld.tch
         Commit to children
         db[commit_sha] = children_commit_bin_shas
@@ -77,10 +84,7 @@ Mappings are stored in `/data/basemaps/`:
         File to commits
         File is a full path, usually terminated with a newline
             e.g.: 'public_html/images/cms/flags/my.gif\n'
-        There are 181M filenames as of Apr 2018 just in 0.tch        
-    Prj2CmtG.{0..7}.tch
-        Project to Commits
-        Project is a user_repo string, e.g. user2589_minicms
+        There are 181M filenames as of Apr 2018 just in 0.tch
     t2pt0-127.{0..7}.{tch,lst}
         Tree to parent trees
         db[tree_bin_sha] = parent_tree_bin_shas
@@ -90,11 +94,11 @@ Mappings are stored in `/data/basemaps/`:
 Python files:
 
     pyfiles.{0..7}.gz  # each line is a path to .py file (not just a filename)
-    pyfilesC.{0..7}.gz  # hashes (trees or commits?) 
-        check 721141f28f0a15354e283eae26be43c2b81e6e52    
-    pyfilesCU.{0..7}.gz  # hashes (trees or commits?) 
+    pyfilesC.{0..7}.gz  # hashes (trees or commits?)
+        check 721141f28f0a15354e283eae26be43c2b81e6e52
+    pyfilesCU.{0..7}.gz  # hashes (trees or commits?)
         check 0000000fcd1c59eac9dd76e7d75229065733de3b
-    pyfilesP.{0..7}.gz  # projects (user_repo) 
+    pyfilesP.{0..7}.gz  # projects (user_repo)
 
 
 There is also a bunch of mappings in `/fast1/All.sha1c/*.tch`,
@@ -102,9 +106,9 @@ which looks to be outdated
 
     b2cFullE.{0..15}.tch  # blob to commits bin sha
     c2fFull.{0..7}.tch  # commit to filename?
-    Cmt2Prj.{0..7}.tch 
+    Cmt2Prj.{0..7}.tch
     commit_parent_{0..127}.tch
-    Auth2Cmt.tch 
+    Auth2Cmt.tch
     author_class.tch
     author_commit.tch
     class2commit.tch
