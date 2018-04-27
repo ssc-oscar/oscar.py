@@ -59,36 +59,36 @@ For blobs,
 
 Mappings are stored in `/data/basemaps/`:
 
-    Auth2Cmt.tch
+    Auth2Cmt.tch  # works
         Author to commits
         db[email] = bytestring of bin shas
         keys are non-normalized authors e.g. 'gsadaram <gsadaram@cisco.com>'
         9.35M keys
-    b2cFullF.{0..15}.tch
+    b2cFullF.{0..15}.tch  # bug 3
         Blob to commits
         db[blob_sha] = commit_bin_shas
-    c2bFullF.{0..15}.tch
+    c2bFullF.{0..15}.tch  # bug #1
         Commit to blobs
         db[blob_sha] = commit_bin_shas
         Looks to be incomplete, see docs/Bugreport1 for details
-    Prj2CmtG.{0..7}.tch
+    Prj2CmtG.{0..7}.tch  # works
         Project to Commits
         Project is a user_repo string, e.g. user2589_minicms
-    Cmt2PrjG.{0..7}.tch
+    Cmt2PrjG.{0..7}.tch  # works
         Commit to projects
         data is lzf compressed, semicolon separated list of projects
-    Cmt2Chld.tch
+    Cmt2Chld.tch  # works
         Commit to children
         db[commit_sha] = children_commit_bin_shas
-    f2cFullF.{0..7}.{tch,lst}
+    f2cFullF.{0..7}.{tch,lst}  # bug #4
         File to commits
         File is a full path, usually terminated with a newline
             e.g.: 'public_html/images/cms/flags/my.gif\n'
         There are 181M filenames as of Apr 2018 just in 0.tch
-    t2pt0-127.{0..7}.{tch,lst}
+    t2pt0-127.{0..7}.{tch,lst}  # works
         Tree to parent trees
         db[tree_bin_sha] = parent_tree_bin_shas
-    b2pt.00-15.{0..7}.tch
+    b2pt.00-15.{0..7}.tch  # bug #2
         Blob to parent trees
 
 Python files:

@@ -104,14 +104,23 @@ def cached_property(func):
     return property(wrapper)
 
 
-def slice_shas(raw_data):
-    """ Convenience method to slice raw_data into 20-byte chunks"""
+def slice20(raw_data):
+    """ Convenience method to slice raw_data into 20-byte chunks
+    >>> list(slice20("a"*20 + "b"*20))
+    ['aaaaaaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbbbbbb']
+    """
     for i in range(0, len(raw_data), 20):
         yield raw_data[i:i + 20]
 
 
 def prefix(value, key_length):
-    """ Calculate 'filesystem sharding' prefix using bit magic """
+    # type: (str, int) -> int
+    """ Calculate 'filesystem sharding' prefix using bit magic
+    >>> prefix('\xff', 7)
+    127
+    >>> prefix('\xff', 3)
+    7
+    """
     return ord(value[0]) & (2**key_length - 1)
 
 
@@ -158,9 +167,9 @@ class GitObject(object):
         """
         :param sha: either a 40 char hex or a 20 bytes binary SHA1 hash
         >>> sha = '05cf84081b63cda822ee407e688269b494a642de'
-        >>> GithObject(sha.decode('hex')).sha == sha
+        >>> GitObject(sha.decode('hex')).sha == sha
         True
-        >>> GithObject(sha).bin_sha == sha.decode('hex')
+        >>> GitObject(sha).bin_sha == sha.decode('hex')
         True
         """
         if len(sha) == 40:
@@ -176,7 +185,7 @@ class GitObject(object):
         """Format given path with object type and key
         >>> go = GitObject('8528315640bac6eae17297270d4ee1892abf6add')
         >>> go.resolve_path("test")
-        test
+        'test'
         >>> go.resolve_path("test_{key}", 7)
         'test_5'
         >>> go.resolve_path("/fast{blob}/All.sha1/{type}_{key}", 8)
@@ -194,26 +203,20 @@ class GitObject(object):
         return TCH(path)[key]
 
     def read(self, path, key_length=7):
+        """ Resolve the path and read .tch"""
         return self._read(self.resolve_path(path, key_length), self.bin_sha)
 
     @classmethod
     def _map(cls, path, key):
-        for bin_sha in slice_shas(cls._read(path, key)):
-            yield cls(bin_sha)
+        return tuple(cls(bin_sha) for bin_sha in slice20(cls._read(path, key)))
 
     def map(self, path, key_length, cls):
-        for bin_sha in slice_shas(self.read(path, key_length)):
-            yield cls(bin_sha)
+        return tuple(cls(bin_sha)
+                     for bin_sha in slice20(self.read(path, key_length)))
 
     def index_line(self):
         # get line number in index file
         return self.read('/fast{blob}/All.sha1/sha1.{type}_{key}.tch')
-
-    def read_binary(self, offset, length):
-        fh = BlobPool('/data/All.blobs/{type}_{key}.bin'.format(
-            type=self.type, key=self.key(7)))
-        fh.seek(offset)
-        return decomp(fh.read(length))
 
     @cached_property
     def data(self):
@@ -227,14 +230,14 @@ class GitObject(object):
 
     def __str__(self):
         """
-        >>> str(Commit('f2a7fcdc51450ab03cb364415f14e634fa69b62c'))
+        >>> print(Commit('f2a7fcdc51450ab03cb364415f14e634fa69b62c'))
         tree d4ddbae978c9ec2dc3b7b3497c2086ecf7be7d9d
         parent 66acf0a046a02b48e0b32052a17f1e240c2d7356
         author Pavel Puchkin <neoascetic@gmail.com> 1375321509 +1100
         committer Pavel Puchkin <neoascetic@gmail.com> 1375321597 +1100
-
+        <BLANKLINE>
         License changed :P
-
+        <BLANKLINE>
         """
         return self.data
 
@@ -246,21 +249,44 @@ class Blob(GitObject):
     def data(self):
         offset, length = unber(
             self.read('/data/All.sha1o/sha1.blob_{key}.tch'))
-        return self.read_binary(offset, length)
+        fh = BlobPool(self.resolve_path('/data/All.blobs/{type}_{key}.bin'))
+        fh.seek(offset)
+        return decomp(fh.read(length))
 
     @property
     def commits(self):
+        """ Get parent commits
+
+        # Known to be inaccurate - tests fail
+        >>> cs = list(Blob("7e2a34e2ec9bfdccfa01fff7762592d9458866eb").commits
+        >>> len(cs) >= 4
+        True
+        >>> "1e971a073f40d74a1e72e07c682e1cba0bae159b" in {c.sha for c in cs}
+        True
+        >>> "8fb99ec51bccc6ea4828c6ea08cd0976b53e6edc" in {c.sha for c in cs}
+        True
+        >>> cs = list(Blob("e0ac96cefe3d230553931c54a79fa164a8fa11da").commits
+        >>> len(cs) >= 4
+        True
+        >>> "1e971a073f40d74a1e72e07c682e1cba0bae159b" in {c.sha for c in cs}
+        True
+        >>> "8fb99ec51bccc6ea4828c6ea08cd0976b53e6edc" in {c.sha for c in cs}
+        True
+        """
         bin_shas = self.read('/data/basemaps/b2cFullF.{key}.tch', 4)
-        for bin_sha in slice_shas(bin_shas):
+        for bin_sha in slice20(bin_shas):
             yield Commit(bin_sha)
 
     @property
     def parents(self):
         """ Get parent trees
-        :return: generator of Tree objects
+        :return: tuple of Tree objects
 
-        TODO: test
-        TODO: ask Audris about inconsistency in name and key length
+        # Known to be inaccurate - tests fail
+        >>> c = Commit("1e971a073f40d74a1e72e07c682e1cba0bae159b")
+        >>> all(c.tree.sha in {pt.sha for pt in blob.parents}
+        ...     for blob in c._blobs)
+        True
         """
         return self.map('/data/basemaps/b2pt.00-15.{key}.tch', 3, Tree)
 
@@ -304,33 +330,58 @@ class Tree(GitObject):
             yield mode, fname, data[start:i].encode('hex')
 
     def traverse(self):
+        """ Recursively traverse commit files structures
+        :return: generator of (mode, filename, blob/tree sha)
+        >>> c = Commit("1e971a073f40d74a1e72e07c682e1cba0bae159b")
+        >>> len(list(c.tree.traverse()))
+        8
+        >>> c = Commit('e38126dbca6572912013621d2aa9e6f7c50f36bc')
+        >>> len(list(c.tree.traverse()))
+        36
+        """
         for mode, fname, sha in self:
             yield mode, fname, sha
+            # trees are always 40000:
+            # https://stackoverflow.com/questions/1071241
             if mode == "40000":
-                yield mode, fname, sha
                 for mode2, fname2, sha2 in Tree(sha).traverse():
                     yield mode2, fname + '/' + fname2, sha2
 
-    @property
+    def full(self):
+        """ Subtree pretty print
+        :return: multiline string, where each line contains mode, name and sha,
+            with subtrees expanded
+        """
+        files = sorted(self.traverse(), key=lambda x: x[1])
+        return "\n".join(" ".join(line) for line in files)
+
+    @cached_property
     def parents(self):
         """ Get parent trees
         :return: generator of Tree objects
 
-        TODO: test
+        >>> c = Commit('e38126dbca6572912013621d2aa9e6f7c50f36bc')
+        >>> trees = {fname: sha
+        ...          for mode, fname, sha in c.tree.traverse() if mode=="40000"}
+        >>> all(trees[fname.rsplit("/", 1)[0]] in
+        ...         {p.sha for p in Tree(sha).parents}
+        ...     for fname, sha in trees.items() if "/" in fname)
+        True
+
         TODO: ask Audris about inconsistency in name and key length
         """
-        return self.map('/data/basemaps/t2pt0-127.{key}.tch', 3, Tree)
+        return tuple(self.map('/data/basemaps/t2pt0-127.{key}.tch', 3, Tree))
 
     def __str__(self):
         """
-        >>> str(Tree("d4ddbae978c9ec2dc3b7b3497c2086ecf7be7d9d"))
+        >>> print(Tree("d4ddbae978c9ec2dc3b7b3497c2086ecf7be7d9d"))
         100755 .gitignore 83d22195edc1473673f1bf35307aea6edf3c37e3
         100644 COPYING fda94b84122f6f36473ca3573794a8f2c4f4a58c
         100644 MANIFEST.in b724831519904e2bc25373523b368c5d41dc368e
         100644 README.rst 234a57538f15d72f00603bf086b465b0f2cda7b5
         40000 minicms 954829887af5d9071aa92c427133ca2cdd0813cc
         100644 setup.py 46aaf071f1b859c5bf452733c2583c70d92cd0c8
-        >>> str(Tree("954829887af5d9071aa92c427133ca2cdd0813cc"))
+        >>> print(Tree("954829887af5d9071aa92c427133ca2cdd0813cc"))
         100644 __init__.py ff1f7925b77129b31938e76b5661f0a2c4500556
         100644 admin.py d05d461b48a8a5b5a9d1ea62b3815e089f3eb79b
         100644 models.py d1d952ee766d616eae5bfbd040c684007a424364
@@ -356,6 +407,17 @@ class Commit(GitObject):
         :param author: str, commit author string, "name <email>".
             E.g.: 'gsadaram <gsadaram@cisco.com>'
         :return: generator of commits
+        >>> cs = list(Commit.by_author('Marat <valiev.m@gmail.com>'))
+        >>> len(cs) > 100
+        True
+        >>> all(isinstance(c, Commit) for c in cs)
+        True
+        >>> author = 'user2589 <valiev.m@gmail.com>'
+        >>> orig = {c.sha for c in Commit.by_project('user2589_karta')
+        ...               if c.author==author}
+        >>> mapp = {c.sha for c in Commit.by_author(author)}
+        >>> orig.issubset(mapp)
+        True
         """
         return cls._map('/data/basemaps/Auth2Cmt.tch', author)
 
@@ -364,6 +426,26 @@ class Commit(GitObject):
         """ Get all commits with this filename
         :param file_path: a full path, e.g.: 'public_html/images/cms/my.gif'
         :return: generator of commits
+
+        >>> proj = 'user2589_minicms'
+        >>> fname = 'minicms/admin.py'
+        >>> orig = {c.sha for c in Commit.by_project(proj)
+        ...         if ' %s ' % fname in c.tree.full()}
+        >>> cs = list(Commit.by_file(fname))
+        >>> len(cs) > 40
+        True
+        >>> all(isinstance(c, Commit) for c in cs)
+        True
+        >>> mapp = {c.sha for c in cs}
+        >>> orig.issubset(mapp)
+        True
+        >>> fname = 'minicms/templatetags/minicms_tags.py'
+        >>> orig = {c.sha for c in Commit.by_project(proj)
+        ...         if ' %s ' % fname in c.tree.full()}
+        >>> mapp = {c.sha for c in Commit.by_file(fname)}
+        >>> orig.issubset(mapp)
+        True
+
         """
         if not file_path.endswith("\n"):
             file_path += "\n"
@@ -381,37 +463,133 @@ class Commit(GitObject):
         True
         >>> all(isinstance(c, Commit) for c in cs)
         True
+        >>> import requests
+        >>> gh = requests.get('https://api.github.com/repos/user2589/minicms/'
+        ...                   'commits?per_page=100').json()
+        >>> sha_gh = {c['sha'] for c in gh}
+        >>> merge = "GitHub Merge Button <merge-button@github.com>"
+        >>> all(c.sha  in sha_gh or c.author == merge for c in cs)
+        True
+        >>> shas = {c.sha for c in cs}
+        >>> all(all(p.sha in shas for p in c.parents) for c in cs)
+        True
         """
         return cls._map('/data/basemaps/Prj2CmtG.%d.tch' % prefix(project, 3),
                         project)
 
+    def __getattr__(self, attr):
+        """ Mimic special properties:
+            tree:           root Tree of the commit
+            parents:        tuple of parent commits
+            message:        str, first line of the commit message
+            full_message:   str, full commit message
+            author:         str, Name <email>
+            authored_at:    str, unix_epoch timezone
+            committer:      str, Name <email>
+            committed_at:   str, unix_epoch timezone
+        >>> c = Commit('e38126dbca6572912013621d2aa9e6f7c50f36bc')
+        >>> c.author.startswith('Marat')
+        True
+        >>> c.authored_at
+        '1337350448 +1100'
+        >>> c.tree.sha
+        '6845f55f47ddfdbe4628a83fdaba35fa4ae3c894'
+        >>> len(c.parents)
+        1
+        >>> c.parents[0].sha
+        'ab124ab4baa42cd9f554b7bb038e19d4e3647957'
+        >>> c.committed_at
+        '1337350448 +1100'
+        """
+        if attr not in ('tree', 'parents', 'message', 'full_message',
+                        'author', 'committer', 'authored_at', 'committed_at'):
+            raise AttributeError
+
+        self.header, self.full_message = self.data.split("\n\n", 1)
+        self.message = self.full_message.split("\n", 1)[0]
+        parents = []
+        for line in self.header.split("\n"):
+            key, value = line.strip().split(" ", 1)
+            if key == "tree":
+                self.tree = Tree(value)
+            elif key == "parent":  # multiple parents possible
+                parents.append(Commit(value))
+            elif key == "author":
+                chunks = value.rsplit(" ", 2)
+                self.author = chunks[0]
+                self.authored_at = " ".join(chunks[1:])
+            elif key == "committer":
+                chunks = value.rsplit(" ", 2)
+                self.committer = chunks[0]
+                self.committed_at = " ".join(chunks[1:])
+        self.parents = tuple(parents)
+
+        return getattr(self, attr)
+
     @cached_property
     def projects(self):
+        # type: () -> list
+        """Projects including this commit
+        >>> proj = 'user2589_minicms'
+        >>> all(proj in c.projects for c in Commit.by_project(proj))
+        True
+        >>> proj = 'user2589_karta'
+        >>> all(proj in c.projects for c in Commit.by_project(proj))
+        True
+        """
         return decomp(
             self.read('/data/basemaps/Cmt2PrjG.{key}.tch', 3)).split(";")
-
-    # TODO: author, committer, times, tree
 
     @cached_property
     def children(self):
         # type: () -> tuple
         """ Commit children
-        :return:
+        :return: tuple of children Commit objects
         >>> cs = Commit('1e971a073f40d74a1e72e07c682e1cba0bae159b').children
-        >>> len(cs)
-        1
+        >>> '9bd02434b834979bb69d0b752a403228f2e385e8' in {c.sha for c in cs}
+        True
         >>> isinstance(cs[0], Commit)
         True
-        >>> cs[0].sha
-        '9bd02434b834979bb69d0b752a403228f2e385e8'
+        >>> len(Commit("a443e1e76c39c7b1ad6f38967a75df667b9fed57").children) > 1
+        True
+        >>> len(Commit("4199110871d5dcb3a79dfc19a16eb630c9218962").children) > 3
+        True
+        >>> cs = Commit.by_project('user2589_minicms')
+        >>> all(all(c.sha in {ch.sha for ch in p.children} for p in c.parents)
+        ...     for c in cs)
+        True
         """
-        return tuple(self.map('/data/basemaps/Cmt2Chld.tch', 1, Commit))
+        return self.map('/data/basemaps/Cmt2Chld.tch', 1, Commit)
+
+    @cached_property
+    def _blobs(self):
+        """ Commit blobs retrieved from tree objects
+        (use .blobs for faster access)
+        :return: tuple of children Blob objects
+
+        >>> len(Commit("1e971a073f40d74a1e72e07c682e1cba0bae159b")._blobs)
+        7
+        """
+        return tuple(Blob(sha)
+                     for mode, filename, sha in self.tree.traverse()
+                     if mode != "40000")
 
     @cached_property
     def blobs(self):
         # type: () -> tuple
-        # TODO: test
-        return tuple(self.map('/data/basemaps/c2bFullF.{key}.tch', 4, Blob))
+        """ Commit blobs retrieved from cached relation
+        much faster
+
+        # Known to be inaccurate - tests fail
+        :return: tuple of children Blob objects
+        >>> c = Commit('1e971a073f40d74a1e72e07c682e1cba0bae159b')
+        >>> len(c.blobs) == len(c._blobs)
+        True
+        >>> c = Commit('e38126dbca6572912013621d2aa9e6f7c50f36bc')
+        >>> len(c.blobs) == len(c._blobs)
+        True
+        """
+        return self.map('/data/basemaps/c2bFullF.{key}.tch', 4, Blob)
 
 
 class Tag(GitObject):
