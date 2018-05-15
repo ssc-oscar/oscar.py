@@ -148,7 +148,7 @@ class BlobPool(object):
     """ Pool of open blob databases to save few milliseconds on opening
     Use:
         db = BlobPool('path_to.tch')
-        value = TCPool('path_to.tch')[key]
+        value = BlobPool('path_to.tch')[key]
     """
     pool = {}
 
@@ -255,8 +255,10 @@ class Blob(GitObject):
 
     @property
     def commits(self):
-        """ Get parent commits
+        # type: () -> tuple
+        """ Get commits where this blob has been added or removed/changed
 
+        # TODO: claimed to return only commits modifying the blob; check and update
         # Known to be inaccurate - tests fail
         >>> cs = list(Blob("7e2a34e2ec9bfdccfa01fff7762592d9458866eb").commits
         >>> len(cs) >= 4
@@ -282,12 +284,14 @@ class Blob(GitObject):
         """ Get parent trees
         :return: tuple of Tree objects
 
-        # Known to be inaccurate - tests fail
-        >>> c = Commit("1e971a073f40d74a1e72e07c682e1cba0bae159b")
-        >>> all(c.tree.sha in {pt.sha for pt in blob.parents}
-        ...     for blob in c._blobs)
-        True
+        # >>> c = Commit("1e971a073f40d74a1e72e07c682e1cba0bae159b")
+        # >>> all(c.tree.sha in {pt.sha for pt in blob.parents}
+        # ...     for blob in c._blobs)
+        # True
         """
+        raise DeprecationWarning(
+            "This relation is not maintained anymore and known to be "
+            "inaccurate. Please don't use it")
         return self.map('/data/basemaps/b2pt.00-15.{key}.tch', 3, Tree)
 
 
@@ -367,8 +371,6 @@ class Tree(GitObject):
         ...         {p.sha for p in Tree(sha).parents}
         ...     for fname, sha in trees.items() if "/" in fname)
         True
-
-        TODO: ask Audris about inconsistency in name and key length
         """
         return tuple(self.map('/data/basemaps/t2pt0-127.{key}.tch', 3, Tree))
 
@@ -392,6 +394,21 @@ class Tree(GitObject):
         100644 views.py 973a78a1fe9e69d4d3b25c92b3889f7e91142439
         """
         return "\n".join(" ".join(line) for line in self)
+
+    @cached_property
+    def files(self):
+        return {fname: sha
+                for mode, fname, sha in self.traverse() if mode != "40000"}
+
+    @cached_property
+    def blobs(self):
+        """ Get a tuple of all blobs from the tree and its subtrees
+        :return: tuple of Blobs
+
+        >>> len(Tree('d20520ef8c1537a42628b72d481b8174c0a1de84').blobs)
+        7
+        """
+        return tuple(Blob(sha) for sha in self.files.values())
 
 
 class Commit(GitObject):
@@ -423,10 +440,11 @@ class Commit(GitObject):
 
     @classmethod
     def by_file(cls, file_path):
-        """ Get all commits with this filename
+        """ Get all commits *modifying* the given file
         :param file_path: a full path, e.g.: 'public_html/images/cms/my.gif'
         :return: generator of commits
 
+        # TODO: claimed to return only commits modifying the file; check and update
         >>> proj = 'user2589_minicms'
         >>> fname = 'minicms/admin.py'
         >>> orig = {c.sha for c in Commit.by_project(proj)
@@ -562,26 +580,13 @@ class Commit(GitObject):
         return self.map('/data/basemaps/Cmt2Chld.tch', 1, Commit)
 
     @cached_property
-    def _blobs(self):
-        """ Commit blobs retrieved from tree objects
-        (use .blobs for faster access)
-        :return: tuple of children Blob objects
-
-        >>> len(Commit("1e971a073f40d74a1e72e07c682e1cba0bae159b")._blobs)
-        7
-        """
-        return tuple(Blob(sha)
-                     for mode, filename, sha in self.tree.traverse()
-                     if mode != "40000")
-
-    @cached_property
     def blobs(self):
         # type: () -> tuple
         """ Commit blobs retrieved from cached relation
         much faster
-
-        # Known to be inaccurate - tests fail
         :return: tuple of children Blob objects
+
+        # TODO: known to be inaccurate - tests fail
         >>> c = Commit('1e971a073f40d74a1e72e07c682e1cba0bae159b')
         >>> len(c.blobs) == len(c._blobs)
         True
@@ -589,6 +594,10 @@ class Commit(GitObject):
         >>> len(c.blobs) == len(c._blobs)
         True
         """
+        raise DeprecationWarning(
+            "This relation is known to miss every first file in all trees. "
+            "Consider using Commit._blobs as a slower but more accurate "
+            "alternative")
         return self.map('/data/basemaps/c2bFullF.{key}.tch', 4, Blob)
 
 
