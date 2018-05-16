@@ -64,8 +64,8 @@ Mappings are stored in `/data/basemaps/`:
         db[email] = bytestring of bin shas
         keys are non-normalized authors e.g. 'gsadaram <gsadaram@cisco.com>'
         9.35M keys
-    b2cFullF.{0..15}.tch  # bug 3
-        Blob to commits
+    b2cFullF.{0..15}.tch
+        Blob to commits where this blob was added or removed
         db[blob_sha] = commit_bin_shas
     c2bFullF.{0..15}.tch  # bug #1
         Commit to blobs
@@ -81,14 +81,14 @@ Mappings are stored in `/data/basemaps/`:
         Commit to children
         db[commit_sha] = children_commit_bin_shas
     f2cFullF.{0..7}.{tch,lst}  # bug #4
-        File to commits
+        File to commits where this file has been changed
         File is a full path, usually terminated with a newline
             e.g.: 'public_html/images/cms/flags/my.gif\n'
         There are 181M filenames as of Apr 2018 just in 0.tch
     t2pt0-127.{0..7}.{tch,lst}  # works
         Tree to parent trees
         db[tree_bin_sha] = parent_tree_bin_shas
-    b2pt.00-15.{0..7}.tch  # bug #2
+    b2pt.00-15.{0..7}.tch  # bug #2 - deprecated
         Blob to parent trees
 
 Python files:
