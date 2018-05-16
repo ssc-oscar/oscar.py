@@ -161,14 +161,25 @@ class BlobPool(object):
 
 
 class GitObject(object):
-    _data = None
     type = None
 
     @classmethod
     def all(cls):
         """ Iterate ALL objects of this type (all projects, all times) """
-        # TODO: implement this method
-        pass
+        for key in range(128):
+            path = '/data/All.blobs/%s_%d' % (cls.type, key)
+            datafile = open(path + '.bin')
+            for line in open(path + '.idx'):
+                chunks = line.strip().split(";")
+                if cls.type == "blob":
+                    offset, comp_length, full_length, sha = chunks[1:5]
+                else:
+                    offset, comp_length, sha = chunks[1:4]
+
+                obj = cls(sha)
+                obj._cache = {'data': decomp(datafile.read(int(comp_length)))}
+
+                yield obj
 
     def __init__(self, sha):
         """
@@ -187,6 +198,11 @@ class GitObject(object):
             self.bin_sha = sha
         else:
             raise ValueError("Invalid SHA1 hash: %s" % sha)
+
+    def __eq__(self, other):
+        return isinstance(other, type(self)) \
+               and self.type == other.type \
+               and self.sha == other.sha
 
     def resolve_path(self, path, key_length=7):
         """Format given path with object type and key
@@ -627,4 +643,4 @@ class Tag(GitObject):
 
     @property
     def data(self):
-        raise NotImplemented
+        raise NotImplementedError
