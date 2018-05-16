@@ -3,6 +3,7 @@ import lzf
 from tokyocabinet import hash
 
 from functools import wraps
+import warnings
 
 INVALID = "compressed data corrupted (invalid length)"
 
@@ -163,6 +164,12 @@ class GitObject(object):
     _data = None
     type = None
 
+    @classmethod
+    def all(cls):
+        """ Iterate ALL objects of this type (all projects, all times) """
+        # TODO: implement this method
+        pass
+
     def __init__(self, sha):
         """
         :param sha: either a 40 char hex or a 20 bytes binary SHA1 hash
@@ -289,9 +296,9 @@ class Blob(GitObject):
         # ...     for blob in c._blobs)
         # True
         """
-        raise DeprecationWarning(
+        warnings.warn(
             "This relation is not maintained anymore and known to be "
-            "inaccurate. Please don't use it")
+            "inaccurate. Please don't use it", DeprecationWarning)
         return self.map('/data/basemaps/b2pt.00-15.{key}.tch', 3, Tree)
 
 
@@ -372,7 +379,11 @@ class Tree(GitObject):
         ...     for fname, sha in trees.items() if "/" in fname)
         True
         """
-        return tuple(self.map('/data/basemaps/t2pt0-127.{key}.tch', 3, Tree))
+        try:
+            return tuple(
+                self.map('/data/basemaps/t2pt0-127.{key}.tch', 3, Tree))
+        except KeyError:
+            return tuple()
 
     def __str__(self):
         """
@@ -412,9 +423,8 @@ class Tree(GitObject):
 
 
 class Commit(GitObject):
-    """ A git commit object
+    """ A git commit object """
 
-    """
     type = 'commit'
 
     @classmethod
@@ -446,8 +456,19 @@ class Commit(GitObject):
 
         # TODO: claimed to return only commits modifying the file; check and update
         >>> proj = 'user2589_minicms'
+        >>> cs = {c.sha: {fname: sha
+        ...               for mode, fname, sha in c.tree.traverse()
+        ...               if mode != "40000"}
+        ...       for c in Commit.by_project(proj)}
+        >>> fname = 'minicms/templatetags/minicms_tags.py'
+        >>> s = set()
+        >>> for sha, files in cs.items():
+        ...     for parent in Commit(sha).parents:
+        ...         if cs[parent.sha].get(fname) != files.get(fname):
+        ...             s.add(sha)
+        >>> s2 = {c.sha for c in Commit.by_file(fname)}
         >>> fname = 'minicms/admin.py'
-        >>> orig = {c.sha for c in Commit.by_project(proj)
+        >>> orig = {c.sha for
         ...         if ' %s ' % fname in c.tree.full()}
         >>> cs = list(Commit.by_file(fname))
         >>> len(cs) > 40
@@ -594,10 +615,10 @@ class Commit(GitObject):
         >>> len(c.blobs) == len(c._blobs)
         True
         """
-        raise DeprecationWarning(
+        warnings.warn(
             "This relation is known to miss every first file in all trees. "
             "Consider using Commit._blobs as a slower but more accurate "
-            "alternative")
+            "alternative", DeprecationWarning)
         return self.map('/data/basemaps/c2bFullF.{key}.tch', 4, Blob)
 
 
