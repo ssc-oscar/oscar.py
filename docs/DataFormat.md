@@ -24,7 +24,7 @@ e.g.:
 
 Blobs:
 
-    id, offset, length, ??int, blob sha, ??sha, ??int
+    id, offset, compressed_length, full_length, blob sha, ??sha, ??int
 
 e.g.
 

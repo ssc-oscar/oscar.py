@@ -3,29 +3,15 @@
 
 This is a convenience library to access OSCAR dataset files.
 
-# Installation
+### Installation
 
-    easy_install --user pip
-    pip install --upgrade pip
-    git clone git@github.com:user2589/oscar.py.git
-    cd oscar.py
-    pip install --user --upgrade -r requirements.txt
-
-Make sure `$HOME/.local/bin` is in your `$PATH`, e.g. by adding this to the end of your
-`.bashrc`:
-
-    if [ -d "$HOME/.local/bin" ] ; then
-        export PATH=~/.local/bin:$PATH
-    fi
-
-Later I will write an installer; 
-remind me to do so if you have any problems with installation
+    easy_install --user --upgrade oscar
 
 # Git objects
 
 This package provides interfaces to git objects: Commit, Tree, Blog and Tag.
 
-All Git objects share one property `sha`, which represents SHA1 object hash as a hex string,
+All git objects have `sha` property, which represents SHA1 object hash as a hex string,
 and `bin_sha`, its binary counterpart.
 All objects can be instantiated using their hashes, either a 40-char hex string or 20-bytes binary.
 
