@@ -1,6 +1,6 @@
 
 import lzf
-from tokyocabinet import hash
+from tokyocabinet import hash as tch
 
 from functools import wraps
 import warnings
@@ -11,10 +11,14 @@ INVALID = "compressed data corrupted (invalid length)"
 def unber(s):
     # type: (str) -> list
     r""" Perl BER unpacking
-    Format definition obtained from http://perldoc.perl.org/functions/pack.html
+    Format definition: from http://perldoc.perl.org/functions/pack.html
         (see "w" template description)
-    :param s:
-    :return:
+
+    BER is a way to pack several variable-length ints into one
+    binary string. Here we do the reverse
+
+    :param s: a binary string with packed values
+    :return: a list of unpacked values
 
     >>> unber('\x00\x83M')
     [0, 461]
@@ -36,8 +40,8 @@ def unber(s):
 
 def lzf_length(raw_data):
     # type: (str) -> (int, int)
-    r""" extract length of uncompressed data from header of Compress::LZF output
-    Please check Compress::LZF sources for the definition of this bit magic
+    r""" Get length of uncompressed data from a header of Compress::LZF
+    output. Check Compress::LZF sources for the definition of this bit magic
         (namely, LZF.xs, decompress_sv)
 
     :param raw_data: data compressed with Perl Compress::LZF
@@ -57,16 +61,16 @@ def lzf_length(raw_data):
     """
     if not raw_data:
         raise ValueError(INVALID)
-    l = ord(raw_data[0])
+    lower = ord(raw_data[0])
     csize = len(raw_data)
     start = 1
     mask = 0x80
-    while mask and csize > start and (l & mask):
+    while mask and csize > start and (lower & mask):
         mask >>= 1 + (mask == 0x80)
         start += 1
     if not mask or csize < start:
         raise ValueError(INVALID)
-    usize = l & (mask - 1)
+    usize = lower & (mask - 1)
     for i in range(1, start):
         usize = (usize << 6) + (ord(raw_data[i]) & 0x3f)
     if not usize:
@@ -281,7 +285,8 @@ class Blob(GitObject):
         # type: () -> tuple
         """ Get commits where this blob has been added or removed/changed
 
-        # TODO: claimed to return only commits modifying the blob; check and update
+        Claimed to return only commits modifying the blob;
+        TODO: check and update
         # Known to be inaccurate - tests fail
         >>> cs = list(Blob("7e2a34e2ec9bfdccfa01fff7762592d9458866eb").commits
         >>> len(cs) >= 4
@@ -470,7 +475,8 @@ class Commit(GitObject):
         :param file_path: a full path, e.g.: 'public_html/images/cms/my.gif'
         :return: generator of commits
 
-        # TODO: claimed to return only commits modifying the file; check and update
+        Claimed to return only commits modifying a file
+        TODO: check and update
         >>> proj = 'user2589_minicms'
         >>> cs = {c.sha: {fname: sha
         ...               for mode, fname, sha in c.tree.traverse()
@@ -605,9 +611,11 @@ class Commit(GitObject):
         True
         >>> isinstance(cs[0], Commit)
         True
-        >>> len(Commit("a443e1e76c39c7b1ad6f38967a75df667b9fed57").children) > 1
+        >>> c = Commit("a443e1e76c39c7b1ad6f38967a75df667b9fed57")
+        >>> len(c.children) > 1
         True
-        >>> len(Commit("4199110871d5dcb3a79dfc19a16eb630c9218962").children) > 3
+        >>> c = Commit("4199110871d5dcb3a79dfc19a16eb630c9218962")
+        >>> len(c.children) > 3
         True
         >>> cs = Commit.by_project('user2589_minicms')
         >>> all(all(c.sha in {ch.sha for ch in p.children} for p in c.parents)
