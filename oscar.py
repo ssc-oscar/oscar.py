@@ -100,12 +100,10 @@ def cached_property(func):
     """ Classic memoize with @property on top"""
     @wraps(func)
     def wrapper(self):
-        if not hasattr(self, "_cache"):
-            self._cache = {}
-        key = func.__name__
-        if key not in self._cache:
-            self._cache[key] = func(self)
-        return self._cache[key]
+        key = "_" + func.__name__
+        if not hasattr(self, key):
+            setattr(self, key, func(self))
+        return getattr(self, key)
     return property(wrapper)
 
 
@@ -181,7 +179,7 @@ class GitObject(object):
                     offset, comp_length, sha = chunks[1:4]
 
                 obj = cls(sha)
-                obj._cache = {'data': decomp(datafile.read(int(comp_length)))}
+                obj._data = decomp(datafile.read(int(comp_length)))
 
                 yield obj
 
