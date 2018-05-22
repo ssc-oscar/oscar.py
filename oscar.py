@@ -108,12 +108,10 @@ def cached_property(func):
 
 
 def slice20(raw_data):
-    """ Convenience method to slice raw_data into 20-byte chunks
-    >>> list(slice20("a"*20 + "b"*20))
-    ['aaaaaaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbbbbbb']
+    """ Slice raw_data into 20-byte chunks and hex encode each of them
     """
-    for i in range(0, len(raw_data), 20):
-        yield raw_data[i:i + 20]
+    return tuple(raw_data[i:i + 20].encode('hex')
+                 for i in range(0, len(raw_data), 20))
 
 
 def prefix(value, key_length):
@@ -127,39 +125,24 @@ def prefix(value, key_length):
     return ord(value[0]) & (2**key_length - 1)
 
 
-class TCH(object):
-    """ Pool of open TokyoCabinet databases to save few milliseconds on opening
-    Use:
-        db = TCPool('path_to.tch')
-        keys = db.fwmkeys('')
-    or, if the key is known:
-        value = TCPool('path_to.tch')[key]
+# Pool of open TokyoCabinet databases to save few milliseconds on opening
+_TCH_POOL = {}
+
+
+def read_tch(path, key):
+    """ Read a value from a Tokyo Cabinet file by the specified key
+    Main purpose of this method is to cached open .tch handlers
+    in _TCH_POOL to speedup reads
     """
-    pool = {}
-
-    @staticmethod
-    def __new__(cls, path):
-        if not path.endswith('.tch'):
-            path += '.tch'
-        if path not in cls.pool:
-            cls.pool[path] = hash.Hash()
-            cls.pool[path].open(path, hash.HDBOREADER)
-        return cls.pool[path]
-
-
-class BlobPool(object):
-    """ Pool of open blob databases to save few milliseconds on opening
-    Use:
-        db = BlobPool('path_to.tch')
-        value = BlobPool('path_to.tch')[key]
-    """
-    pool = {}
-
-    @staticmethod
-    def __new__(cls, path):
-        if path not in cls.pool:
-            cls.pool[path] = open(path, 'rb')
-        return cls.pool[path]
+    if not path.endswith('.tch'):
+        path += '.tch'
+    if path not in _TCH_POOL:
+        _TCH_POOL[path] = tch.Hash()
+        _TCH_POOL[path].open(path, tch.HDBOREADER)
+    try:
+        return _TCH_POOL[path][key]
+    except KeyError:
+        return ''
 
 
 class GitObject(object):
@@ -219,28 +202,16 @@ class GitObject(object):
         >>> go.resolve_path("/fast{blob}/All.sha1/{type}_{key}", 8)
         '/fast1/All.sha1/blob_133'
         """
-        return path.format(blob=1 if self.type == 'blob' else '',
-                           type=self.type, key=prefix(self.bin_sha, key_length))
-
-    @staticmethod
-    def _read(path, key):
-        """ Read the specified TokyCabinet by the specified key"""
-        return TCH(path)[key]
+        return path.format(
+            blob=1 if self.type == 'blob' else '',
+            type=self.type, key=prefix(self.bin_sha, key_length))
 
     def read(self, path, key_length=7):
         """ Resolve the path and read .tch"""
-        return self._read(self.resolve_path(path, key_length), self.bin_sha)
-
-    @classmethod
-    def _map(cls, path, key):
-        return tuple(cls(bin_sha) for bin_sha in slice20(cls._read(path, key)))
-
-    def map(self, path, key_length, cls):
-        return tuple(cls(bin_sha)
-                     for bin_sha in slice20(self.read(path, key_length)))
+        return read_tch(self.resolve_path(path, key_length), self.bin_sha)
 
     def index_line(self):
-        # get line number in index file
+        # get a line number in the index file
         return self.read('/fast{blob}/All.sha1/sha1.{type}_{key}.tch')
 
     @cached_property
@@ -270,30 +241,40 @@ class GitObject(object):
 class Blob(GitObject):
     type = 'blob'
 
+    def __len__(self):
+        return len(self.data)
+
     @cached_property
     def data(self):
-        offset, length = unber(
-            self.read('/data/All.sha1o/sha1.blob_{key}.tch'))
-        fh = BlobPool(self.resolve_path('/data/All.blobs/{type}_{key}.bin'))
+        try:
+            offset, length = unber(
+                self.read('/data/All.sha1o/sha1.blob_{key}.tch'))
+        except ValueError:  # empty read -> value not found
+            raise KeyError
+        fh = open(self.resolve_path('/data/All.blobs/{type}_{key}.bin'), 'rb')
         fh.seek(offset)
         return decomp(fh.read(length))
 
+    @cached_property
+    def commit_shas(self):
+        """ SHAs of Commits in which this blob have been
+        introduced/modified/removed
+        """
+        return slice20(self.read('/data/basemaps/b2cFullF.{key}.tch', 4))
+
     @property
     def commits(self):
-        # type: () -> tuple
-        """ Get commits where this blob has been added or removed/changed
+        """ Commits where this blob has been added/removed/changed
 
-        Claimed to return only commits modifying the blob;
         TODO: check and update
-        # Known to be inaccurate - tests fail
-        >>> cs = list(Blob("7e2a34e2ec9bfdccfa01fff7762592d9458866eb").commits
+        >>> cs = list(Blob("7e2a34e2ec9bfdccfa01fff7762592d9458866eb").commits)
         >>> len(cs) >= 4
         True
         >>> "1e971a073f40d74a1e72e07c682e1cba0bae159b" in {c.sha for c in cs}
         True
         >>> "8fb99ec51bccc6ea4828c6ea08cd0976b53e6edc" in {c.sha for c in cs}
         True
-        >>> cs = list(Blob("e0ac96cefe3d230553931c54a79fa164a8fa11da").commits
+        >>> cs = list(Blob("e0ac96cefe3d230553931c54a79fa164a8fa11da").commits)
         >>> len(cs) >= 4
         True
         >>> "1e971a073f40d74a1e72e07c682e1cba0bae159b" in {c.sha for c in cs}
@@ -301,24 +282,7 @@ class Blob(GitObject):
         >>> "8fb99ec51bccc6ea4828c6ea08cd0976b53e6edc" in {c.sha for c in cs}
         True
         """
-        bin_shas = self.read('/data/basemaps/b2cFullF.{key}.tch', 4)
-        for bin_sha in slice20(bin_shas):
-            yield Commit(bin_sha)
-
-    @property
-    def parents(self):
-        """ Get parent trees
-        :return: tuple of Tree objects
-
-        # >>> c = Commit("1e971a073f40d74a1e72e07c682e1cba0bae159b")
-        # >>> all(c.tree.sha in {pt.sha for pt in blob.parents}
-        # ...     for blob in c._blobs)
-        # True
-        """
-        warnings.warn(
-            "This relation is not maintained anymore and known to be "
-            "inaccurate. Please don't use it", DeprecationWarning)
-        return self.map('/data/basemaps/b2pt.00-15.{key}.tch', 3, Tree)
+        return (Commit(bin_sha) for bin_sha in self.commit_shas)
 
 
 class Tree(GitObject):
@@ -359,6 +323,9 @@ class Tree(GitObject):
             i += 21
             yield mode, fname, data[start:i].encode('hex')
 
+    def __len__(self):
+        return len(self.files)
+
     def traverse(self):
         """ Recursively traverse commit files structures
         :return: generator of (mode, filename, blob/tree sha)
@@ -386,7 +353,11 @@ class Tree(GitObject):
         return "\n".join(" ".join(line) for line in files)
 
     @cached_property
-    def parents(self):
+    def parent_tree_shas(self):
+        return slice20(self.read('/data/basemaps/t2pt0-127.{key}.tch', 3))
+
+    @property
+    def parent_trees(self):
         """ Get parent trees
         :return: generator of Tree objects
 
@@ -394,15 +365,11 @@ class Tree(GitObject):
         >>> trees = {fname: sha
         ...          for mode, fname, sha in c.tree.traverse() if mode=="40000"}
         >>> all(trees[fname.rsplit("/", 1)[0]] in
-        ...         {p.sha for p in Tree(sha).parents}
+        ...         {p.sha for p in Tree(sha).parent_trees}
         ...     for fname, sha in trees.items() if "/" in fname)
         True
         """
-        try:
-            return tuple(
-                self.map('/data/basemaps/t2pt0-127.{key}.tch', 3, Tree))
-        except KeyError:
-            return tuple()
+        return (Tree(sha) for sha in self.parent_tree_shas)
 
     def __str__(self):
         """
@@ -430,15 +397,15 @@ class Tree(GitObject):
         return {fname: sha
                 for mode, fname, sha in self.traverse() if mode != "40000"}
 
-    @cached_property
+    @property
     def blobs(self):
         """ Get a tuple of all blobs from the tree and its subtrees
         :return: tuple of Blobs
 
-        >>> len(Tree('d20520ef8c1537a42628b72d481b8174c0a1de84').blobs)
+        >>> len(tuple(Tree('d20520ef8c1537a42628b72d481b8174c0a1de84').blobs))
         7
         """
-        return tuple(Blob(sha) for sha in self.files.values())
+        return (Blob(sha) for sha in self.files.values())
 
 
 class Commit(GitObject):
@@ -465,7 +432,8 @@ class Commit(GitObject):
         >>> orig.issubset(mapp)
         True
         """
-        return cls._map('/data/basemaps/Auth2Cmt.tch', author)
+        return (cls(sha) for sha in
+                slice20(read_tch('/data/basemaps/Auth2Cmt.tch', author)))
 
     @classmethod
     def by_file(cls, file_path):
@@ -504,12 +472,12 @@ class Commit(GitObject):
         >>> mapp = {c.sha for c in Commit.by_file(fname)}
         >>> orig.issubset(mapp)
         True
-
         """
         if not file_path.endswith("\n"):
             file_path += "\n"
-        return cls._map('/data/basemaps/f2cFullF.%d.tch' % prefix(file_path, 3),
-                        file_path)
+        tch_path = '/data/basemaps/f2cFullF.%d.tch' % prefix(file_path, 3)
+        data = read_tch(tch_path, file_path)
+        return (cls(sha) for sha in slice20(data))
 
     @classmethod
     def by_project(cls, project):
@@ -533,13 +501,14 @@ class Commit(GitObject):
         >>> all(all(p.sha in shas for p in c.parents) for c in cs)
         True
         """
-        return cls._map('/data/basemaps/Prj2CmtG.%d.tch' % prefix(project, 3),
-                        project)
+        tch_path = '/data/basemaps/Prj2CmtG.%d.tch' % prefix(project, 3)
+        data = read_tch(tch_path, project)
+        return (cls(bin_sha) for bin_sha in slice20(data))
 
     def __getattr__(self, attr):
         """ Mimic special properties:
             tree:           root Tree of the commit
-            parents:        tuple of parent commits
+            parent_shas:    tuple of parent commit sha hashes
             message:        str, first line of the commit message
             full_message:   str, full commit message
             author:         str, Name <email>
@@ -553,26 +522,26 @@ class Commit(GitObject):
         '1337350448 +1100'
         >>> c.tree.sha
         '6845f55f47ddfdbe4628a83fdaba35fa4ae3c894'
-        >>> len(c.parents)
+        >>> len(c.parent_shas)
         1
-        >>> c.parents[0].sha
+        >>> c.parent_shas[0]
         'ab124ab4baa42cd9f554b7bb038e19d4e3647957'
         >>> c.committed_at
         '1337350448 +1100'
         """
-        if attr not in ('tree', 'parents', 'message', 'full_message',
+        if attr not in ('tree', 'parent_shas', 'message', 'full_message',
                         'author', 'committer', 'authored_at', 'committed_at'):
             raise AttributeError
 
         self.header, self.full_message = self.data.split("\n\n", 1)
         self.message = self.full_message.split("\n", 1)[0]
-        parents = []
+        parent_shas = []
         for line in self.header.split("\n"):
             key, value = line.strip().split(" ", 1)
             if key == "tree":
                 self.tree = Tree(value)
             elif key == "parent":  # multiple parents possible
-                parents.append(Commit(value))
+                parent_shas.append(value)
             elif key == "author":
                 chunks = value.rsplit(" ", 2)
                 self.author = chunks[0]
@@ -581,9 +550,20 @@ class Commit(GitObject):
                 chunks = value.rsplit(" ", 2)
                 self.committer = chunks[0]
                 self.committed_at = " ".join(chunks[1:])
-        self.parents = tuple(parents)
+        self.parent_shas = tuple(parent_shas)
 
         return getattr(self, attr)
+
+    @property
+    def parents(self):
+        """ A generator of parent commits
+        If you only need hashes (and not Commit objects),
+        use .parent_sha instead
+        >>> c = Commit('e38126dbca6572912013621d2aa9e6f7c50f36bc')
+        >>> tuple(c.parents)
+        (<Commit: ab124ab4baa42cd9f554b7bb038e19d4e3647957>,)
+        """
+        return (Commit(sha) for sha in self.parent_shas)
 
     @cached_property
     def projects(self):
@@ -596,52 +576,70 @@ class Commit(GitObject):
         >>> all(proj in c.projects for c in Commit.by_project(proj))
         True
         """
-        return decomp(
-            self.read('/data/basemaps/Cmt2PrjG.{key}.tch', 3)).split(";")
+        data = decomp(self.read('/data/basemaps/Cmt2PrjG.{key}.tch', 3))
+        if not data:
+            return []
+        return data.split(";")
 
     @cached_property
-    def children(self):
-        # type: () -> tuple
-        """ Commit children
-        :return: tuple of children Commit objects
-        >>> cs = Commit('1e971a073f40d74a1e72e07c682e1cba0bae159b').children
-        >>> '9bd02434b834979bb69d0b752a403228f2e385e8' in {c.sha for c in cs}
+    def child_shas(self):
+        """ Children commit binary sha hashes
+        :return: a tuple of children commit sha (20-byte binary string)
+
+        >>> c = Commit('1e971a073f40d74a1e72e07c682e1cba0bae159b')
+        >>> cs = c.child_shas
+        >>> len(cs) > 0  # actually, 1
         True
-        >>> isinstance(cs[0], Commit)
+        >>> isinstance(c.child_shas, tuple)
+        True
+        >>> '9bd02434b834979bb69d0b752a403228f2e385e8' in cs
+        True
+        """
+        # key_length will be ignored
+        return slice20(self.read('/data/basemaps/Cmt2Chld.tch', 1))
+
+    @property
+    def children(self):
+        """ Commit children
+        :return: a generator of children Commit objects
+        >>> c = Commit('1e971a073f40d74a1e72e07c682e1cba0bae159b')
+        >>> isinstance(tuple(c.children)[0], Commit)
         True
         >>> c = Commit("a443e1e76c39c7b1ad6f38967a75df667b9fed57")
-        >>> len(c.children) > 1
+        >>> len(tuple(c.children)) > 1
         True
         >>> c = Commit("4199110871d5dcb3a79dfc19a16eb630c9218962")
-        >>> len(c.children) > 3
+        >>> len(tuple(c.children)) > 3
         True
         >>> cs = Commit.by_project('user2589_minicms')
         >>> all(all(c.sha in {ch.sha for ch in p.children} for p in c.parents)
         ...     for c in cs)
         True
         """
-        return self.map('/data/basemaps/Cmt2Chld.tch', 1, Commit)
+        return (Commit(bin_sha) for bin_sha in self.child_shas)
 
     @cached_property
+    def blob_shas(self):
+        return slice20(self.read('/data/basemaps/c2bFullF.{key}.tch', 4))
+
+    @property
     def blobs(self):
-        # type: () -> tuple
         """ Commit blobs retrieved from cached relation
         much faster
         :return: tuple of children Blob objects
 
-        # TODO: known to be inaccurate - tests fail
         >>> c = Commit('1e971a073f40d74a1e72e07c682e1cba0bae159b')
-        >>> len(c.blobs) == len(c._blobs)
+        >>> len(tuple(c.blobs)) == len(tuple(c.tree.blobs))
         True
         >>> c = Commit('e38126dbca6572912013621d2aa9e6f7c50f36bc')
-        >>> len(c.blobs) == len(c._blobs)
+        >>> len(tuple(c.blobs)) == len(tuple(c.tree.blobs))
         True
         """
         warnings.warn(
             "This relation is known to miss every first file in all trees. "
-            "Consider using Commit._blobs as a slower but more accurate "
+            "Consider using Commit.tree.blobs as a slower but more accurate "
             "alternative", DeprecationWarning)
-        return self.map('/data/basemaps/c2bFullF.{key}.tch', 4, Blob)
+        return (Blob(bin_sha) for bin_sha in self.blob_shas)
 
 
 class Tag(GitObject):
