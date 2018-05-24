@@ -264,24 +264,7 @@ class Blob(GitObject):
 
     @property
     def commits(self):
-        """ Commits where this blob has been added/removed/changed
-
-        TODO: check and update
-        >>> cs = list(Blob("7e2a34e2ec9bfdccfa01fff7762592d9458866eb").commits)
-        >>> len(cs) >= 4
-        True
-        >>> "1e971a073f40d74a1e72e07c682e1cba0bae159b" in {c.sha for c in cs}
-        True
-        >>> "8fb99ec51bccc6ea4828c6ea08cd0976b53e6edc" in {c.sha for c in cs}
-        True
-        >>> cs = list(Blob("e0ac96cefe3d230553931c54a79fa164a8fa11da").commits)
-        >>> len(cs) >= 4
-        True
-        >>> "1e971a073f40d74a1e72e07c682e1cba0bae159b" in {c.sha for c in cs}
-        True
-        >>> "8fb99ec51bccc6ea4828c6ea08cd0976b53e6edc" in {c.sha for c in cs}
-        True
-        """
+        """ Commits where this blob has been added/removed/changed """
         return (Commit(bin_sha) for bin_sha in self.commit_shas)
 
 
@@ -440,38 +423,6 @@ class Commit(GitObject):
         """ Get all commits *modifying* the given file
         :param file_path: a full path, e.g.: 'public_html/images/cms/my.gif'
         :return: generator of commits
-
-        Claimed to return only commits modifying a file
-        TODO: check and update
-        >>> proj = 'user2589_minicms'
-        >>> cs = {c.sha: {fname: sha
-        ...               for mode, fname, sha in c.tree.traverse()
-        ...               if mode != "40000"}
-        ...       for c in Commit.by_project(proj)}
-        >>> fname = 'minicms/templatetags/minicms_tags.py'
-        >>> s = set()
-        >>> for sha, files in cs.items():
-        ...     for parent in Commit(sha).parents:
-        ...         if cs[parent.sha].get(fname) != files.get(fname):
-        ...             s.add(sha)
-        >>> s2 = {c.sha for c in Commit.by_file(fname)}
-        >>> fname = 'minicms/admin.py'
-        >>> orig = {c.sha for
-        ...         if ' %s ' % fname in c.tree.full()}
-        >>> cs = list(Commit.by_file(fname))
-        >>> len(cs) > 40
-        True
-        >>> all(isinstance(c, Commit) for c in cs)
-        True
-        >>> mapp = {c.sha for c in cs}
-        >>> orig.issubset(mapp)
-        True
-        >>> fname = 'minicms/templatetags/minicms_tags.py'
-        >>> orig = {c.sha for c in Commit.by_project(proj)
-        ...         if ' %s ' % fname in c.tree.full()}
-        >>> mapp = {c.sha for c in Commit.by_file(fname)}
-        >>> orig.issubset(mapp)
-        True
         """
         if not file_path.endswith("\n"):
             file_path += "\n"
