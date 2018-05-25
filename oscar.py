@@ -129,27 +129,37 @@ def prefix(value, key_length):
 _TCH_POOL = {}
 
 
-def read_tch(path, key):
-    """ Read a value from a Tokyo Cabinet file by the specified key
-    Main purpose of this method is to cached open .tch handlers
-    in _TCH_POOL to speedup reads
-    """
+def _get_tch(path):
     if not path.endswith('.tch'):
         path += '.tch'
     if path not in _TCH_POOL:
         _TCH_POOL[path] = tch.Hash()
         _TCH_POOL[path].open(path, tch.HDBOREADER)
+    return _TCH_POOL[path]
+
+
+def read_tch(path, key):
+    """ Read a value from a Tokyo Cabinet file by the specified key
+    Main purpose of this method is to cached open .tch handlers
+    in _TCH_POOL to speedup reads
+    """
+
     try:
-        return _TCH_POOL[path][key]
+        return _get_tch(path)[key]
     except KeyError:
         return ''
 
 
-class GitObject(object):
+def tch_keys(path, key_prefix=''):
+    return _get_tch(path).fwmkeys(key_prefix)
+
+
     type = None
 
     @classmethod
     def all(cls):
+class GitObject(_Base):
+
         """ Iterate ALL objects of this type (all projects, all times) """
         for key in range(128):
             path = '/data/All.blobs/%s_%d' % (cls.type, key)
