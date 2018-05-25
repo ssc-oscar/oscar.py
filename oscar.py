@@ -154,19 +154,45 @@ def tch_keys(path, key_prefix=''):
     return _get_tch(path).fwmkeys(key_prefix)
 
 
+class _Base(object):
     type = None
+    key = None
+
+    def __init__(self, key):
+        """
+        :param key: unique identifier for an object of this type
+        """
+        self.key = key
+
+    def __repr__(self):
+        return "<%s: %s>" % ((self.type or 'OscarBase').capitalize(), self.key)
+
+    def __eq__(self, other):
+        return isinstance(other, type(self)) \
+               and self.type == other.type \
+               and self.key == other.key
+
+    def __str__(self):
+        return self.key
 
     @classmethod
     def all(cls):
+        raise NotImplementedError
+
+
 class GitObject(_Base):
 
+    @classmethod
+    def all(cls, ignored_prefix=''):
         """ Iterate ALL objects of this type (all projects, all times) """
         for key in range(128):
             path = '/data/All.blobs/%s_%d' % (cls.type, key)
             datafile = open(path + '.bin')
             for line in open(path + '.idx'):
                 chunks = line.strip().split(";")
-                if cls.type == "blob":
+                if len(chunks) > 4:  # cls.type == "blob":
+                    # usually, it's true for blobs;
+                    # however, some blobs follow common pattern
                     offset, comp_length, full_length, sha = chunks[1:5]
                 else:
                     offset, comp_length, sha = chunks[1:4]
@@ -193,11 +219,7 @@ class GitObject(_Base):
             self.bin_sha = sha
         else:
             raise ValueError("Invalid SHA1 hash: %s" % sha)
-
-    def __eq__(self, other):
-        return isinstance(other, type(self)) \
-               and self.type == other.type \
-               and self.sha == other.sha
+        super(GitObject, self).__init__(sha)
 
     def resolve_path(self, path, key_length=7):
         """Format given path with object type and key
@@ -226,13 +248,10 @@ class GitObject(_Base):
 
     @cached_property
     def data(self):
-        if self.type is None:
-            raise NotImplemented
+        if self.type not in ('commit', 'tree'):
+            raise NotImplementedError
         # default implementation will only work for commits and trees
         return decomp(self.read('/fast1/All.sha1c/{type}_{key}.tch'))
-
-    def __repr__(self):
-        return "<%s: %s>" % ((self.type or 'GitObject').capitalize(), self.sha)
 
     def __str__(self):
         """
@@ -606,6 +625,166 @@ class Commit(GitObject):
 class Tag(GitObject):
     type = 'tag'
 
+
+class Project(_Base):
+    type = 'project'
+
+    @classmethod
+    def all(cls, name_prefix=''):
+        """ Get all project URIs, starting with an optional prefix
+        This method is heavy so it is moved to integration tests
+        """
+        for key_prefix in range(8):
+            tch_path = '/data/basemaps/Prj2CmtG.%d.tch' % key_prefix
+            for uri in tch_keys(tch_path, name_prefix):
+                yield cls(uri)
+
+    @cached_property
+    def commit_shas(self):
+        """ SHA1 of all commits in the project
+        >>> commits = Project('user2589_minicms').commit_shas
+        >>> len(commits) > 60
+        True
+        >>> isinstance(commits, tuple)
+        True
+        >>> isinstance(commits[0], str)
+        True
+        >>> len(commits[0] == 40)
+        True
+        """
+        tch_path = '/data/basemaps/Prj2CmtG.%d.tch' % prefix(self.key, 3)
+        return slice20(read_tch(tch_path, self.key))
+
     @property
-    def data(self):
-        raise NotImplementedError
+    def commits(self):
+        for sha in self.commit_shas:
+            c = Commit(sha)
+            if c.author != 'GitHub Merge Button <merge-button@github.com>':
+                yield c
+
+    @cached_property
+    def head(self):
+        commits = {c.sha: c for c in self.commits}
+        parents = set().union(*(c.parent_shas for c in commits.values()))
+        heads = set(commits.keys()) - parents
+        assert len(heads) == 1, "Unexpected number of heads"
+        return tuple(heads)[0]
+
+    @property
+    def commits_fp(self):
+        """ Get a subset of commits following only first parent, to mimic
+        https://git-scm.com/docs/git-log#git-log---first-parent
+        """
+        commit = self.head
+        while True:
+            yield commit
+            if not commit.parent_shas:
+                return
+            commit = Commit(commit.parent_shas[0])
+
+
+class File(_Base):
+    type = 'file'
+
+    @classmethod
+    def all(cls, fname_prefix=''):
+        """ Get all file names, starting with an optional prefix
+        This method is heavy so it is moved to integration tests
+        """
+        for key_prefix in range(8):
+            tch_path = '/data/basemaps/f2cFullF.%d.tch' % key_prefix
+            for fname in tch_keys(tch_path, fname_prefix):
+                yield cls(fname)
+
+    @cached_property
+    def commit_shas(self):
+        """ SHA1 of all commits authored by the Author
+        >>> commits = File('minicms/templatetags/minicms_tags.py').commit_shas
+        >>> len(commits) > 0
+        True
+        >>> isinstance(commits, tuple)
+        True
+        >>> isinstance(commits[0], str)
+        True
+        >>> len(commits[0] == 40)
+        True
+        """
+        file_path = self.key
+        if not file_path.endswith("\n"):
+            file_path += "\n"
+        tch_path = '/data/basemaps/f2cFullF.%d.tch' % prefix(file_path, 3)
+        return slice20(read_tch(tch_path, file_path))
+
+    @property
+    def commits(self):
+        """ A commits authored by the Author
+        >>> commits = tuple(Author('user2589 <valiev.m@gmail.com>').commits)
+        >>> len(commits) > 50
+        True
+        >>> isinstance(commits[0], Commit)
+        True
+        """
+        return (Commit(sha) for sha in self.commit_shas)
+
+
+class Author(_Base):
+    type = 'author'
+
+    @classmethod
+    def all(cls, name_prefix=''):
+        """ Get all author names, starting with an optional prefix
+        This method is heavy so it is moved to integration tests
+        """
+        for name in tch_keys('/data/basemaps/Auth2Cmt.tch', name_prefix):
+            yield cls(name)
+
+    @cached_property
+    def commit_shas(self):
+        """ SHA1 of all commits authored by the Author
+        >>> commits = Author('user2589 <valiev.m@gmail.com>').commit_shas
+        >>> len(commits) > 50
+        True
+        >>> isinstance(commits, tuple)
+        True
+        >>> isinstance(commits[0], str)
+        True
+        >>> len(commits[0] == 40)
+        True
+        """
+        return slice20(read_tch('/data/basemaps/Auth2Cmt.tch', self.key))
+
+    @property
+    def commits(self):
+        """ A commits authored by the Author
+        >>> commits = tuple(Author('user2589 <valiev.m@gmail.com>').commits)
+        >>> len(commits) > 50
+        True
+        >>> isinstance(commits[0], Commit)
+        True
+        """
+        return (Commit(sha) for sha in self.commit_shas)
+
+    @cached_property
+    def file_names(self):
+        """ All filenames changed by the Author
+        >>> fnames = Author('user2589 <valiev.m@gmail.com>').file_names
+        >>> len(fnames) > 50
+        True
+        >>> isinstance(fnames, tuple)
+        True
+        >>> isinstance(fnames[0], str)
+        True
+        """
+        data = decomp(read_tch('/data/basemaps/Auth2File.tch', self.key))
+        return tuple((data and data.split(";")) or [])
+
+    @property
+    def files(self):
+        """ All File objects changed by the Author
+        >>> fnames = tuple(Author('user2589 <valiev.m@gmail.com>').files)
+        >>> len(fnames) > 50
+        True
+        >>> isinstance(fnames[0], File)
+        True
+        """
+        return (File(fname) for fname in self.file_names)
