@@ -279,7 +279,8 @@ class Blob(GitObject):
             offset, length = unber(
                 self.read('/data/All.sha1o/sha1.blob_{key}.tch'))
         except ValueError:  # empty read -> value not found
-            raise KeyError
+            raise KeyError('Blob data not found (bad sha?)')
+        # no caching here because it will make the code non-thread-safe
         fh = open(self.resolve_path('/data/All.blobs/{type}_{key}.bin'), 'rb')
         fh.seek(offset)
         return decomp(fh.read(length))
@@ -546,20 +547,23 @@ class Commit(GitObject):
         return (Commit(sha) for sha in self.parent_shas)
 
     @cached_property
-    def projects(self):
-        # type: () -> list
+    def project_names(self):
+        # type: () -> tuple
         """Projects including this commit
-        >>> proj = 'user2589_minicms'
-        >>> all(proj in c.projects for c in Commit.by_project(proj))
+        >>> c = Commit('f2a7fcdc51450ab03cb364415f14e634fa69b62c')
+        >>> isinstance(c.project_names, tuple)
         True
-        >>> proj = 'user2589_karta'
-        >>> all(proj in c.projects for c in Commit.by_project(proj))
+        >>> len(c.project_names) > 0
+        True
+        >>> 'user2589_minicms' in c.project_names
         True
         """
         data = decomp(self.read('/data/basemaps/Cmt2PrjG.{key}.tch', 3))
-        if not data:
-            return []
-        return data.split(";")
+        return tuple((data and data.split(";")) or [])
+
+    @property
+    def projects(self):
+        return (Project(uri) for uri in self.project_names)
 
     @cached_property
     def child_shas(self):

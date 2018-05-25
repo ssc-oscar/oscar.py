@@ -12,7 +12,7 @@ So, to get the key, use `sha[0] & 7f`, NOT bit shift.
 
 Content of .idx files for commits, trees and tags:
 
-    id, offset, length, object sha
+    id, offset, compressed_length, object sha
 
 e.g.:
 
@@ -20,6 +20,9 @@ e.g.:
     1;267;185;0017b852ce7b49225c5a797b3d4221d363c0acdd
     2;452;167;0054bab7302b386ddf2350a3fb2db08d59e125e1
     3;619;235;8028315640bac6eae17297270d4ee1892abf6add
+
+sometimes blob records have this format, too.
+See `aef80de037d7a39ccd5f7f70d9e7dffc0a67aec8` for example.
 
 
 Blobs:
