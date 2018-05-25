@@ -433,17 +433,8 @@ class Commit(GitObject):
         :param author: str, commit author string, "name <email>".
             E.g.: 'gsadaram <gsadaram@cisco.com>'
         :return: generator of commits
-        >>> cs = list(Commit.by_author('Marat <valiev.m@gmail.com>'))
-        >>> len(cs) > 100
-        True
-        >>> all(isinstance(c, Commit) for c in cs)
-        True
-        >>> author = 'user2589 <valiev.m@gmail.com>'
-        >>> orig = {c.sha for c in Commit.by_project('user2589_karta')
-        ...               if c.author==author}
-        >>> mapp = {c.sha for c in Commit.by_author(author)}
-        >>> orig.issubset(mapp)
-        True
+
+        Tested by test.TestRelations.test_author_commit
         """
         return (cls(sha) for sha in
                 slice20(read_tch('/data/basemaps/Auth2Cmt.tch', author)))
@@ -470,16 +461,6 @@ class Commit(GitObject):
         >>> len(cs) > 65
         True
         >>> all(isinstance(c, Commit) for c in cs)
-        True
-        >>> import requests
-        >>> gh = requests.get('https://api.github.com/repos/user2589/minicms/'
-        ...                   'commits?per_page=100').json()
-        >>> sha_gh = {c['sha'] for c in gh}
-        >>> merge = "GitHub Merge Button <merge-button@github.com>"
-        >>> all(c.sha  in sha_gh or c.author == merge for c in cs)
-        True
-        >>> shas = {c.sha for c in cs}
-        >>> all(all(p.sha in shas for p in c.parents) for c in cs)
         True
         """
         tch_path = '/data/basemaps/Prj2CmtG.%d.tch' % prefix(project, 3)

@@ -1,24 +1,47 @@
 
-from oscar import *
-
+import requests
 import unittest
+
+from oscar import *
 
 
 class TestRelations(unittest.TestCase):
     """
     List of all relations and data file locations
     https://bitbucket.org/swsc/lookup/src/master/README.md
-    author2commit
+    author2commit - done
     author2file
-    blob2commit - done
+    blob2commit - done // 4x  Fails
     commit2blob
-    commit2project
-    file2commit - done
-    project2commit
+    commit2project - done
+    file2commit - done  // Fails
+    project2commit - done
     """
 
     def test_author_commit(self):
-        pass
+        proj = 'user2589_minicms'
+        authors = ('Marat <valiev.m@gmail.com>',
+                   'user2589 <valiev.m@gmail.com>')
+        commits = {c.sha: c for c in Project(proj).commits}
+
+        for author in authors:
+            relation = {c.sha: c for c in Author(author).commits}
+            for sha, c in relation.items():
+                self.assertEqual(
+                    c.author, author,
+                    "Author2Cmt lists commit %s as authored by %s, but it is "
+                    "%s" % (sha, author, c.author))
+
+            relation = {sha for sha in relation if sha in commits}
+            cs = {sha for sha, c in commits.items() if c.author == author}
+            diff = relation - cs
+            self.assertFalse(
+                diff, "Author2Cmt lists commits %s as authored by %s, but"
+                      "they are not" % (",".join(diff), author))
+            diff = cs - relation
+            self.assertFalse(
+                diff, "Author2Cmt does not list commits %s as authored by %s,"
+                      "but they are" % (",".join(diff), author))
 
     def test_blob_commits_delete(self):
         """ Test blob2Cmt
@@ -39,8 +62,8 @@ class TestRelations(unittest.TestCase):
         for sha in blobs:
             self.assertIn(
                 commit_sha, Blob(sha).commit_shas,
-                "Commit %s has blob %s deleted,"
-                "but it is not listed in blob.commits" % (commit_sha, sha))
+                "Blob2Cmt doesn't list commit %s for blob %s,"
+                "but it but it was deleted in this commit" % (commit_sha, sha))
 
     def test_blob_commits_change(self):
         """ Test blob2Cmt
@@ -58,8 +81,8 @@ class TestRelations(unittest.TestCase):
         for sha in blobs:
             self.assertIn(
                 commit_sha, Blob(sha).commit_shas,
-                "Commit %s has blob %s changed,"
-                "but it is not listed in blob.commits" % (commit_sha, sha))
+                "Blob2Cmt doesn't list commit %s for blob %s,"
+                "but it but it was changed in this commit" % (commit_sha, sha))
 
     def test_blob_commits_add(self):
         """ Test blob2Cmt
@@ -75,8 +98,8 @@ class TestRelations(unittest.TestCase):
         for sha in blobs:
             self.assertIn(
                 commit_sha, Blob(sha).commit_shas,
-                "Commit %s has blob %s added for the first time, "
-                "but it is not listed in blob.commits" % (commit_sha, sha))
+                "Blob2Cmt doesn't list commit %s for blob %s,"
+                "but it but it was added in this commit" % (commit_sha, sha))
 
     def test_blob_commits_all(self):
         """ Test blob2Cmt
@@ -90,8 +113,7 @@ class TestRelations(unittest.TestCase):
         # Feel free to change to any other blob from that project
         proj = 'user2589_minicms'
         blob_sha = 'c3bfa5467227e7188626e001652b85db57950a36'
-        commits = {c.sha: c for c in
-                   Commit.by_project(proj)}
+        commits = {c.sha: c for c in Project(proj).commits}
         present = {sha: blob_sha in c.tree.files.values()
                    for sha, c in commits.items()}
 
@@ -121,11 +143,18 @@ class TestRelations(unittest.TestCase):
             diff, "Blob2Cmt indicates blob %s was NOT changed in "
                   "commits %s, but it was" % (blob_sha, ",".join(diff)))
 
+    def test_commit_projects(self):
+        for proj in ('user2589_minicms', 'user2589_karta'):
+            for c in Project(proj).commits:
+                self.assertIn(
+                    proj, c.project_names,
+                    "Cmt2PrjG asserts commit %s doesn't belong to project %s, "
+                    "but it does" % (c.sha, proj))
+
     def test_file_commits(self):
         proj = 'user2589_minicms'
         fname = 'minicms/templatetags/minicms_tags.py'
-        commits = {c.sha: c for c in
-                   Commit.by_project(proj)}
+        commits = {c.sha: c for c in Project(proj).commits}
 
         changed = set()
         for sha, c in commits.items():
@@ -134,7 +163,7 @@ class TestRelations(unittest.TestCase):
                 changed.add(sha)
 
         # only consider changes in this project
-        relation = {c.sha for c in Commit.by_file(fname) if c.sha in commits}
+        relation = {sha for sha in File(fname).commit_shas if sha in commits}
 
         diff = relation - changed
         self.assertFalse(
@@ -145,3 +174,21 @@ class TestRelations(unittest.TestCase):
         self.assertFalse(
             diff, "File2Cmt indicates file %s was NOT changed in "
                   "commits %s, but it was" % (fname, ",".join(diff)))
+
+    def test_project_commits(self):
+        # select something long abandoned and with <100 commits
+        project = 'user2589_minicms'
+        relation = {c.sha for c in Project(project).commits}
+        url = "https://api.github.com/repos/%s/commits?" \
+              "per_page=100" % project.replace("_", "/")
+        github = {c['sha'] for c in requests.get(url).json()}
+
+        diff = relation - github
+        self.assertFalse(
+            diff, "Prj2Cmt lists commits %s in project %s but they're not on "
+                  "github" % (",".join(diff), project))
+
+        diff = github - relation
+        self.assertFalse(
+            diff, "Prj2Cmt doesn't list commits %s in project %s but they're "
+                  "on github" % (",".join(diff), project))
