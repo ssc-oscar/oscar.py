@@ -5,7 +5,7 @@ from setuptools import setup
 # see also: https://packaging.python.org/tutorials/distributing-packages/
 setup(
     name="oscar",
-    version="0.0.1",
+    version="0.1.0",
     description="A Python interface to OSCAR data",
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
@@ -24,5 +24,4 @@ setup(
     author_email='marat@cmu.edu',
     url='https://github.com/user2589/oscar.py',
     install_requires=[r.strip() for r in open('requirements.txt') if r.strip()]
-    # TODO: run unit tests
 )

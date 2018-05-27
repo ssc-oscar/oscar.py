@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from functools import wraps
 import warnings
 
+__version__ = "0.1.0"
 
 
 def unber(s):
