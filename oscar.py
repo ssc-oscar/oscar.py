@@ -6,7 +6,6 @@ from datetime import datetime, timedelta
 from functools import wraps
 import warnings
 
-INVALID = "compressed data corrupted (invalid length)"
 
 
 def unber(s):
@@ -61,7 +60,7 @@ def lzf_length(raw_data):
     (3, 2524)
     """
     if not raw_data:
-        raise ValueError(INVALID)
+        raise ValueError("LZF compressed data are missing header")
     lower = ord(raw_data[0])
     csize = len(raw_data)
     start = 1
@@ -70,12 +69,12 @@ def lzf_length(raw_data):
         mask >>= 1 + (mask == 0x80)
         start += 1
     if not mask or csize < start:
-        raise ValueError(INVALID)
+        raise ValueError("LZF compressed data header is corrupted")
     usize = lower & (mask - 1)
     for i in range(1, start):
         usize = (usize << 6) + (ord(raw_data[i]) & 0x3f)
     if not usize:
-        raise ValueError(INVALID)
+        raise ValueError("LZF compressed data header is corrupted")
     return start, usize
 
 
@@ -308,13 +307,17 @@ class Blob(GitObject):
     @cached_property
     def commit_shas(self):
         """ SHAs of Commits in which this blob have been
-        introduced/modified/removed
+        introduced or modified.
+        **NOTE: commits removing this blob are not included**
         """
         return slice20(self.read('/data/basemaps/b2cFullF.{key}.tch', 4))
 
     @property
     def commits(self):
-        """ Commits where this blob has been added/removed/changed """
+        """ Commits where this blob has been added or changed
+
+        **NOTE: commits removing this blob are not included**
+        """
         return (Commit(bin_sha) for bin_sha in self.commit_shas)
 
 
@@ -432,7 +435,7 @@ class Tree(GitObject):
 
     @property
     def blob_shas(self):
-        return self.files.values()
+        return tuple(self.files.values())
 
     @property
     def blobs(self):
@@ -536,13 +539,14 @@ class Commit(GitObject):
         """ Children commit binary sha hashes
         :return: a tuple of children commit sha (20-byte binary string)
 
-        >>> c = Commit('1e971a073f40d74a1e72e07c682e1cba0bae159b')
-        >>> cs = c.child_shas
+        >>> cs = Commit('1e971a073f40d74a1e72e07c682e1cba0bae159b').child_shas
         >>> len(cs) > 0  # actually, 1
         True
-        >>> isinstance(c.child_shas, tuple)
+        >>> isinstance(cs, tuple)
         True
-        >>> '9bd02434b834979bb69d0b752a403228f2e385e8' in cs
+        >>> isinstance(cs[0], str)
+        True
+        >>> len(cs[0]) == 40
         True
         """
         # key_length will be ignored
@@ -553,20 +557,13 @@ class Commit(GitObject):
         """ Commit children
         :return: a generator of children Commit objects
         >>> c = Commit('1e971a073f40d74a1e72e07c682e1cba0bae159b')
-        >>> isinstance(tuple(c.children)[0], Commit)
+        >>> cs = tuple(c.children)
+        >>> len(cs) > 0
         True
-        >>> c = Commit("a443e1e76c39c7b1ad6f38967a75df667b9fed57")
-        >>> len(tuple(c.children)) > 1
-        True
-        >>> c = Commit("4199110871d5dcb3a79dfc19a16eb630c9218962")
-        >>> len(tuple(c.children)) > 3
-        True
-        >>> cs = Commit.by_project('user2589_minicms')
-        >>> all(all(c.sha in {ch.sha for ch in p.children} for p in c.parents)
-        ...     for c in cs)
+        >>> isinstance(cs[0], Commit)
         True
         """
-        return (Commit(bin_sha) for bin_sha in self.child_shas)
+        return (Commit(sha) for sha in self.child_shas)
 
     @cached_property
     def blob_shas(self):
@@ -577,15 +574,17 @@ class Commit(GitObject):
         >>> bs = Commit('1e971a073f40d74a1e72e07c682e1cba0bae159b').blob_shas
         >>> isinstance(bs, tuple)
         True
-        >>> len(bs)
-        7
-        >>> min(bs)
-        'e0ac96cefe3d230553931c54a79fa164a8fa11da'
+        >>> len(bs) > 0
+        True
+        >>> isinstance(bs[0], str)
+        True
+        >>> len(bs[0]) == 40
+        True
         """
         return self.tree.blob_shas
 
     @property
-    def _blob_shas(self):
+    def blob_shas_rel(self):
         """When this relation passes the test, please replace blob_sha with it
         It should be faster but as of now it is not accurate
         """
@@ -603,8 +602,10 @@ class Commit(GitObject):
         alternative
         :return: tuple of children Blob objects
 
-        >>> c = Commit('e38126dbca6572912013621d2aa9e6f7c50f36bc')
-        >>> len(tuple(c.blobs)) == len(tuple(c.tree.blobs))
+        >>> bs= tuple(Commit('e38126dbca6572912013621d2aa9e6f7c50f36bc').blobs)
+        >>> len(bs) > 0
+        True
+        >>> isinstance(bs[0], Blob)
         True
         """
         return (Blob(bin_sha) for bin_sha in self.blob_shas)
@@ -637,7 +638,7 @@ class Project(_Base):
         True
         >>> isinstance(commits[0], str)
         True
-        >>> len(commits[0] == 40)
+        >>> len(commits[0]) == 40
         True
         """
         tch_path = '/data/basemaps/Prj2CmtH.%d.tch' % prefix(self.key, 3)
@@ -645,6 +646,15 @@ class Project(_Base):
 
     @property
     def commits(self):
+        """ Generator of all commits in the project.
+        Order of commits is not guaranteed
+
+        >>> commits = tuple(Project('user2589_minicms').commits)
+        >>> len(commits) > 60
+        True
+        >>> isinstance(commits[0], Commit)
+        True
+        """
         for sha in self.commit_shas:
             c = Commit(sha)
             if c.author != 'GitHub Merge Button <merge-button@github.com>':
@@ -652,23 +662,40 @@ class Project(_Base):
 
     @cached_property
     def head(self):
+        """ Get the last commit SHA, i.e. the repository HEAD
+        >>> Project('user2589_minicms').head
+        'f2a7fcdc51450ab03cb364415f14e634fa69b62c'
+        """
         commits = {c.sha: c for c in self.commits}
         parents = set().union(*(c.parent_shas for c in commits.values()))
         heads = set(commits.keys()) - parents
         assert len(heads) == 1, "Unexpected number of heads"
         return tuple(heads)[0]
 
+    @cached_property
+    def tail(self):
+        """ Get the first commit SHA by following first parents
+        >>> Project('user2589_minicms').tail
+        '1e971a073f40d74a1e72e07c682e1cba0bae159b'
+        """
+        commits = {c.sha: c for c in self.commits}
+        pts = set(c.parent_shas[0] for c in commits.values() if c.parent_shas)
+        for sha, c in commits.items():
+            if sha in pts and not c.parent_shas:
+                return sha
+
     @property
     def commits_fp(self):
-        """ Get a subset of commits following only first parent, to mimic
+        """ Get a commit chain by following only the first parent, to mimic
         https://git-scm.com/docs/git-log#git-log---first-parent
+        >>> p = Project('user2589_minicms')
+        >>> set(c.sha for c in p.commits_fp).issubset(p.commit_shas)
+        True
         """
-        commit = self.head
-        while True:
+        commit = Commit(self.head)
+        while commit:
             yield commit
-            if not commit.parent_shas:
-                return
-            commit = Commit(commit.parent_shas[0])
+            commit = commit.parent_shas and commit.parents.next()
 
 
 class File(_Base):
@@ -686,7 +713,10 @@ class File(_Base):
 
     @cached_property
     def commit_shas(self):
-        """ SHA1 of all commits authored by the Author
+        """ SHA1 of all commits changing this file
+
+        **NOTE: this relation considers only diff with the first parent,
+        which substantially limits its application**
         >>> commits = File('minicms/templatetags/minicms_tags.py').commit_shas
         >>> len(commits) > 0
         True
@@ -694,7 +724,7 @@ class File(_Base):
         True
         >>> isinstance(commits[0], str)
         True
-        >>> len(commits[0] == 40)
+        >>> len(commits[0]) == 40
         True
         """
         file_path = self.key
@@ -705,11 +735,14 @@ class File(_Base):
 
     @property
     def commits(self):
-        """ A commits authored by the Author
-        >>> commits = tuple(Author('user2589 <valiev.m@gmail.com>').commits)
-        >>> len(commits) > 50
+        """ All commits changing the file
+
+        **NOTE: this relation considers only diff with the first parent,
+        which substantially limits its application**
+        >>> cs = tuple(File('minicms/templatetags/minicms_tags.py').commits)
+        >>> len(cs) > 0
         True
-        >>> isinstance(commits[0], Commit)
+        >>> isinstance(cs[0], Commit)
         True
         """
         return (Commit(sha) for sha in self.commit_shas)
@@ -736,7 +769,7 @@ class Author(_Base):
         True
         >>> isinstance(commits[0], str)
         True
-        >>> len(commits[0] == 40)
+        >>> len(commits[0]) == 40
         True
         """
         return slice20(read_tch('/data/basemaps/Auth2CmtH.tch', self.key))

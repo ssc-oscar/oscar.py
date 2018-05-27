@@ -6,8 +6,7 @@ deploy:
 
 .PHONY: test_local
 test_local:
-	python -m doctest oscar.py
-	python -m unittest test
+	python -m doctest oscar.py; python -m unittest test
 
 .PHONY: test
 test:
