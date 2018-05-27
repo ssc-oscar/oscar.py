@@ -450,47 +450,6 @@ class Commit(GitObject):
 
     type = 'commit'
 
-    @classmethod
-    def by_author(cls, author):
-        """ Get all commits authored by <author>
-
-        :param author: str, commit author string, "name <email>".
-            E.g.: 'gsadaram <gsadaram@cisco.com>'
-        :return: generator of commits
-
-        Tested by test.TestRelations.test_author_commit
-        """
-        return (cls(sha) for sha in
-                slice20(read_tch('/data/basemaps/Auth2Cmt.tch', author)))
-
-    @classmethod
-    def by_file(cls, file_path):
-        """ Get all commits *modifying* the given file
-        :param file_path: a full path, e.g.: 'public_html/images/cms/my.gif'
-        :return: generator of commits
-        """
-        if not file_path.endswith("\n"):
-            file_path += "\n"
-        tch_path = '/data/basemaps/f2cFullF.%d.tch' % prefix(file_path, 3)
-        data = read_tch(tch_path, file_path)
-        return (cls(sha) for sha in slice20(data))
-
-    @classmethod
-    def by_project(cls, project):
-        """ Get all commits for the specified project
-        :param project: project id <user>_<repo>, e.g. user2589_oscar.py
-        :return: generator of commits
-
-        >>> cs = list(Commit.by_project('user2589_minicms'))
-        >>> len(cs) > 65
-        True
-        >>> all(isinstance(c, Commit) for c in cs)
-        True
-        """
-        tch_path = '/data/basemaps/Prj2CmtG.%d.tch' % prefix(project, 3)
-        data = read_tch(tch_path, project)
-        return (cls(bin_sha) for bin_sha in slice20(data))
-
     def __getattr__(self, attr):
         """ Mimic special properties:
             tree:           root Tree of the commit
