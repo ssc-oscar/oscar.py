@@ -431,6 +431,10 @@ class Tree(GitObject):
                 for mode, fname, sha in self.traverse() if mode != "40000"}
 
     @property
+    def blob_shas(self):
+        return self.files.values()
+
+    @property
     def blobs(self):
         """ Get a tuple of all blobs from the tree and its subtrees
         :return: tuple of Blobs
@@ -605,25 +609,43 @@ class Commit(GitObject):
 
     @cached_property
     def blob_shas(self):
-        return slice20(self.read('/data/basemaps/c2bFullF.{key}.tch', 4))
+        """ SHA hashes of all blobs in the commit
+
+        :return: tuple of 40-byte hex strings
+
+        >>> bs = Commit('1e971a073f40d74a1e72e07c682e1cba0bae159b').blob_shas
+        >>> isinstance(bs, tuple)
+        True
+        >>> len(bs)
+        7
+        >>> min(bs)
+        'e0ac96cefe3d230553931c54a79fa164a8fa11da'
+        """
+        return self.tree.blob_shas
 
     @property
-    def blobs(self):
-        """ Commit blobs retrieved from cached relation
-        much faster
-        :return: tuple of children Blob objects
-
-        >>> c = Commit('1e971a073f40d74a1e72e07c682e1cba0bae159b')
-        >>> len(tuple(c.blobs)) == len(tuple(c.tree.blobs))
-        True
-        >>> c = Commit('e38126dbca6572912013621d2aa9e6f7c50f36bc')
-        >>> len(tuple(c.blobs)) == len(tuple(c.tree.blobs))
-        True
+    def _blob_shas(self):
+        """When this relation passes the test, please replace blob_sha with it
+        It should be faster but as of now it is not accurate
         """
         warnings.warn(
             "This relation is known to miss every first file in all trees. "
             "Consider using Commit.tree.blobs as a slower but more accurate "
             "alternative", DeprecationWarning)
+        return slice20(self.read('/data/basemaps/c2bFullF.{key}.tch', 4))
+
+    @property
+    def blobs(self):
+        """ Commit blobs
+        This relation is known to miss every first file in all trees.
+        Consider using Commit.tree.blobs as a slower but more accurate
+        alternative
+        :return: tuple of children Blob objects
+
+        >>> c = Commit('e38126dbca6572912013621d2aa9e6f7c50f36bc')
+        >>> len(tuple(c.blobs)) == len(tuple(c.tree.blobs))
+        True
+        """
         return (Blob(bin_sha) for bin_sha in self.blob_shas)
 
 
