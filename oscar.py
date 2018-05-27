@@ -2,6 +2,7 @@
 import lzf
 from tokyocabinet import hash as tch
 
+from datetime import datetime, timedelta
 from functools import wraps
 import warnings
 
@@ -123,6 +124,25 @@ def prefix(value, key_length):
     7
     """
     return ord(value[0]) & (2**key_length - 1)
+
+
+def parse_commit_date(timestamp):
+    """ Parse date string of authored_at/commited_at
+
+    :param timestamp:
+    :return: UTC datetime
+    TODO: timezone support
+
+    >>> parse_commit_date('1337145807 +1100')
+    datetime.datetime(2012, 5, 16, 12, 23, 27)
+    """
+    ts, tz = timestamp.split()
+    sign = -1 if tz.startswith('-') else 1
+    hours, minutes = int(tz[-4:-2]), int(tz[-2])
+    td = timedelta(hours=sign * hours, minutes=sign * minutes)
+
+    dt = datetime.fromtimestamp(int(ts))
+    return dt + td
 
 
 # Pool of open TokyoCabinet databases to save few milliseconds on opening
