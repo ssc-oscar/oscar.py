@@ -499,6 +499,8 @@ class Commit(GitObject):
 
         return getattr(self, attr)
 
+    # TODO: implement __gt__, ge, le, lt to sort by date
+
     @property
     def parents(self):
         """ A generator of parent commits
@@ -522,7 +524,7 @@ class Commit(GitObject):
         >>> 'user2589_minicms' in c.project_names
         True
         """
-        data = decomp(self.read('/data/basemaps/Cmt2PrjG.{key}.tch', 3))
+        data = decomp(self.read('/data/basemaps/Cmt2PrjH.{key}.tch', 3))
         return tuple((data and data.split(";")) or [])
 
     @property
@@ -621,7 +623,7 @@ class Project(_Base):
         This method is heavy so it is moved to integration tests
         """
         for key_prefix in range(8):
-            tch_path = '/data/basemaps/Prj2CmtG.%d.tch' % key_prefix
+            tch_path = '/data/basemaps/Prj2CmtH.%d.tch' % key_prefix
             for uri in tch_keys(tch_path, name_prefix):
                 yield cls(uri)
 
@@ -638,7 +640,7 @@ class Project(_Base):
         >>> len(commits[0] == 40)
         True
         """
-        tch_path = '/data/basemaps/Prj2CmtG.%d.tch' % prefix(self.key, 3)
+        tch_path = '/data/basemaps/Prj2CmtH.%d.tch' % prefix(self.key, 3)
         return slice20(read_tch(tch_path, self.key))
 
     @property
@@ -721,7 +723,7 @@ class Author(_Base):
         """ Get all author names, starting with an optional prefix
         This method is heavy so it is moved to integration tests
         """
-        for name in tch_keys('/data/basemaps/Auth2Cmt.tch', name_prefix):
+        for name in tch_keys('/data/basemaps/Auth2CmtH.tch', name_prefix):
             yield cls(name)
 
     @cached_property
@@ -737,7 +739,7 @@ class Author(_Base):
         >>> len(commits[0] == 40)
         True
         """
-        return slice20(read_tch('/data/basemaps/Auth2Cmt.tch', self.key))
+        return slice20(read_tch('/data/basemaps/Auth2CmtH.tch', self.key))
 
     @property
     def commits(self):
