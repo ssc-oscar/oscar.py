@@ -7,6 +7,7 @@ from functools import wraps
 import warnings
 
 __version__ = "0.1.0"
+__author__ = "Marat (@cmu.edu)"
 
 
 def unber(s):
@@ -129,8 +130,11 @@ def prefix(value, key_length):
 def parse_commit_date(timestamp):
     """ Parse date string of authored_at/commited_at
 
-    :param timestamp:
+    :param timestamp: Commit.authored_at or Commit.commited_at,
+        e.g. '1337145807 +1100'
+    :type timestamp: str
     :return: UTC datetime
+    :rtype: datetime.datetime
     TODO: timezone support
 
     >>> parse_commit_date('1337145807 +1100')
@@ -187,16 +191,31 @@ class _Base(object):
     def __repr__(self):
         return "<%s: %s>" % ((self.type or 'OscarBase').capitalize(), self.key)
 
+    def __hash__(self):
+        return hash(self.key)
+
     def __eq__(self, other):
+        """
+        >>> sha = 'f2a7fcdc51450ab03cb364415f14e634fa69b62c'
+        >>> Commit(sha) == Commit(sha)
+        True
+        >>> Commit(sha) == Blob(sha)
+        False
+        """
         return isinstance(other, type(self)) \
-               and self.type == other.type \
-               and self.key == other.key
+            and self.type == other.type \
+            and self.key == other.key
 
     def __str__(self):
         return self.key
 
     @classmethod
-    def all(cls):
+    def all(cls, key_prefix=''):
+        """ Iterate all objects of the given type
+
+        This might be useful to get a list of all projects, or a list of
+        all file names.
+        """
         raise NotImplementedError
 
 
@@ -295,6 +314,7 @@ class Blob(GitObject):
 
     @cached_property
     def data(self):
+        """ Content of the blob """
         try:
             offset, length = unber(
                 self.read('/data/All.sha1o/sha1.blob_{key}.tch'))
@@ -323,6 +343,38 @@ class Blob(GitObject):
 
 
 class Tree(GitObject):
+    """
+    Trees are iterable. Each element of the iteration is a 3-tuple:
+    `(mode, filename, sha)`
+
+    - `mode` is an ASCII decimal **string** similar to file mode
+        in Unix systems. Subtrees always have mode "40000"
+    - `filename` is a string filename, not including directories
+    - `sha` is a 40 bytes hex string representing file content Blob SHA
+
+    .. Note:: iteration is not recursive.
+        For a recursive walk, use Tree.traverse() or Tree.files
+
+    Both files and blobs can be checked for a membership,
+    either by their id (filename or SHA) or a corresponding object:
+
+        >>> tree = Tree("d4ddbae978c9ec2dc3b7b3497c2086ecf7be7d9d")
+        >>> '.gitignore' in tree
+        True
+        >>> File('.keep') in tree
+        False
+        >>> '83d22195edc1473673f1bf35307aea6edf3c37e3' in tree
+        True
+        >>> Blob('83d22195edc1473673f1bf35307aea6edf3c37e3') in tree
+        True
+
+    `len(tree)` returns the number of files under the tree, including files in
+    subtrees but not the subtrees themselves:
+
+        >>> len(Tree("d4ddbae978c9ec2dc3b7b3497c2086ecf7be7d9d"))
+        16
+
+    """
     type = 'tree'
 
     def __iter__(self):
@@ -363,9 +415,23 @@ class Tree(GitObject):
     def __len__(self):
         return len(self.files)
 
+    def __contains__(self, item):
+        if isinstance(item, File):
+            return item.key in self.files
+        elif isinstance(item, Blob):
+            return item.sha in self.blob_shas
+        elif not isinstance(item, str):
+            return False
+
+        return item in self.blob_shas or item in self.files
+
     def traverse(self):
-        """ Recursively traverse commit files structures
+        """ Recursively traverse the tree
+        This will generate 3-tuples of the same format as direct tree iteration,
+        but will recursively include subtrees content.
+
         :return: generator of (mode, filename, blob/tree sha)
+
         >>> c = Commit("1e971a073f40d74a1e72e07c682e1cba0bae159b")
         >>> len(list(c.tree.traverse()))
         8
@@ -381,8 +447,11 @@ class Tree(GitObject):
                 for mode2, fname2, sha2 in Tree(sha).traverse():
                     yield mode2, fname + '/' + fname2, sha2
 
+    @property
     def full(self):
-        """ Subtree pretty print
+        """ Formatted tree content, including recursive files and subtrees
+        It is intended for debug purposes only.
+
         :return: multiline string, where each line contains mode, name and sha,
             with subtrees expanded
         """
@@ -391,32 +460,20 @@ class Tree(GitObject):
 
     @cached_property
     def parent_tree_shas(self):
+        """ Tuple of SHA hashes of parent trees
+        i.e. trees including this one as a subdirectory.
+        """
         return slice20(self.read('/data/basemaps/t2pt0-127.{key}.tch', 3))
 
     @property
     def parent_trees(self):
         """ Get parent trees
-        :return: generator of Tree objects
-
-        >>> c = Commit('e38126dbca6572912013621d2aa9e6f7c50f36bc')
-        >>> trees = {fname: sha
-        ...          for mode, fname, sha in c.tree.traverse() if mode=="40000"}
-        >>> all(trees[fname.rsplit("/", 1)[0]] in
-        ...         {p.sha for p in Tree(sha).parent_trees}
-        ...     for fname, sha in trees.items() if "/" in fname)
-        True
+        :return: generator of parent Tree objects
         """
         return (Tree(sha) for sha in self.parent_tree_shas)
 
     def __str__(self):
         """
-        >>> print(Tree("d4ddbae978c9ec2dc3b7b3497c2086ecf7be7d9d"))
-        100755 .gitignore 83d22195edc1473673f1bf35307aea6edf3c37e3
-        100644 COPYING fda94b84122f6f36473ca3573794a8f2c4f4a58c
-        100644 MANIFEST.in b724831519904e2bc25373523b368c5d41dc368e
-        100644 README.rst 234a57538f15d72f00603bf086b465b0f2cda7b5
-        40000 minicms 954829887af5d9071aa92c427133ca2cdd0813cc
-        100644 setup.py 46aaf071f1b859c5bf452733c2583c70d92cd0c8
         >>> print(Tree("954829887af5d9071aa92c427133ca2cdd0813cc"))
         100644 __init__.py ff1f7925b77129b31938e76b5661f0a2c4500556
         100644 admin.py d05d461b48a8a5b5a9d1ea62b3815e089f3eb79b
@@ -431,17 +488,23 @@ class Tree(GitObject):
 
     @cached_property
     def files(self):
+        """ A dict of all files and their content/blob sha under this tree.
+        It includes recursive files (i.e. files in subdirectories).
+        It does not include subdirectories themselves.
+        """
         return {fname: sha
                 for mode, fname, sha in self.traverse() if mode != "40000"}
 
     @property
     def blob_shas(self):
+        """A tuple of all file content shas, including files in subdirectories
+        """
         return tuple(self.files.values())
 
     @property
     def blobs(self):
-        """ Get a tuple of all blobs from the tree and its subtrees
-        :return: tuple of Blobs
+        """ A generator of Blob objects with file content.
+        It does include files in subdirectories.
 
         >>> len(tuple(Tree('d20520ef8c1537a42628b72d481b8174c0a1de84').blobs))
         7
@@ -450,8 +513,23 @@ class Tree(GitObject):
 
 
 class Commit(GitObject):
-    """ A git commit object """
+    """ A git commit object.
 
+    Commits have some special properties.
+    Most of object properties provided by this project are lazy, i.e. they are
+    computed when you access them for the first time.
+    The following `Commit` properties will be instantiated all at once on the
+    first access to *any* of them.
+
+    - :data:`tree`:           root `Tree` of the commit
+    - :data:`parent_shas`:    tuple of parent commit sha hashes
+    - :data:`message`:        str, first line of the commit message
+    - :data:`full_message`:   str, full commit message
+    - :data:`author`:         str, Name <email>
+    - :data:`authored_at`:    str, unix_epoch+timezone
+    - :data:`committer`:      str, Name <email>
+    - :data:`committed_at`:   str, unix_epoch+timezone
+    """
     type = 'commit'
 
     def __getattr__(self, attr):
@@ -510,6 +588,7 @@ class Commit(GitObject):
         """ A generator of parent commits
         If you only need hashes (and not Commit objects),
         use .parent_sha instead
+
         >>> c = Commit('e38126dbca6572912013621d2aa9e6f7c50f36bc')
         >>> tuple(c.parents)
         (<Commit: ab124ab4baa42cd9f554b7bb038e19d4e3647957>,)
@@ -519,7 +598,10 @@ class Commit(GitObject):
     @cached_property
     def project_names(self):
         # type: () -> tuple
-        """Projects including this commit
+        """ URIs of projects including this commit.
+        This property can be used to find all forks of a project
+        by its first commit.
+
         >>> c = Commit('f2a7fcdc51450ab03cb364415f14e634fa69b62c')
         >>> isinstance(c.project_names, tuple)
         True
@@ -533,36 +615,27 @@ class Commit(GitObject):
 
     @property
     def projects(self):
+        """ A generator of `Project` s, in which this commit is included.
+        """
         return (Project(uri) for uri in self.project_names)
 
     @cached_property
     def child_shas(self):
         """ Children commit binary sha hashes
-        :return: a tuple of children commit sha (20-byte binary string)
+        Basically, this is a reverse parent_shas
 
         >>> cs = Commit('1e971a073f40d74a1e72e07c682e1cba0bae159b').child_shas
-        >>> len(cs) > 0  # actually, 1
-        True
-        >>> isinstance(cs, tuple)
-        True
-        >>> isinstance(cs[0], str)
-        True
-        >>> len(cs[0]) == 40
-        True
+        ('9bd02434b834979bb69d0b752a403228f2e385e8',)
         """
         # key_length will be ignored
         return slice20(self.read('/data/basemaps/Cmt2Chld.tch', 1))
 
     @property
     def children(self):
-        """ Commit children
-        :return: a generator of children Commit objects
-        >>> c = Commit('1e971a073f40d74a1e72e07c682e1cba0bae159b')
-        >>> cs = tuple(c.children)
-        >>> len(cs) > 0
-        True
-        >>> isinstance(cs[0], Commit)
-        True
+        """ A generator of children `Commit` objects
+
+        >>> tuple(Commit('1e971a073f40d74a1e72e07c682e1cba0bae159b').children)
+        (<Commit: 9bd02434b834979bb69d0b752a403228f2e385e8>,)
         """
         return (Commit(sha) for sha in self.child_shas)
 
@@ -570,23 +643,21 @@ class Commit(GitObject):
     def blob_shas(self):
         """ SHA hashes of all blobs in the commit
 
-        :return: tuple of 40-byte hex strings
-
-        >>> bs = Commit('1e971a073f40d74a1e72e07c682e1cba0bae159b').blob_shas
-        >>> isinstance(bs, tuple)
-        True
-        >>> len(bs) > 0
-        True
-        >>> isinstance(bs[0], str)
-        True
-        >>> len(bs[0]) == 40
-        True
+        >>> Commit('af0048f4aac8f4760bf9b816e01524d7fb20a3fc').blob_shas
+        ('b2f49ffef1c8d7ce83a004b34035f917713e2766',
+         'c92011c5ccc32a9248bd929a6e56f846ac5b8072',
+         'bf3c2d2df2ef710f995b590ac3e2c851b592c871')
         """
         return self.tree.blob_shas
 
     @property
     def blob_shas_rel(self):
-        """When this relation passes the test, please replace blob_sha with it
+        """
+        This relation is known to miss every first file in all trees.
+        Consider using Commit.tree.blobs as a slower but more accurate
+        alternative.
+
+        When this relation passes the test, please replace blob_sha with it
         It should be faster but as of now it is not accurate
         """
         warnings.warn(
@@ -597,60 +668,56 @@ class Commit(GitObject):
 
     @property
     def blobs(self):
-        """ Commit blobs
-        This relation is known to miss every first file in all trees.
-        Consider using Commit.tree.blobs as a slower but more accurate
-        alternative
-        :return: tuple of children Blob objects
+        """ A generator of `Blob` objects included in this commit
 
-        >>> bs= tuple(Commit('e38126dbca6572912013621d2aa9e6f7c50f36bc').blobs)
-        >>> len(bs) > 0
-        True
-        >>> isinstance(bs[0], Blob)
-        True
+        >>> tuple(Commit('af0048f4aac8f4760bf9b816e01524d7fb20a3fc').blobs)
+        (<Blob: b2f49ffef1c8d7ce83a004b34035f917713e2766>,
+         <Blob: c92011c5ccc32a9248bd929a6e56f846ac5b8072>,
+         <Blob: bf3c2d2df2ef710f995b590ac3e2c851b592c871>)
         """
         return (Blob(bin_sha) for bin_sha in self.blob_shas)
 
 
 class Tag(GitObject):
+    """ Tag doesn't have any functionality associated.
+    You can't really do anything useful with it yet
+    """
     type = 'tag'
 
 
 class Project(_Base):
+    """
+    Projects are initialized with a URI:
+        - Github: `{user}_{repo}`, e.g. `user2589_minicms`
+        - Gitlab: `gl_{user}_{repo}`
+        - Bitbucket: `bb_{user}_{repo}`
+        - Bioconductor: `bc_{user}_{repo}`
+
+    Projects are iterable:
+
+        >>> for commit in Project('user2589_minicms'):  # doctest: +SKIP
+        ...     print(commit.sha)
+
+    Commits can be checked for membership in the project, either by their SHA
+    hash or by a Commit object itself:
+
+        >>> sha = 'e38126dbca6572912013621d2aa9e6f7c50f36bc'
+        >>> sha in Project('user2589_minicms')
+        True
+        >>> Commit(sha) in Project('user2589_minicms')
+        True
+    """
     type = 'project'
 
-    @classmethod
-    def all(cls, name_prefix=''):
-        """ Get all project URIs, starting with an optional prefix
-        This method is heavy so it is moved to integration tests
-        """
-        for key_prefix in range(8):
-            tch_path = '/data/basemaps/Prj2CmtH.%d.tch' % key_prefix
-            for uri in tch_keys(tch_path, name_prefix):
-                yield cls(uri)
+    def __init__(self, uri):
+        self.uri = uri
+        super(Project, self).__init__(uri)
 
-    @cached_property
-    def commit_shas(self):
-        """ SHA1 of all commits in the project
-        >>> commits = Project('user2589_minicms').commit_shas
-        >>> len(commits) > 60
-        True
-        >>> isinstance(commits, tuple)
-        True
-        >>> isinstance(commits[0], str)
-        True
-        >>> len(commits[0]) == 40
-        True
-        """
-        tch_path = '/data/basemaps/Prj2CmtH.%d.tch' % prefix(self.key, 3)
-        return slice20(read_tch(tch_path, self.key))
-
-    @property
-    def commits(self):
+    def __iter__(self):
         """ Generator of all commits in the project.
         Order of commits is not guaranteed
 
-        >>> commits = tuple(Project('user2589_minicms').commits)
+        >>> commits = tuple(Project('user2589_minicms'))
         >>> len(commits) > 60
         True
         >>> isinstance(commits[0], Commit)
@@ -661,9 +728,57 @@ class Project(_Base):
             if c.author != 'GitHub Merge Button <merge-button@github.com>':
                 yield c
 
+    def __contains__(self, item):
+        if isinstance(item, Commit):
+            key = item.key
+        elif isinstance(item, str):
+            key = item
+        else:
+            return False
+        return key in self.commit_shas
+
+    @classmethod
+    def all(cls, name_prefix=''):
+        """ Get all project URIs, with URI starting with an optional prefix
+
+        Args:
+            name_prefix (str): optional URI prefix
+        Returns:
+            a generator of `Project` objects
+
+        >>> for project
+        """
+        for key_prefix in range(8):
+            tch_path = '/data/basemaps/Prj2CmtH.%d.tch' % key_prefix
+            for uri in tch_keys(tch_path, name_prefix):
+                yield cls(uri)
+
+    @cached_property
+    def commit_shas(self):
+        """ SHA1 of all commits in the project
+
+        >>> Project('user2589_django-currencies').commit_shas
+        ('2dbcd43f077f2b5511cc107d63a0b9539a6aa2a7',
+         '7572fc070c44f85e2a540f9a5a05a95d1dd2662d')
+        """
+        tch_path = '/data/basemaps/Prj2CmtH.%d.tch' % prefix(self.key, 3)
+        return slice20(read_tch(tch_path, self.key))
+
+    @property
+    def commits(self):
+        """ A generator of all Commit objects in the project.
+        It has the same effect as iterating the Project object itself.
+
+        >>> list(Project('user2589_django-currencies').commits)
+        [<Commit: 2dbcd43f077f2b5511cc107d63a0b9539a6aa2a7>,
+         <Commit: 7572fc070c44f85e2a540f9a5a05a95d1dd2662d>]
+        """
+        return (c for c in self)
+
     @cached_property
     def head(self):
         """ Get the last commit SHA, i.e. the repository HEAD
+
         >>> Project('user2589_minicms').head
         'f2a7fcdc51450ab03cb364415f14e634fa69b62c'
         """
@@ -676,6 +791,7 @@ class Project(_Base):
     @cached_property
     def tail(self):
         """ Get the first commit SHA by following first parents
+
         >>> Project('user2589_minicms').tail
         '1e971a073f40d74a1e72e07c682e1cba0bae159b'
         """
@@ -689,6 +805,7 @@ class Project(_Base):
     def commits_fp(self):
         """ Get a commit chain by following only the first parent, to mimic
         https://git-scm.com/docs/git-log#git-log---first-parent
+
         >>> p = Project('user2589_minicms')
         >>> set(c.sha for c in p.commits_fp).issubset(p.commit_shas)
         True
@@ -700,7 +817,17 @@ class Project(_Base):
 
 
 class File(_Base):
+    """
+    Files are initialized with a path, starting from a commit root tree:
+
+        >>> File('.gitignore')  # doctest: +SKIP
+        >>> File('docs/Index.rst')  # doctest: +SKIP
+    """
     type = 'file'
+
+    def __init__(self, path):
+        self.path = path
+        super(File, self).__init__(path)
 
     @classmethod
     def all(cls, fname_prefix=''):
@@ -750,7 +877,20 @@ class File(_Base):
 
 
 class Author(_Base):
+    """
+    Authors are initialized with a combination of name and email, as they
+    appear in git configuration.
+
+        >>> Author('John Doe <john.doe@aol.com>')  # doctest: +SKIP
+
+    At this point we don't have a relation to map all aliases of the same
+    author, so keep in mind that this object represents an alias, not a person.
+    """
     type = 'author'
+
+    def __init__(self, full_email):
+        self.full_email = full_email
+        super(Author, self).__init__(full_email)
 
     @classmethod
     def all(cls, name_prefix=''):
@@ -763,6 +903,7 @@ class Author(_Base):
     @cached_property
     def commit_shas(self):
         """ SHA1 of all commits authored by the Author
+
         >>> commits = Author('user2589 <valiev.m@gmail.com>').commit_shas
         >>> len(commits) > 50
         True
@@ -777,7 +918,8 @@ class Author(_Base):
 
     @property
     def commits(self):
-        """ A commits authored by the Author
+        """ A generator of all Commit objects authored by the Author
+
         >>> commits = tuple(Author('user2589 <valiev.m@gmail.com>').commits)
         >>> len(commits) > 50
         True
@@ -788,7 +930,8 @@ class Author(_Base):
 
     @cached_property
     def file_names(self):
-        """ All filenames changed by the Author
+        """ All file names the Author has changed
+
         >>> fnames = Author('user2589 <valiev.m@gmail.com>').file_names
         >>> len(fnames) > 50
         True
@@ -803,6 +946,7 @@ class Author(_Base):
     @property
     def files(self):
         """ All File objects changed by the Author
+
         >>> fnames = tuple(Author('user2589 <valiev.m@gmail.com>').files)
         >>> len(fnames) > 50
         True

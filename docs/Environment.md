@@ -1,5 +1,6 @@
 
-Some quick notes on environment setup
+# Set up a development environment
+
 
 ## Import paths:
 
@@ -18,8 +19,6 @@ If you want to install Perl modules locally, add to the same file:
 
 ## Python
 
-Install development version of the package:
-
 Install pip:
 
     easy_install --user pip
@@ -35,6 +34,7 @@ Note that OSCAR servers are running RHEL and have different big/little endian th
 most conventional Linux distributions.
 Pakcages compiled on Debian-based systems are known not to work with OSCAR
 Tokyo Cabinet files.
+By the same reasons Docker images won't work.
 
 ## Perl
 

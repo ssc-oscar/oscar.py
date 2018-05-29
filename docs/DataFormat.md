@@ -60,6 +60,10 @@ For blobs,
 
 ## Mappings
 
+Please see https://bitbucket.org/swsc/lookup/src/master/README.md
+for the full list and some extra descriptions.
+
+
 Mappings are stored in `/data/basemaps/`:
 
     Auth2Cmt.tch  # works

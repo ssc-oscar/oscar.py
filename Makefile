@@ -32,6 +32,7 @@ clean:
 
 .PHONY: install_dev
 install_dev:
-	apt-get install flake8
 	pip install --user requests  # required by tests
 	pip install --user tokyocabinet
+	# documentation builder
+	pip install --user  sphinx sphinx-autobuild

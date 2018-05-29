@@ -219,3 +219,15 @@ class TestRelations(unittest.TestCase):
         self.assertFalse(
             diff, "Prj2Cmt doesn't list commits %s in project %s but they're "
                   "on github" % (",".join(diff), project))
+
+    def test_tree_parent_tree(self):
+        c = Commit('e38126dbca6572912013621d2aa9e6f7c50f36bc')
+        trees = {fname: sha
+                 for mode, fname, sha in c.tree.traverse() if mode == "40000"}
+        for fname, sha in trees.items():
+            if "/" in fname:
+                parent_sha = trees[fname.rsplit("/", 1)[0]]
+                self.assertIn(
+                    parent_sha, Tree(sha).parent_tree_shas,
+                    "Tree %s includes tree %s, but not included in its parents"
+                    "" % (parent_sha, sha))
