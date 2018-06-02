@@ -427,8 +427,8 @@ class Tree(GitObject):
 
     def traverse(self):
         """ Recursively traverse the tree
-        This will generate 3-tuples of the same format as direct tree iteration,
-        but will recursively include subtrees content.
+        This will generate 3-tuples of the same format as direct tree
+        iteration, but will recursively include subtrees content.
 
         :return: generator of (mode, filename, blob/tree sha)
 
@@ -506,8 +506,10 @@ class Tree(GitObject):
         """ A generator of Blob objects with file content.
         It does include files in subdirectories.
 
-        >>> len(tuple(Tree('d20520ef8c1537a42628b72d481b8174c0a1de84').blobs))
-        7
+        >>> tuple(Tree('d20520ef8c1537a42628b72d481b8174c0a1de84').blobs
+        ...       )  # doctest: +ELLIPSIS, +NORMALIZE_WHITESPACE
+        (<Blob: 2bdf5d686c6cd488b706be5c99c3bb1e166cf2f6>, ...,
+         <Blob: c006bef767d08b41633b380058a171b7786b71ab>)
         """
         return (Blob(sha) for sha in self.files.values())
 
@@ -624,7 +626,7 @@ class Commit(GitObject):
         """ Children commit binary sha hashes
         Basically, this is a reverse parent_shas
 
-        >>> cs = Commit('1e971a073f40d74a1e72e07c682e1cba0bae159b').child_shas
+        >>> Commit('1e971a073f40d74a1e72e07c682e1cba0bae159b').child_shas
         ('9bd02434b834979bb69d0b752a403228f2e385e8',)
         """
         # key_length will be ignored
@@ -643,7 +645,8 @@ class Commit(GitObject):
     def blob_shas(self):
         """ SHA hashes of all blobs in the commit
 
-        >>> Commit('af0048f4aac8f4760bf9b816e01524d7fb20a3fc').blob_shas
+        >>> Commit('af0048f4aac8f4760bf9b816e01524d7fb20a3fc'
+        ...        ).blob_shas  # doctest: +NORMALIZE_WHITESPACE
         ('b2f49ffef1c8d7ce83a004b34035f917713e2766',
          'c92011c5ccc32a9248bd929a6e56f846ac5b8072',
          'bf3c2d2df2ef710f995b590ac3e2c851b592c871')
@@ -670,7 +673,8 @@ class Commit(GitObject):
     def blobs(self):
         """ A generator of `Blob` objects included in this commit
 
-        >>> tuple(Commit('af0048f4aac8f4760bf9b816e01524d7fb20a3fc').blobs)
+        >>> tuple(Commit('af0048f4aac8f4760bf9b816e01524d7fb20a3fc').blobs
+        ...       )  # doctest: +NORMALIZE_WHITESPACE
         (<Blob: b2f49ffef1c8d7ce83a004b34035f917713e2766>,
          <Blob: c92011c5ccc32a9248bd929a6e56f846ac5b8072>,
          <Blob: bf3c2d2df2ef710f995b590ac3e2c851b592c871>)
@@ -745,8 +749,6 @@ class Project(_Base):
             name_prefix (str): optional URI prefix
         Returns:
             a generator of `Project` objects
-
-        >>> for project
         """
         for key_prefix in range(8):
             tch_path = '/data/basemaps/Prj2CmtH.%d.tch' % key_prefix
@@ -757,7 +759,8 @@ class Project(_Base):
     def commit_shas(self):
         """ SHA1 of all commits in the project
 
-        >>> Project('user2589_django-currencies').commit_shas
+        >>> Project('user2589_django-currencies'
+        ...         ).commit_shas # doctest: +NORMALIZE_WHITESPACE
         ('2dbcd43f077f2b5511cc107d63a0b9539a6aa2a7',
          '7572fc070c44f85e2a540f9a5a05a95d1dd2662d')
         """
@@ -769,9 +772,10 @@ class Project(_Base):
         """ A generator of all Commit objects in the project.
         It has the same effect as iterating the Project object itself.
 
-        >>> list(Project('user2589_django-currencies').commits)
-        [<Commit: 2dbcd43f077f2b5511cc107d63a0b9539a6aa2a7>,
-         <Commit: 7572fc070c44f85e2a540f9a5a05a95d1dd2662d>]
+        >>> tuple(Project('user2589_django-currencies').commits
+        ...       ) # doctest: +NORMALIZE_WHITESPACE
+        (<Commit: 2dbcd43f077f2b5511cc107d63a0b9539a6aa2a7>,
+         <Commit: 7572fc070c44f85e2a540f9a5a05a95d1dd2662d>)
         """
         return (c for c in self)
 

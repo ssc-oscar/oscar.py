@@ -1,0 +1,22 @@
+language: python
+
+sudo: required
+
+install:
+  - make travis_env
+
+cache:
+  - packages
+  - pip
+
+script:
+  - make html
+
+deploy:
+  provider: pages
+  skip-cleanup: true
+  github-token: $GITHUB_TOKEN
+  keep-history: true
+  on:
+    branch: master
+  local-dir: docs/build/html

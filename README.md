@@ -16,4 +16,5 @@ files are stored.
 
 ### Reference
 
-Please see readthedocs for the reference (link TBD).
+Please see <https://ssc-oscar.github.io/oscar.py>
+for the reference.
