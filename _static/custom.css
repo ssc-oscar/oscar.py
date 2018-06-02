@@ -1,0 +1,10 @@
+/* This file intentionally left blank. */
+
+div.sphinxsidebarwrapper {
+    position:fixed;
+}
+
+div.document {
+    width: 940px;
+    margin: 30px auto 0 30px;
+}
