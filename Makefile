@@ -1,9 +1,4 @@
 
-SPHINXOPTS    =
-SPHINXBUILD   = sphinx-build
-SPHINXPROJ    = oscar
-SOURCEDIR     = docs
-BUILDDIR      = docs/build
 
 .PHONY: deploy
 deploy:
@@ -33,19 +28,13 @@ publish:
 .PHONY: clean
 clean:
 	rm -rf oscar.egg-info dist build docs/build
+	find -name "*.pyo" -delete
+	find -name "*.pyc" -delete
+	find -name __pycache__ -delete
 
 .PHONY: html
 html:
-	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
-
-.PHONY: install_dev
-install_dev:
-	sudo apt-get install libtokyocabinet-dev
-	pip install --user flake8
-	pip install --user requests  # required by tests
-	pip install --user -r requirements.txt
-	# documentation builder
-	pip install --user  sphinx sphinx-autobuild
+	sphinx-build -M html "docs" "docs/build"
 
 .PHONY: install_dev
 install_dev:
