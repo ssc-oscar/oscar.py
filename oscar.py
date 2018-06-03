@@ -329,6 +329,7 @@ class Blob(GitObject):
     def commit_shas(self):
         """ SHAs of Commits in which this blob have been
         introduced or modified.
+
         **NOTE: commits removing this blob are not included**
         """
         return slice20(self.read('/data/basemaps/b2cFullF.{key}.tch', 4))
@@ -343,7 +344,8 @@ class Blob(GitObject):
 
 
 class Tree(GitObject):
-    """
+    """ A representation of git tree object, basically - a directory.
+
     Trees are iterable. Each element of the iteration is a 3-tuple:
     `(mode, filename, sha)`
 
@@ -355,7 +357,7 @@ class Tree(GitObject):
     .. Note:: iteration is not recursive.
         For a recursive walk, use Tree.traverse() or Tree.files
 
-    Both files and blobs can be checked for a membership,
+    Both files and blobs can be checked for membership,
     either by their id (filename or SHA) or a corresponding object:
 
         >>> tree = Tree("d4ddbae978c9ec2dc3b7b3497c2086ecf7be7d9d")
@@ -587,9 +589,9 @@ class Commit(GitObject):
 
     @property
     def parents(self):
-        """ A generator of parent commits
-        If you only need hashes (and not Commit objects),
-        use .parent_sha instead
+        """ A generator of parent commits.
+        If you only need hashes (and not `Commit` objects),
+        use `.parent_sha` instead
 
         >>> c = Commit('e38126dbca6572912013621d2aa9e6f7c50f36bc')
         >>> tuple(c.parents)
@@ -623,7 +625,7 @@ class Commit(GitObject):
 
     @cached_property
     def child_shas(self):
-        """ Children commit binary sha hashes
+        """ Children commit binary sha hashes.
         Basically, this is a reverse parent_shas
 
         >>> Commit('1e971a073f40d74a1e72e07c682e1cba0bae159b').child_shas
@@ -645,8 +647,7 @@ class Commit(GitObject):
     def blob_shas(self):
         """ SHA hashes of all blobs in the commit
 
-        >>> Commit('af0048f4aac8f4760bf9b816e01524d7fb20a3fc'
-        ...        ).blob_shas  # doctest: +NORMALIZE_WHITESPACE
+        >>> Commit('af0048f4aac8f4760bf9b816e01524d7fb20a3fc').blob_shas  # doctest: +NORMALIZE_WHITESPACE
         ('b2f49ffef1c8d7ce83a004b34035f917713e2766',
          'c92011c5ccc32a9248bd929a6e56f846ac5b8072',
          'bf3c2d2df2ef710f995b590ac3e2c851b592c871')
@@ -673,8 +674,7 @@ class Commit(GitObject):
     def blobs(self):
         """ A generator of `Blob` objects included in this commit
 
-        >>> tuple(Commit('af0048f4aac8f4760bf9b816e01524d7fb20a3fc').blobs
-        ...       )  # doctest: +NORMALIZE_WHITESPACE
+        >>> tuple(Commit('af0048f4aac8f4760bf9b816e01524d7fb20a3fc').blobs)  # doctest: +NORMALIZE_WHITESPACE
         (<Blob: b2f49ffef1c8d7ce83a004b34035f917713e2766>,
          <Blob: c92011c5ccc32a9248bd929a6e56f846ac5b8072>,
          <Blob: bf3c2d2df2ef710f995b590ac3e2c851b592c871>)
@@ -702,7 +702,7 @@ class Project(_Base):
         >>> for commit in Project('user2589_minicms'):  # doctest: +SKIP
         ...     print(commit.sha)
 
-    Commits can be checked for membership in the project, either by their SHA
+    Commits can be checked for membership in a project, either by their SHA
     hash or by a Commit object itself:
 
         >>> sha = 'e38126dbca6572912013621d2aa9e6f7c50f36bc'
@@ -736,7 +736,12 @@ class Project(_Base):
         if isinstance(item, Commit):
             key = item.key
         elif isinstance(item, str):
-            key = item
+            if len(item) == 20:
+                key = item.encode('hex')
+            elif len(item) == 40:
+                key = item
+            else:
+                return False
         else:
             return False
         return key in self.commit_shas
@@ -759,8 +764,7 @@ class Project(_Base):
     def commit_shas(self):
         """ SHA1 of all commits in the project
 
-        >>> Project('user2589_django-currencies'
-        ...         ).commit_shas # doctest: +NORMALIZE_WHITESPACE
+        >>> Project('user2589_django-currencies').commit_shas # doctest: +NORMALIZE_WHITESPACE
         ('2dbcd43f077f2b5511cc107d63a0b9539a6aa2a7',
          '7572fc070c44f85e2a540f9a5a05a95d1dd2662d')
         """
@@ -772,8 +776,7 @@ class Project(_Base):
         """ A generator of all Commit objects in the project.
         It has the same effect as iterating the Project object itself.
 
-        >>> tuple(Project('user2589_django-currencies').commits
-        ...       ) # doctest: +NORMALIZE_WHITESPACE
+        >>> tuple(Project('user2589_django-currencies').commits) # doctest: +NORMALIZE_WHITESPACE
         (<Commit: 2dbcd43f077f2b5511cc107d63a0b9539a6aa2a7>,
          <Commit: 7572fc070c44f85e2a540f9a5a05a95d1dd2662d>)
         """
@@ -808,11 +811,15 @@ class Project(_Base):
     @property
     def commits_fp(self):
         """ Get a commit chain by following only the first parent, to mimic
-        https://git-scm.com/docs/git-log#git-log---first-parent
+        https://git-scm.com/docs/git-log#git-log---first-parent .
+        Thus, you only get a small subset of the full commit tree:
 
         >>> p = Project('user2589_minicms')
         >>> set(c.sha for c in p.commits_fp).issubset(p.commit_shas)
         True
+
+        In some scenarios, where branches are not important, it can save a lot
+        of computing.
         """
         commit = Commit(self.head)
         while commit:
@@ -849,6 +856,7 @@ class File(_Base):
 
         **NOTE: this relation considers only diff with the first parent,
         which substantially limits its application**
+
         >>> commits = File('minicms/templatetags/minicms_tags.py').commit_shas
         >>> len(commits) > 0
         True
@@ -871,6 +879,7 @@ class File(_Base):
 
         **NOTE: this relation considers only diff with the first parent,
         which substantially limits its application**
+
         >>> cs = tuple(File('minicms/templatetags/minicms_tags.py').commits)
         >>> len(cs) > 0
         True
