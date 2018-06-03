@@ -114,7 +114,7 @@ It is mostly important for <cite>Blob</cite> to access the file content.</p>
 <span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="n">commit</span><span class="o">.</span><span class="n">sha</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Commits can be checked for membership in the project, either by their SHA
+<p>Commits can be checked for membership in a project, either by their SHA
 hash or by a Commit object itself:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sha</span> <span class="o">=</span> <span class="s1">&#39;e38126dbca6572912013621d2aa9e6f7c50f36bc&#39;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">sha</span> <span class="ow">in</span> <span class="n">Project</span><span class="p">(</span><span class="s1">&#39;user2589_minicms&#39;</span><span class="p">)</span>
@@ -127,8 +127,7 @@ hash or by a Commit object itself:</p>
 <dt id="oscar.Project.commit_shas">
 <code class="descname">commit_shas</code><a class="headerlink" href="#oscar.Project.commit_shas" title="Permalink to this definition">¶</a></dt>
 <dd><p>SHA1 of all commits in the project</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Project</span><span class="p">(</span><span class="s1">&#39;user2589_django-currencies&#39;</span>
-<span class="gp">... </span>        <span class="p">)</span><span class="o">.</span><span class="n">commit_shas</span> 
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Project</span><span class="p">(</span><span class="s1">&#39;user2589_django-currencies&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">commit_shas</span> 
 <span class="go">(&#39;2dbcd43f077f2b5511cc107d63a0b9539a6aa2a7&#39;,</span>
 <span class="go"> &#39;7572fc070c44f85e2a540f9a5a05a95d1dd2662d&#39;)</span>
 </pre></div>
@@ -140,8 +139,7 @@ hash or by a Commit object itself:</p>
 <code class="descname">commits</code><a class="headerlink" href="#oscar.Project.commits" title="Permalink to this definition">¶</a></dt>
 <dd><p>A generator of all Commit objects in the project.
 It has the same effect as iterating the Project object itself.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">tuple</span><span class="p">(</span><span class="n">Project</span><span class="p">(</span><span class="s1">&#39;user2589_django-currencies&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">commits</span>
-<span class="gp">... </span>      <span class="p">)</span> 
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">tuple</span><span class="p">(</span><span class="n">Project</span><span class="p">(</span><span class="s1">&#39;user2589_django-currencies&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">commits</span><span class="p">)</span> 
 <span class="go">(&lt;Commit: 2dbcd43f077f2b5511cc107d63a0b9539a6aa2a7&gt;,</span>
 <span class="go"> &lt;Commit: 7572fc070c44f85e2a540f9a5a05a95d1dd2662d&gt;)</span>
 </pre></div>
@@ -152,12 +150,15 @@ It has the same effect as iterating the Project object itself.</p>
 <dt id="oscar.Project.commits_fp">
 <code class="descname">commits_fp</code><a class="headerlink" href="#oscar.Project.commits_fp" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get a commit chain by following only the first parent, to mimic
-<a class="reference external" href="https://git-scm.com/docs/git-log#git-log---first-parent">https://git-scm.com/docs/git-log#git-log—first-parent</a></p>
+<a class="reference external" href="https://git-scm.com/docs/git-log#git-log---first-parent">https://git-scm.com/docs/git-log#git-log—first-parent</a> .
+Thus, you only get a small subset of the full commit tree:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">p</span> <span class="o">=</span> <span class="n">Project</span><span class="p">(</span><span class="s1">&#39;user2589_minicms&#39;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">set</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">sha</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">p</span><span class="o">.</span><span class="n">commits_fp</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">commit_shas</span><span class="p">)</span>
 <span class="go">True</span>
 </pre></div>
 </div>
+<p>In some scenarios, where branches are not important, it can save a lot
+of computing.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -205,8 +206,7 @@ first access to <em>any</em> of them.</p>
 <dt id="oscar.Commit.blob_shas">
 <code class="descname">blob_shas</code><a class="headerlink" href="#oscar.Commit.blob_shas" title="Permalink to this definition">¶</a></dt>
 <dd><p>SHA hashes of all blobs in the commit</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Commit</span><span class="p">(</span><span class="s1">&#39;af0048f4aac8f4760bf9b816e01524d7fb20a3fc&#39;</span>
-<span class="gp">... </span>       <span class="p">)</span><span class="o">.</span><span class="n">blob_shas</span>  
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Commit</span><span class="p">(</span><span class="s1">&#39;af0048f4aac8f4760bf9b816e01524d7fb20a3fc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">blob_shas</span>  
 <span class="go">(&#39;b2f49ffef1c8d7ce83a004b34035f917713e2766&#39;,</span>
 <span class="go"> &#39;c92011c5ccc32a9248bd929a6e56f846ac5b8072&#39;,</span>
 <span class="go"> &#39;bf3c2d2df2ef710f995b590ac3e2c851b592c871&#39;)</span>
@@ -218,8 +218,7 @@ first access to <em>any</em> of them.</p>
 <dt id="oscar.Commit.blobs">
 <code class="descname">blobs</code><a class="headerlink" href="#oscar.Commit.blobs" title="Permalink to this definition">¶</a></dt>
 <dd><p>A generator of <cite>Blob</cite> objects included in this commit</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">tuple</span><span class="p">(</span><span class="n">Commit</span><span class="p">(</span><span class="s1">&#39;af0048f4aac8f4760bf9b816e01524d7fb20a3fc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">blobs</span>
-<span class="gp">... </span>      <span class="p">)</span>  
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">tuple</span><span class="p">(</span><span class="n">Commit</span><span class="p">(</span><span class="s1">&#39;af0048f4aac8f4760bf9b816e01524d7fb20a3fc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">blobs</span><span class="p">)</span>  
 <span class="go">(&lt;Blob: b2f49ffef1c8d7ce83a004b34035f917713e2766&gt;,</span>
 <span class="go"> &lt;Blob: c92011c5ccc32a9248bd929a6e56f846ac5b8072&gt;,</span>
 <span class="go"> &lt;Blob: bf3c2d2df2ef710f995b590ac3e2c851b592c871&gt;)</span>
@@ -230,7 +229,7 @@ first access to <em>any</em> of them.</p>
 <dl class="attribute">
 <dt id="oscar.Commit.child_shas">
 <code class="descname">child_shas</code><a class="headerlink" href="#oscar.Commit.child_shas" title="Permalink to this definition">¶</a></dt>
-<dd><p>Children commit binary sha hashes
+<dd><p>Children commit binary sha hashes.
 Basically, this is a reverse parent_shas</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Commit</span><span class="p">(</span><span class="s1">&#39;1e971a073f40d74a1e72e07c682e1cba0bae159b&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">child_shas</span>
 <span class="go">(&#39;9bd02434b834979bb69d0b752a403228f2e385e8&#39;,)</span>
@@ -251,9 +250,9 @@ Basically, this is a reverse parent_shas</p>
 <dl class="attribute">
 <dt id="oscar.Commit.parents">
 <code class="descname">parents</code><a class="headerlink" href="#oscar.Commit.parents" title="Permalink to this definition">¶</a></dt>
-<dd><p>A generator of parent commits
-If you only need hashes (and not Commit objects),
-use .parent_sha instead</p>
+<dd><p>A generator of parent commits.
+If you only need hashes (and not <cite>Commit</cite> objects),
+use <cite>.parent_sha</cite> instead</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">c</span> <span class="o">=</span> <span class="n">Commit</span><span class="p">(</span><span class="s1">&#39;e38126dbca6572912013621d2aa9e6f7c50f36bc&#39;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">tuple</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">parents</span><span class="p">)</span>
 <span class="go">(&lt;Commit: ab124ab4baa42cd9f554b7bb038e19d4e3647957&gt;,)</span>
@@ -289,7 +288,8 @@ by its first commit.</p>
 <dl class="class">
 <dt id="oscar.Tree">
 <em class="property">class </em><code class="descclassname">oscar.</code><code class="descname">Tree</code><span class="sig-paren">(</span><em>sha</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oscar.html#Tree"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oscar.Tree" title="Permalink to this definition">¶</a></dt>
-<dd><p>Trees are iterable. Each element of the iteration is a 3-tuple:
+<dd><p>A representation of git tree object, basically - a directory.</p>
+<p>Trees are iterable. Each element of the iteration is a 3-tuple:
 <cite>(mode, filename, sha)</cite></p>
 <ul class="simple">
 <li><dl class="first docutils">
@@ -305,7 +305,7 @@ by its first commit.</p>
 <p class="last">iteration is not recursive.
 For a recursive walk, use Tree.traverse() or Tree.files</p>
 </div>
-<p>Both files and blobs can be checked for a membership,
+<p>Both files and blobs can be checked for membership,
 either by their id (filename or SHA) or a corresponding object:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">tree</span> <span class="o">=</span> <span class="n">Tree</span><span class="p">(</span><span class="s2">&quot;d4ddbae978c9ec2dc3b7b3497c2086ecf7be7d9d&quot;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="s1">&#39;.gitignore&#39;</span> <span class="ow">in</span> <span class="n">tree</span>
@@ -404,16 +404,18 @@ iteration, but will recursively include subtrees content.</p>
 <code class="descname">commit_shas</code><a class="headerlink" href="#oscar.File.commit_shas" title="Permalink to this definition">¶</a></dt>
 <dd><p>SHA1 of all commits changing this file</p>
 <p><strong>NOTE: this relation considers only diff with the first parent,
-which substantially limits its application</strong>
-&gt;&gt;&gt; commits = File(‘minicms/templatetags/minicms_tags.py’).commit_shas
-&gt;&gt;&gt; len(commits) &gt; 0
-True
-&gt;&gt;&gt; isinstance(commits, tuple)
-True
-&gt;&gt;&gt; isinstance(commits[0], str)
-True
-&gt;&gt;&gt; len(commits[0]) == 40
-True</p>
+which substantially limits its application</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">commits</span> <span class="o">=</span> <span class="n">File</span><span class="p">(</span><span class="s1">&#39;minicms/templatetags/minicms_tags.py&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">commit_shas</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">commits</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">isinstance</span><span class="p">(</span><span class="n">commits</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">isinstance</span><span class="p">(</span><span class="n">commits</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">str</span><span class="p">)</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">commits</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="mi">40</span>
+<span class="go">True</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="attribute">
@@ -421,12 +423,14 @@ True</p>
 <code class="descname">commits</code><a class="headerlink" href="#oscar.File.commits" title="Permalink to this definition">¶</a></dt>
 <dd><p>All commits changing the file</p>
 <p><strong>NOTE: this relation considers only diff with the first parent,
-which substantially limits its application</strong>
-&gt;&gt;&gt; cs = tuple(File(‘minicms/templatetags/minicms_tags.py’).commits)
-&gt;&gt;&gt; len(cs) &gt; 0
-True
-&gt;&gt;&gt; isinstance(cs[0], Commit)
-True</p>
+which substantially limits its application</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">cs</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">File</span><span class="p">(</span><span class="s1">&#39;minicms/templatetags/minicms_tags.py&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">commits</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">cs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">isinstance</span><span class="p">(</span><span class="n">cs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">Commit</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
 </dd></dl>
 
 </dd></dl>
@@ -438,8 +442,8 @@ True</p>
 <dt id="oscar.Blob.commit_shas">
 <code class="descname">commit_shas</code><a class="headerlink" href="#oscar.Blob.commit_shas" title="Permalink to this definition">¶</a></dt>
 <dd><p>SHAs of Commits in which this blob have been
-introduced or modified.
-<strong>NOTE: commits removing this blob are not included</strong></p>
+introduced or modified.</p>
+<p><strong>NOTE: commits removing this blob are not included</strong></p>
 </dd></dl>
 
 <dl class="attribute">
