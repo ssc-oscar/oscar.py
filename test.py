@@ -2,23 +2,78 @@
 import requests
 
 from collections import defaultdict
+import doctest
+import logging
+import os
 import unittest
 
 from oscar import *
+
+
+class TestStatus(unittest.TestCase):
+
+    def test_status(self):
+
+        levels = {
+            1: logging.warning,
+            2: logging.error,
+            3: logging.critical,
+        }
+
+        def check(path, level):
+            if not os.path.isfile(path):
+                levels[level]("Does not exist: %s", path)
+
+        kwargs = {'blob': '', 'type': 'commit', 'key': 0}
+        # key lenght: 7 bit, with few exceptions
+        check(PATHS['all_random'].format(**kwargs), 3)
+        check(PATHS['blob_data'].format(**kwargs), 1)
+        check(PATHS['all_sequential'].format(**kwargs) + '.idx', 1)
+        check(PATHS['index_line'].format(**kwargs), 1)
+
+        kwargs['type'] = 'tree'
+        check(PATHS['all_random'].format(**kwargs), 3)
+        check(PATHS['blob_data'].format(**kwargs), 1)
+        check(PATHS['all_sequential'].format(**kwargs) + '.idx', 1)
+        check(PATHS['index_line'].format(**kwargs), 1)
+
+        kwargs = {'blob': '1', 'type': 'blob', 'key': 0}
+        check(PATHS['blob_data'].format(**kwargs), 3)
+        check(PATHS['blob_offset'].format(**kwargs), 3)
+        check(PATHS['index_line'].format(**kwargs), 1)
+
+        # type-agnostic
+        # key lenght: 4 bit
+        check(PATHS['blob_commits'].format(**kwargs), 2)
+        check(PATHS['commit_blobs'].format(**kwargs), 2)
+        # key lenght: 3 bit
+        check(PATHS['tree_parents'].format(**kwargs), 2)
+        check(PATHS['commit_projects'].format(**kwargs), 2)
+        check(PATHS['project_commits'].format(**kwargs), 2)
+        check(PATHS['file_commits'].format(**kwargs), 2)
+        # key lenght: 0
+        check(PATHS['commit_children'].format(**kwargs), 2)
+        check(PATHS['author_commits'].format(**kwargs), 2)
+        check(PATHS['author_files'].format(**kwargs), 2)
+
+
+def check_status():
+    return unittest.TestLoader().loadTestsFromTestCase(TestStatus)
 
 
 class TestRelations(unittest.TestCase):
     """
     List of all relations and data file locations
     https://bitbucket.org/swsc/lookup/src/master/README.md
-    author2commit - done
-    author2file - done // Fail
-    blob2commit - done // 4x  Fails
-    commit2blob - done
-    commit2project - done
-    commit2children -
-    file2commit - done  // Fails
-    project2commit - done
+
+    author2commit   - done
+    author2file     - done // Fail
+    blob2commit     - done // 2x  Fails
+    commit2blob     - done // Fail
+    commit2project  - done
+    commit2children - done
+    file2commit     - done
+    project2commit  - done
     """
 
     def test_author_commit(self):
@@ -231,3 +286,9 @@ class TestRelations(unittest.TestCase):
                     parent_sha, Tree(sha).parent_tree_shas,
                     "Tree %s includes tree %s, but not included in its parents"
                     "" % (parent_sha, sha))
+
+
+if __name__ == "__main__":
+    import oscar
+    doctest.testmod(oscar)
+    unittest.main()

@@ -2,7 +2,11 @@
 
 .PHONY: deploy
 deploy:
-	scp oscar.py test.py Makefile $(SERVER):$(REMOTE_PATH)
+	scp oscar.py test.py setup.py Makefile $(SERVER):$(REMOTE_PATH)
+
+.PHONY: status
+status:
+	python -m unittest test.TestStatus
 
 .PHONY: test_local
 test_local:

@@ -6,8 +6,28 @@ from datetime import datetime, timedelta, tzinfo
 from functools import wraps
 import warnings
 
-__version__ = "0.1.0"
+__version__ = "0.1.2"
 __author__ = "Marat (@cmu.edu)"
+
+PATHS = {
+    # not critical - almost never used
+    'all_sequential': '/data/All.blobs/{type}_{key}',  # cmt, tree
+    'index_line': '/fast{blob}/All.sha1/sha1.{type}_{key}.tch',
+    # critical - contain actual objects
+    'all_random': '/fast1/All.sha1c/{type}_{key}.tch',  # cmt, tree
+    'blob_offset': '/data/All.sha1o/sha1.blob_{key}.tch',
+    'blob_data': '/data/All.blobs/{type}_{key}.bin',
+    # relations - good to have but not critical
+    'blob_commits': '/data/basemaps/b2cFullF.{key}.tch',
+    'tree_parents': '/data/basemaps/t2pt0-127.{key}.tch',
+    'commit_projects': '/data/basemaps/Cmt2PrjH.{key}.tch',
+    'commit_children': '/data/basemaps/Cmt2Chld.tch',
+    'commit_blobs': '/data/basemaps/c2bFullF.{key}.tch',
+    'project_commits': '/data/basemaps/Prj2CmtH.{key}.tch',
+    'file_commits': '/data/basemaps/f2cFullF.{key}.tch',
+    'author_commits': '/data/basemaps/Auth2CmtH.tch',
+    'author_files': '/data/basemaps/Auth2File.tch',
+}
 
 
 def unber(s):
@@ -192,6 +212,7 @@ def _get_tch(path):
     if path not in _TCH_POOL:
         _TCH_POOL[path] = tch.Hash()
         _TCH_POOL[path].open(path, tch.HDBOREADER)
+        # _TCH_POOL[path].setmutex()
     return _TCH_POOL[path]
 
 
@@ -239,6 +260,9 @@ class _Base(object):
             and self.type == other.type \
             and self.key == other.key
 
+    def __ne__(self, other):
+        return not self == other
+
     def __str__(self):
         return self.key
 
@@ -258,7 +282,7 @@ class GitObject(_Base):
     def all(cls, ignored_prefix=''):
         """ Iterate ALL objects of this type (all projects, all times) """
         for key in range(128):
-            path = '/data/All.blobs/%s_%d' % (cls.type, key)
+            path = PATHS['all_sequential'].format(type=cls.type, key=key)
             datafile = open(path + '.bin')
             for line in open(path + '.idx'):
                 chunks = line.strip().split(";")
@@ -303,7 +327,7 @@ class GitObject(_Base):
         >>> go.resolve_path("/fast{blob}/All.sha1/{type}_{key}", 8)
         '/fast/All.sha1/None_133'
         >>> go.type = 'blob'
-        >>> go.resolve_path("/fast{blob}/All.sha1/{type}_{key}", 8)
+        >>> go.resolve_path("/fast{blob}/All.sha1/{ type}_{key}", 8)
         '/fast1/All.sha1/blob_133'
         """
         return path.format(
@@ -316,14 +340,14 @@ class GitObject(_Base):
 
     def index_line(self):
         # get a line number in the index file
-        return self.read('/fast{blob}/All.sha1/sha1.{type}_{key}.tch')
+        return self.read(PATHS['index_line'])
 
     @cached_property
     def data(self):
         if self.type not in ('commit', 'tree'):
             raise NotImplementedError
         # default implementation will only work for commits and trees
-        return decomp(self.read('/fast1/All.sha1c/{type}_{key}.tch'))
+        return decomp(self.read(PATHS['all_random']))
 
     def __str__(self):
         """
@@ -350,11 +374,11 @@ class Blob(GitObject):
         """ Content of the blob """
         try:
             offset, length = unber(
-                self.read('/data/All.sha1o/sha1.blob_{key}.tch'))
+                self.read(PATHS['blob_offset']))
         except ValueError:  # empty read -> value not found
             raise KeyError('Blob data not found (bad sha?)')
-        # no caching here because it will make the code non-thread-safe
-        fh = open(self.resolve_path('/data/All.blobs/{type}_{key}.bin'), 'rb')
+        # no caching here to stay thread-safe
+        fh = open(self.resolve_path(PATHS['blob_data']), 'rb')
         fh.seek(offset)
         return decomp(fh.read(length))
 
@@ -365,7 +389,7 @@ class Blob(GitObject):
 
         **NOTE: commits removing this blob are not included**
         """
-        return slice20(self.read('/data/basemaps/b2cFullF.{key}.tch', 4))
+        return slice20(self.read(PATHS['blob_commits'], 4))
 
     @property
     def commits(self):
@@ -498,7 +522,7 @@ class Tree(GitObject):
         """ Tuple of SHA hashes of parent trees
         i.e. trees including this one as a subdirectory.
         """
-        return slice20(self.read('/data/basemaps/t2pt0-127.{key}.tch', 3))
+        return slice20(self.read(PATHS['tree_parents'], 3))
 
     @property
     def parent_trees(self):
@@ -618,8 +642,6 @@ class Commit(GitObject):
 
         return getattr(self, attr)
 
-    # TODO: implement __gt__, ge, le, lt to sort by date
-
     @property
     def parents(self):
         """ A generator of parent commits.
@@ -647,7 +669,7 @@ class Commit(GitObject):
         >>> 'user2589_minicms' in c.project_names
         True
         """
-        data = decomp(self.read('/data/basemaps/Cmt2PrjH.{key}.tch', 3))
+        data = decomp(self.read(PATHS['commit_projects'], 3))
         return tuple((data and data.split(";")) or [])
 
     @property
@@ -664,8 +686,8 @@ class Commit(GitObject):
         >>> Commit('1e971a073f40d74a1e72e07c682e1cba0bae159b').child_shas
         ('9bd02434b834979bb69d0b752a403228f2e385e8',)
         """
-        # key_length will be ignored
-        return slice20(self.read('/data/basemaps/Cmt2Chld.tch', 1))
+        # key_length will be ignored if =1
+        return slice20(self.read(PATHS['commit_children'], 1))
 
     @property
     def children(self):
@@ -701,7 +723,7 @@ class Commit(GitObject):
             "This relation is known to miss every first file in all trees. "
             "Consider using Commit.tree.blobs as a slower but more accurate "
             "alternative", DeprecationWarning)
-        return slice20(self.read('/data/basemaps/c2bFullF.{key}.tch', 4))
+        return slice20(self.read(PATHS['commit_blobs'], 4))
 
     @property
     def blobs(self):
@@ -789,7 +811,7 @@ class Project(_Base):
             a generator of `Project` objects
         """
         for key_prefix in range(8):
-            tch_path = '/data/basemaps/Prj2CmtH.%d.tch' % key_prefix
+            tch_path = PATHS['project_commits'].format(key=key_prefix)
             for uri in tch_keys(tch_path, name_prefix):
                 yield cls(uri)
 
@@ -801,13 +823,13 @@ class Project(_Base):
         ('2dbcd43f077f2b5511cc107d63a0b9539a6aa2a7',
          '7572fc070c44f85e2a540f9a5a05a95d1dd2662d')
         """
-        tch_path = '/data/basemaps/Prj2CmtH.%d.tch' % prefix(self.key, 3)
+        tch_path = PATHS['project_commits'].format(key=prefix(self.key, 3))
         return slice20(read_tch(tch_path, self.key))
 
     @property
     def commits(self):
         """ A generator of all Commit objects in the project.
-        It has the same effect as iterating the Project object itself.
+        It has the same effect as iterating a `Project` instance itself.
 
         >>> tuple(Project('user2589_django-currencies').commits) # doctest: +NORMALIZE_WHITESPACE
         (<Commit: 2dbcd43f077f2b5511cc107d63a0b9539a6aa2a7>,
@@ -851,7 +873,7 @@ class Project(_Base):
         >>> set(c.sha for c in p.commits_fp).issubset(p.commit_shas)
         True
 
-        In some scenarios, where branches are not important, it can save a lot
+        In scenarios where branches are not important, it can save a lot
         of computing.
         """
         commit = Commit(self.head)
@@ -879,7 +901,7 @@ class File(_Base):
         This method is heavy so it is moved to integration tests
         """
         for key_prefix in range(8):
-            tch_path = '/data/basemaps/f2cFullF.%d.tch' % key_prefix
+            tch_path = PATHS['file_commits'].format(key=key_prefix)
             for fname in tch_keys(tch_path, fname_prefix):
                 yield cls(fname)
 
@@ -903,7 +925,7 @@ class File(_Base):
         file_path = self.key
         if not file_path.endswith("\n"):
             file_path += "\n"
-        tch_path = '/data/basemaps/f2cFullF.%d.tch' % prefix(file_path, 3)
+        tch_path = PATHS['file_commits'].format(key=prefix(file_path, 3))
         return slice20(read_tch(tch_path, file_path))
 
     @property
@@ -930,7 +952,7 @@ class Author(_Base):
         >>> Author('John Doe <john.doe@aol.com>')  # doctest: +SKIP
 
     At this point we don't have a relation to map all aliases of the same
-    author, so keep in mind that this object represents an alias, not a person.
+    author, so keep in mind this object represents an alias, not a person.
     """
     type = 'author'
 
@@ -943,7 +965,7 @@ class Author(_Base):
         """ Get all author names, starting with an optional prefix
         This method is heavy so it is moved to integration tests
         """
-        for name in tch_keys('/data/basemaps/Auth2CmtH.tch', name_prefix):
+        for name in tch_keys(PATHS['author_commits'], name_prefix):
             yield cls(name)
 
     @cached_property
@@ -960,7 +982,7 @@ class Author(_Base):
         >>> len(commits[0]) == 40
         True
         """
-        return slice20(read_tch('/data/basemaps/Auth2CmtH.tch', self.key))
+        return slice20(read_tch(PATHS['author_commits'], self.key))
 
     @property
     def commits(self):
@@ -986,7 +1008,7 @@ class Author(_Base):
         >>> isinstance(fnames[0], str)
         True
         """
-        data = decomp(read_tch('/data/basemaps/Auth2File.tch', self.key))
+        data = decomp(read_tch(PATHS['author_files'], self.key))
         return tuple((data and data.split(";")) or [])
 
     @property

@@ -7,7 +7,7 @@ setup(
     # whenever you're updating the next three lines
     # please also update oscar.py
     name="oscar",
-    version="0.1.1",
+    version="0.1.2",
     author='Marat (@cmu.edu)',
 
     description="A Python interface to OSCAR data",
@@ -26,5 +26,6 @@ setup(
     license="GPL v3.0",
     author_email='marat@cmu.edu',
     url='https://github.com/ssc-oscar/oscar.py',
-    install_requires=[r.strip() for r in open('requirements.txt') if r.strip()]
+    install_requires=[r.strip() for r in open('requirements.txt') if r.strip()],
+    test_suite='test.TestStatus'
 )
