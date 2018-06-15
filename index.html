@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Reference &#8212; oscar 0.1.0 documentation</title>
+    <title>Reference &#8212; oscar 0.1.2 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -138,7 +138,7 @@ hash or by a Commit object itself:</p>
 <dt id="oscar.Project.commits">
 <code class="descname">commits</code><a class="headerlink" href="#oscar.Project.commits" title="Permalink to this definition">¶</a></dt>
 <dd><p>A generator of all Commit objects in the project.
-It has the same effect as iterating the Project object itself.</p>
+It has the same effect as iterating a <cite>Project</cite> instance itself.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">tuple</span><span class="p">(</span><span class="n">Project</span><span class="p">(</span><span class="s1">&#39;user2589_django-currencies&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">commits</span><span class="p">)</span> 
 <span class="go">(&lt;Commit: 2dbcd43f077f2b5511cc107d63a0b9539a6aa2a7&gt;,</span>
 <span class="go"> &lt;Commit: 7572fc070c44f85e2a540f9a5a05a95d1dd2662d&gt;)</span>
@@ -157,7 +157,7 @@ Thus, you only get a small subset of the full commit tree:</p>
 <span class="go">True</span>
 </pre></div>
 </div>
-<p>In some scenarios, where branches are not important, it can save a lot
+<p>In scenarios where branches are not important, it can save a lot
 of computing.</p>
 </dd></dl>
 
@@ -470,7 +470,7 @@ appear in git configuration.</p>
 </pre></div>
 </div>
 <p>At this point we don’t have a relation to map all aliases of the same
-author, so keep in mind that this object represents an alias, not a person.</p>
+author, so keep in mind this object represents an alias, not a person.</p>
 <dl class="attribute">
 <dt id="oscar.Author.commit_shas">
 <code class="descname">commit_shas</code><a class="headerlink" href="#oscar.Author.commit_shas" title="Permalink to this definition">¶</a></dt>
