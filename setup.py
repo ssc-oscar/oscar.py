@@ -7,7 +7,7 @@ setup(
     # whenever you're updating the next three lines
     # please also update oscar.py
     name="oscar",
-    version="0.1.0",
+    version="0.1.1",
     author='Marat (@cmu.edu)',
 
     description="A Python interface to OSCAR data",
