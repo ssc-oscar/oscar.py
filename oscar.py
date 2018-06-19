@@ -218,6 +218,8 @@ def read_tch(path, key):
 
     try:
         return _get_tch(path)[key]
+    except tch.error:
+        raise IOError("Tokyocabinet file " + path + " not found")
     except KeyError:
         return ''
 
@@ -841,7 +843,7 @@ class Project(_Base):
         commits = {c.sha: c for c in self.commits}
         parents = set().union(*(c.parent_shas for c in commits.values()))
         heads = set(commits.keys()) - parents
-        assert len(heads) == 1, "Unexpected number of heads"
+        assert len(heads) == 1, "Unexpected number of heads (" + len(heads) + " instead of 1)"
         return tuple(heads)[0]
 
     @cached_property
