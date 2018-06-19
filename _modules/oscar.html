@@ -27,6 +27,8 @@
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
+          
+
           <div class="body" role="main">
             
   <h1>Source code for oscar</h1><div class="highlight"><pre>
@@ -217,14 +219,8 @@
 <span class="sd">    :return: UTC datetime</span>
 <span class="sd">    :rtype: datetime.datetime</span>
 
-<span class="sd">    &gt;&gt;&gt; parse_commit_date(&#39;1337145807 +1100&#39;) == \</span>
-<span class="sd">    ... parse_commit_date(&#39;1337145807 +1000&#39;)</span>
-<span class="sd">    True</span>
-<span class="sd">    &gt;&gt;&gt; parse_commit_date(&#39;1337145000 +1100&#39;) &lt; \</span>
-<span class="sd">    ... parse_commit_date(&#39;1337145807 +1000&#39;)</span>
-<span class="sd">    True</span>
-<span class="sd">    &gt;&gt;&gt; parse_commit_date(&#39;1337145999 +1100&#39;) &gt; \</span>
-<span class="sd">    ... parse_commit_date(&#39;1337145807 +1000&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; parse_commit_date(&#39;1337145807 +1100&#39;)</span>
+<span class="sd">    datetime.datetime(2012, 5, 16, 16, 23, 27, tzinfo=&lt;Timezone: 11:00&gt;)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">ts</span><span class="p">,</span> <span class="n">tz</span> <span class="o">=</span> <span class="n">timestamp</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
     <span class="n">sign</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="k">if</span> <span class="n">tz</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="mi">1</span>
@@ -359,7 +355,7 @@
 <span class="sd">        &gt;&gt;&gt; go.resolve_path(&quot;/fast{blob}/All.sha1/{type}_{key}&quot;, 8)</span>
 <span class="sd">        &#39;/fast/All.sha1/None_133&#39;</span>
 <span class="sd">        &gt;&gt;&gt; go.type = &#39;blob&#39;</span>
-<span class="sd">        &gt;&gt;&gt; go.resolve_path(&quot;/fast{blob}/All.sha1/{ type}_{key}&quot;, 8)</span>
+<span class="sd">        &gt;&gt;&gt; go.resolve_path(&quot;/fast{blob}/All.sha1/{type}_{key}&quot;, 8)</span>
 <span class="sd">        &#39;/fast1/All.sha1/blob_133&#39;</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">path</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
@@ -1057,6 +1053,7 @@
 </pre></div>
 
           </div>
+          
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
@@ -1090,7 +1087,7 @@
       
       |
       Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.5</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
       
     </div>
 
