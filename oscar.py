@@ -185,14 +185,8 @@ def parse_commit_date(timestamp):
     :return: UTC datetime
     :rtype: datetime.datetime
 
-    >>> parse_commit_date('1337145807 +1100') == \
-    ... parse_commit_date('1337145807 +1000')
-    True
-    >>> parse_commit_date('1337145000 +1100') < \
-    ... parse_commit_date('1337145807 +1000')
-    True
-    >>> parse_commit_date('1337145999 +1100') > \
-    ... parse_commit_date('1337145807 +1000')
+    >>> parse_commit_date('1337145807 +1100')
+    datetime.datetime(2012, 5, 16, 16, 23, 27, tzinfo=<Timezone: 11:00>)
     """
     ts, tz = timestamp.split()
     sign = -1 if tz.startswith('-') else 1
@@ -327,7 +321,7 @@ class GitObject(_Base):
         >>> go.resolve_path("/fast{blob}/All.sha1/{type}_{key}", 8)
         '/fast/All.sha1/None_133'
         >>> go.type = 'blob'
-        >>> go.resolve_path("/fast{blob}/All.sha1/{ type}_{key}", 8)
+        >>> go.resolve_path("/fast{blob}/All.sha1/{type}_{key}", 8)
         '/fast1/All.sha1/blob_133'
         """
         return path.format(

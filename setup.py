@@ -26,6 +26,6 @@ setup(
     license="GPL v3.0",
     author_email='marat@cmu.edu',
     url='https://github.com/ssc-oscar/oscar.py',
-    install_requires=[r.strip() for r in open('requirements.txt') if r.strip()],
+    install_requires=['python-lzf', 'tokyocabinet'],
     test_suite='test.TestStatus'
 )

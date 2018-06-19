@@ -11,9 +11,9 @@ from oscar import *
 
 
 class TestStatus(unittest.TestCase):
-
+    """Check what data/relations are available"""
     def test_status(self):
-
+        # this test never fails. Instead, it logs status to stderr
         levels = {
             1: logging.warning,
             2: logging.error,
