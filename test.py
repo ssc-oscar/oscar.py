@@ -24,37 +24,40 @@ class TestStatus(unittest.TestCase):
             if not os.path.isfile(path):
                 levels[level]("Does not exist: %s", path)
 
-        kwargs = {'blob': '', 'type': 'commit', 'key': 0}
+        kwargs = {'type': 'commit', 'key': 0}
         # key lenght: 7 bit, with few exceptions
         check(PATHS['all_random'].format(**kwargs), 3)
         check(PATHS['blob_data'].format(**kwargs), 1)
         check(PATHS['all_sequential'].format(**kwargs) + '.idx', 1)
-        check(PATHS['index_line'].format(**kwargs), 1)
+        check(PATHS['commit_index_line'].format(**kwargs), 1)
 
         kwargs['type'] = 'tree'
         check(PATHS['all_random'].format(**kwargs), 3)
         check(PATHS['blob_data'].format(**kwargs), 1)
         check(PATHS['all_sequential'].format(**kwargs) + '.idx', 1)
-        check(PATHS['index_line'].format(**kwargs), 1)
+        check(PATHS['tree_index_line'].format(**kwargs), 1)
 
-        kwargs = {'blob': '1', 'type': 'blob', 'key': 0}
+        kwargs = {'type': 'blob', 'key': 0}
         check(PATHS['blob_data'].format(**kwargs), 3)
         check(PATHS['blob_offset'].format(**kwargs), 3)
-        check(PATHS['index_line'].format(**kwargs), 1)
+        check(PATHS['blob_index_line'].format(**kwargs), 1)
 
         # type-agnostic
-        # key lenght: 4 bit
+        # key length: 4 bit
         check(PATHS['blob_commits'].format(**kwargs), 2)
         check(PATHS['commit_blobs'].format(**kwargs), 2)
-        # key lenght: 3 bit
+        # key length: 3 bit
         check(PATHS['tree_parents'].format(**kwargs), 2)
         check(PATHS['commit_projects'].format(**kwargs), 2)
         check(PATHS['project_commits'].format(**kwargs), 2)
         check(PATHS['file_commits'].format(**kwargs), 2)
-        # key lenght: 0
         check(PATHS['commit_children'].format(**kwargs), 2)
+        # key length: 0
         check(PATHS['author_commits'].format(**kwargs), 2)
         check(PATHS['author_files'].format(**kwargs), 2)
+
+        kwargs = {'type': 'tag', 'key': 0}
+        check(PATHS['tag_index_line'].format(**kwargs), 1)
 
 
 def check_status():

@@ -12,21 +12,26 @@ __author__ = "Marat (@cmu.edu)"
 PATHS = {
     # not critical - almost never used
     'all_sequential': '/data/All.blobs/{type}_{key}',  # cmt, tree
-    'index_line': '/fast{blob}/All.sha1/sha1.{type}_{key}.tch',
+    'blob_index_line': '/fast1/All.sha1/sha1.{type}_{key}.tch',
+    'tree_index_line': '/fast1/All.sha1/sha1.{type}_{key}.tch',
+    'commit_index_line': '/fast/All.sha1/sha1.{type}_{key}.tch',
+    'tag_index_line': '/fast/All.sha1/sha1.{type}_{key}.tch',
     # critical - contain actual objects
     'all_random': '/fast1/All.sha1c/{type}_{key}.tch',  # cmt, tree
     'blob_offset': '/data/All.sha1o/sha1.blob_{key}.tch',
     'blob_data': '/data/All.blobs/{type}_{key}.bin',
     # relations - good to have but not critical
-    'blob_commits': '/data/basemaps/b2cFullF.{key}.tch',
+    'blob_commits': '/data/basemaps/b2cFullH.{key}.tch',
     'tree_parents': '/data/basemaps/t2pt0-127.{key}.tch',
     'commit_projects': '/data/basemaps/Cmt2PrjH.{key}.tch',
-    'commit_children': '/data/basemaps/Cmt2Chld.tch',
-    'commit_blobs': '/data/basemaps/c2bFullF.{key}.tch',
+    'commit_children': '/data/basemaps/Cmt2ChldH.{key}.tch',
+    'commit_blobs': '/data/basemaps/c2bFullH.{key}.tch',
     'project_commits': '/data/basemaps/Prj2CmtH.{key}.tch',
+
+    # TODO: replace with H when it's ready
     'file_commits': '/data/basemaps/f2cFullF.{key}.tch',
     'author_commits': '/data/basemaps/Auth2CmtH.tch',
-    'author_files': '/data/basemaps/Auth2File.tch',
+    'author_files': '/data/basemaps/Auth2FileH.tch',
 }
 
 
@@ -320,14 +325,10 @@ class GitObject(_Base):
         'test'
         >>> go.resolve_path("test_{key}", 7)
         'test_5'
-        >>> go.resolve_path("/fast{blob}/All.sha1/{type}_{key}", 8)
+        >>> go.resolve_path("/fast/All.sha1/{type}_{key}", 8)
         '/fast/All.sha1/None_133'
-        >>> go.type = 'blob'
-        >>> go.resolve_path("/fast{blob}/All.sha1/{type}_{key}", 8)
-        '/fast1/All.sha1/blob_133'
         """
         return path.format(
-            blob=1 if self.type == 'blob' else '',
             type=self.type, key=prefix(self.bin_sha, key_length))
 
     def read(self, path, key_length=7):
@@ -336,7 +337,7 @@ class GitObject(_Base):
 
     def index_line(self):
         # get a line number in the index file
-        return self.read(PATHS['index_line'])
+        return self.read(PATHS[self.type + '_index_line'])
 
     @cached_property
     def data(self):
