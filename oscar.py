@@ -809,7 +809,11 @@ class Project(_Base):
         """
         for sha in self.commit_shas:
             c = Commit(sha)
-            if c.author != 'GitHub Merge Button <merge-button@github.com>':
+            try:
+                author = c.author
+            except ObjectNotFound:
+                continue
+            if author != 'GitHub Merge Button <merge-button@github.com>':
                 yield c
 
     def __contains__(self, item):
@@ -974,7 +978,17 @@ class File(_Base):
         >>> isinstance(cs[0], Commit)
         True
         """
-        return (Commit(sha) for sha in self.commit_shas)
+        for sha in self.commit_shas:
+            c = Commit(sha)
+            try:
+                author = c.author
+            except ObjectNotFound:
+                continue
+            if author != 'GitHub Merge Button <merge-button@github.com>':
+                yield c
+
+    def __str__(self):
+        return super(File, self).__str__().rstrip("\n\r")
 
 
 class Author(_Base):
