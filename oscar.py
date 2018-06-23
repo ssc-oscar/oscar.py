@@ -18,7 +18,7 @@ PATHS = {
     'tag_index_line': '/fast/All.sha1/sha1.{type}_{key}.tch',
     # critical - contain actual objects
     'all_random': '/fast1/All.sha1c/{type}_{key}.tch',  # cmt, tree
-    'blob_offset': '/data/All.sha1o/sha1.blob_{key}.tch',
+    'blob_offset': '/fast1/All.sha1o/sha1.blob_{key}.tch',
     'blob_data': '/data/All.blobs/{type}_{key}.bin',
     # relations - good to have but not critical
     'blob_commits': '/data/basemaps/b2cFullH.{key}.tch',
@@ -881,6 +881,8 @@ class Project(_Base):
 
         >>> Project('user2589_minicms').head
         <Commit: f2a7fcdc51450ab03cb364415f14e634fa69b62c>
+        >>> Project('RoseTHERESA_SimpleCMS').head
+        <Commit: a47afa002ccfd3e23920f323b172f78c5c970250>
         """
         # Sometimes (very rarely) commit dates are wrong, so the latest commit
         # is not actually the head. The magic below is to account for this
