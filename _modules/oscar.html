@@ -52,7 +52,7 @@
     <span class="s1">&#39;tag_index_line&#39;</span><span class="p">:</span> <span class="s1">&#39;/fast/All.sha1/sha1.</span><span class="si">{type}</span><span class="s1">_</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span>
     <span class="c1"># critical - contain actual objects</span>
     <span class="s1">&#39;all_random&#39;</span><span class="p">:</span> <span class="s1">&#39;/fast1/All.sha1c/</span><span class="si">{type}</span><span class="s1">_</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span>  <span class="c1"># cmt, tree</span>
-    <span class="s1">&#39;blob_offset&#39;</span><span class="p">:</span> <span class="s1">&#39;/data/All.sha1o/sha1.blob_</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;blob_offset&#39;</span><span class="p">:</span> <span class="s1">&#39;/fast1/All.sha1o/sha1.blob_</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span>
     <span class="s1">&#39;blob_data&#39;</span><span class="p">:</span> <span class="s1">&#39;/data/All.blobs/</span><span class="si">{type}</span><span class="s1">_</span><span class="si">{key}</span><span class="s1">.bin&#39;</span><span class="p">,</span>
     <span class="c1"># relations - good to have but not critical</span>
     <span class="s1">&#39;blob_commits&#39;</span><span class="p">:</span> <span class="s1">&#39;/data/basemaps/b2cFullH.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span>
@@ -915,6 +915,8 @@
 
 <span class="sd">        &gt;&gt;&gt; Project(&#39;user2589_minicms&#39;).head</span>
 <span class="sd">        &lt;Commit: f2a7fcdc51450ab03cb364415f14e634fa69b62c&gt;</span>
+<span class="sd">        &gt;&gt;&gt; Project(&#39;RoseTHERESA_SimpleCMS&#39;).head</span>
+<span class="sd">        &lt;Commit: a47afa002ccfd3e23920f323b172f78c5c970250&gt;</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Sometimes (very rarely) commit dates are wrong, so the latest commit</span>
         <span class="c1"># is not actually the head. The magic below is to account for this</span>
