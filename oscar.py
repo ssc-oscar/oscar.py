@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, tzinfo
 from functools import wraps
 import warnings
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 __author__ = "Marat (@cmu.edu)"
 
 PATHS = {
