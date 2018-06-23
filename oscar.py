@@ -35,6 +35,10 @@ PATHS = {
 }
 
 
+class ObjectNotFound(KeyError):
+    pass
+
+
 def unber(s):
     # type: (str) -> list
     r""" Perl BER unpacking
@@ -215,7 +219,7 @@ def _get_tch(path):
     return _TCH_POOL[path]
 
 
-def read_tch(path, key):
+def read_tch(path, key, silent=False):
     """ Read a value from a Tokyo Cabinet file by the specified key
     Main purpose of this method is to cached open .tch handlers
     in _TCH_POOL to speedup reads
@@ -226,7 +230,9 @@ def read_tch(path, key):
     except tch.error:
         raise IOError("Tokyocabinet file " + path + " not found")
     except KeyError:
-        return ''
+        if silent:
+            return ''
+        raise ObjectNotFound(path + " " + key)
 
 
 def tch_keys(path, key_prefix=''):
@@ -331,9 +337,10 @@ class GitObject(_Base):
         return path.format(
             type=self.type, key=prefix(self.bin_sha, key_length))
 
-    def read(self, path, key_length=7):
+    def read(self, path, key_length=7, silent=True):
         """ Resolve the path and read .tch"""
-        return read_tch(self.resolve_path(path, key_length), self.bin_sha)
+        return read_tch(
+            self.resolve_path(path, key_length), self.bin_sha, silent)
 
     def index_line(self):
         # get a line number in the index file
@@ -344,7 +351,7 @@ class GitObject(_Base):
         if self.type not in ('commit', 'tree'):
             raise NotImplementedError
         # default implementation will only work for commits and trees
-        return decomp(self.read(PATHS['all_random']))
+        return decomp(self.read(PATHS['all_random'], silent=False))
 
     def __str__(self):
         """
@@ -449,7 +456,10 @@ class Tree(GitObject):
         ...     for line in Tree("954829887af5d9071aa92c427133ca2cdd0813cc"))
         True
         """
-        data = self.data
+        try:
+            data = self.data
+        except ObjectNotFound:
+            data = ''
         i = 0
         while i < len(data):
             # mode
@@ -711,8 +721,7 @@ class Commit(GitObject):
         >>> Commit('1e971a073f40d74a1e72e07c682e1cba0bae159b').child_shas
         ('9bd02434b834979bb69d0b752a403228f2e385e8',)
         """
-        # key_length will be ignored if =1
-        return slice20(self.read(PATHS['commit_children'], 1))
+        return slice20(self.read(PATHS['commit_children'], 3))
 
     @property
     def children(self):
@@ -853,7 +862,7 @@ class Project(_Base):
          '7572fc070c44f85e2a540f9a5a05a95d1dd2662d')
         """
         tch_path = PATHS['project_commits'].format(key=prefix(self.key, 3))
-        return slice20(read_tch(tch_path, self.key))
+        return slice20(read_tch(tch_path, self.key, silent=True))
 
     @property
     def commits(self):
@@ -913,7 +922,7 @@ class Project(_Base):
         In scenarios where branches are not important, it can save a lot
         of computing.
         """
-        commit = Commit(self.head)
+        commit = self.head
         while commit:
             yield commit
             commit = commit.parent_shas and commit.parents.next()
@@ -963,7 +972,7 @@ class File(_Base):
         if not file_path.endswith("\n"):
             file_path += "\n"
         tch_path = PATHS['file_commits'].format(key=prefix(file_path, 3))
-        return slice20(read_tch(tch_path, file_path))
+        return slice20(read_tch(tch_path, file_path, silent=True))
 
     @property
     def commits(self):
@@ -1029,7 +1038,7 @@ class Author(_Base):
         >>> len(commits[0]) == 40
         True
         """
-        return slice20(read_tch(PATHS['author_commits'], self.key))
+        return slice20(read_tch(PATHS['author_commits'], self.key, silent=True))
 
     @property
     def commits(self):
