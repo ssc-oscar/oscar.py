@@ -863,16 +863,24 @@ class Project(_Base):
 
     @cached_property
     def head(self):
-        """ Get the last commit SHA, i.e. the repository HEAD
+        """ Get the HEAD commit of the repository
 
         >>> Project('user2589_minicms').head
-        'f2a7fcdc51450ab03cb364415f14e634fa69b62c'
+        <Commit: f2a7fcdc51450ab03cb364415f14e634fa69b62c>
         """
+        # Sometimes (very rarely) commit dates are wrong, so the latest commit
+        # is not actually the head. The magic below is to account for this
         commits = {c.sha: c for c in self.commits}
         parents = set().union(*(c.parent_shas for c in commits.values()))
         heads = set(commits.keys()) - parents
-        assert len(heads) == 1, "Unexpected number of heads (" + len(heads) + " instead of 1)"
-        return tuple(heads)[0]
+
+        # it is possible that there is more than one head.
+        # E.g. it happens when HEAD is moved manually (git reset)
+        # and continued with a separate chain of commits.
+        # in this case, let's just use the latest one
+        # actually, storing refs would make it much simpler
+        return sorted((commits[sha] for sha in heads),
+                      key=lambda c: c.authored_at)[-1]
 
     @cached_property
     def tail(self):
