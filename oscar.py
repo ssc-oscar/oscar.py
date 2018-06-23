@@ -599,6 +599,7 @@ class Commit(GitObject):
             authored_at:    str, unix_epoch timezone
             committer:      str, Name <email>
             committed_at:   str, unix_epoch timezone
+            signature:      str or None, PGP signature
         >>> c = Commit('e38126dbca6572912013621d2aa9e6f7c50f36bc')
         >>> c.author.startswith('Marat')
         True
@@ -614,14 +615,38 @@ class Commit(GitObject):
         '1337350448 +1100'
         """
         if attr not in ('tree', 'parent_shas', 'message', 'full_message',
-                        'author', 'committer', 'authored_at', 'committed_at'):
+                        'author', 'committer', 'authored_at', 'committed_at',
+                        'signature'):
             raise AttributeError
 
         self.header, self.full_message = self.data.split("\n\n", 1)
         self.message = self.full_message.split("\n", 1)[0]
         parent_shas = []
+        signature = None
+        reading_signature = False
         for line in self.header.split("\n"):
-            key, value = line.strip().split(" ", 1)
+            if reading_signature:
+                # examples:
+                #   1cc6f4418dcc09f64dcbb0410fec76ceaa5034ab
+                #   cbbc685c45bdff4da5ea0984f1dd3a73486b4556
+                signature += line
+                if line.strip() == "-----END PGP SIGNATURE-----":
+                    self.signature = signature
+                    reading_signature = False
+                continue
+
+            if line.startswith(" "):  # mergetag object, not supported (yet?)
+                # example: c1313c68c7f784efaf700fbfb771065840fc260a
+                continue
+
+            line = line.strip()
+            if not line:  # sometimes there is an empty line after gpgsig
+                continue
+            try:
+                key, value = line.split(" ", 1)
+            except ValueError:
+                raise ValueError("Unexpected header in commit " + self.sha)
+
             if key == "tree":
                 self.tree = Tree(value)
             elif key == "parent":  # multiple parents possible
@@ -634,6 +659,9 @@ class Commit(GitObject):
                 chunks = value.rsplit(" ", 2)
                 self.committer = chunks[0]
                 self.committed_at = " ".join(chunks[1:])
+            elif key == 'gpgsig':
+                signature = value
+                reading_signature = True
         self.parent_shas = tuple(parent_shas)
 
         return getattr(self, attr)
