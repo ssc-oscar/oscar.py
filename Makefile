@@ -23,6 +23,7 @@ lint:
 
 .PHONY: publish
 publish:
+	$(MAKE) clean
 	$(MAKE) test
 	$(MAKE) deploy
 	python setup.py sdist bdist_wheel

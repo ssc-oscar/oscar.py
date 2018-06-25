@@ -4,9 +4,10 @@ from tokyocabinet import hash as tch
 
 from datetime import datetime, timedelta, tzinfo
 from functools import wraps
+import time
 import warnings
 
-__version__ = "0.1.3"
+__version__ = "1.0.0"
 __author__ = "Marat (@cmu.edu)"
 
 PATHS = {
@@ -192,17 +193,28 @@ def parse_commit_date(timestamp):
         e.g. '1337145807 +1100'
     :type timestamp: str
     :return: UTC datetime
-    :rtype: datetime.datetime
+    :rtype: datetime.datetime or None
 
     >>> parse_commit_date('1337145807 +1100')
     datetime.datetime(2012, 5, 16, 16, 23, 27, tzinfo=<Timezone: 11:00>)
+    >>> parse_commit_date('3337145807 +1100') is None
+    True
     """
     ts, tz = timestamp.split()
     sign = -1 if tz.startswith('-') else 1
-    hours, minutes = sign*int(tz[-4:-2]), sign*int(tz[-2])
-    # comparison doesn't work correctly for timezone aware dates
-    # so, resorting to naive UTC implementation below
-    return datetime.fromtimestamp(int(ts), CommitTimezone(hours, minutes))
+    try:
+        ts = int(ts)
+        hours, minutes = sign * int(tz[-4:-2]), sign * int(tz[-2])
+        dt = datetime.fromtimestamp(ts, CommitTimezone(hours, minutes))
+    except ValueError:
+        # i.e. if timestamp or timezone is invalid
+        return None
+
+    # timestamp is in the future
+    if ts > time.time():
+        return None
+
+    return dt
 
 
 # Pool of open TokyoCabinet databases to save few milliseconds on opening
@@ -380,7 +392,7 @@ class Blob(GitObject):
             offset, length = unber(
                 self.read(PATHS['blob_offset']))
         except ValueError:  # empty read -> value not found
-            raise KeyError('Blob data not found (bad sha?)')
+            raise ObjectNotFound('Blob data not found (bad sha?)')
         # no caching here to stay thread-safe
         fh = open(self.resolve_path(PATHS['blob_data']), 'rb')
         fh.seek(offset)
@@ -607,15 +619,15 @@ class Commit(GitObject):
             message:        str, first line of the commit message
             full_message:   str, full commit message
             author:         str, Name <email>
-            authored_at:    str, unix_epoch timezone
+            authored_at:    timezone-aware datetime or None (if invalid)
             committer:      str, Name <email>
-            committed_at:   str, unix_epoch timezone
+            committed_at:   timezone-aware datetime or None (if invalid)
             signature:      str or None, PGP signature
         >>> c = Commit('e38126dbca6572912013621d2aa9e6f7c50f36bc')
         >>> c.author.startswith('Marat')
         True
         >>> c.authored_at
-        '1337350448 +1100'
+        datetime.datetime(2012, 5, 19, 1, 14, 8, tzinfo=<Timezone: 11:00>)
         >>> c.tree.sha
         '6845f55f47ddfdbe4628a83fdaba35fa4ae3c894'
         >>> len(c.parent_shas)
@@ -623,12 +635,15 @@ class Commit(GitObject):
         >>> c.parent_shas[0]
         'ab124ab4baa42cd9f554b7bb038e19d4e3647957'
         >>> c.committed_at
-        '1337350448 +1100'
+        datetime.datetime(2012, 5, 19, 1, 14, 8, tzinfo=<Timezone: 11:00>)
         """
-        if attr not in ('tree', 'parent_shas', 'message', 'full_message',
-                        'author', 'committer', 'authored_at', 'committed_at',
-                        'signature'):
+        attrs = ('tree', 'parent_shas', 'message', 'full_message', 'author',
+                 'committer', 'authored_at', 'committed_at', 'signature')
+        if attr not in attrs:
             raise AttributeError
+
+        for a in attrs:
+            setattr(self, a, None)
 
         self.header, self.full_message = self.data.split("\n\n", 1)
         self.message = self.full_message.split("\n", 1)[0]
@@ -663,13 +678,16 @@ class Commit(GitObject):
             elif key == "parent":  # multiple parents possible
                 parent_shas.append(value)
             elif key == "author":
+                # author name can have arbitrary number of spaces while
+                # timestamp is guaranteed to have one, so rsplit
                 chunks = value.rsplit(" ", 2)
                 self.author = chunks[0]
-                self.authored_at = " ".join(chunks[1:])
+                self.authored_at = parse_commit_date(" ".join(chunks[1:]))
             elif key == "committer":
+                # same logic as author
                 chunks = value.rsplit(" ", 2)
                 self.committer = chunks[0]
-                self.committed_at = " ".join(chunks[1:])
+                self.committed_at = parse_commit_date(" ".join(chunks[1:]))
             elif key == 'gpgsig':
                 signature = value
                 reading_signature = True
@@ -923,6 +941,8 @@ class Project(_Base):
 
         In scenarios where branches are not important, it can save a lot
         of computing.
+
+        Note: commits will come in order from the latest to the earliest.
         """
         commit = self.head
         while commit:
