@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>oscar &#8212; oscar 0.1.3 documentation</title>
+    <title>oscar &#8212; oscar 1.0.0 documentation</title>
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
@@ -38,9 +38,10 @@
 
 <span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span><span class="p">,</span> <span class="n">tzinfo</span>
 <span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">wraps</span>
+<span class="kn">import</span> <span class="nn">time</span>
 <span class="kn">import</span> <span class="nn">warnings</span>
 
-<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;0.1.3&quot;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;1.0.0&quot;</span>
 <span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Marat (@cmu.edu)&quot;</span>
 
 <span class="n">PATHS</span> <span class="o">=</span> <span class="p">{</span>
@@ -226,17 +227,28 @@
 <span class="sd">        e.g. &#39;1337145807 +1100&#39;</span>
 <span class="sd">    :type timestamp: str</span>
 <span class="sd">    :return: UTC datetime</span>
-<span class="sd">    :rtype: datetime.datetime</span>
+<span class="sd">    :rtype: datetime.datetime or None</span>
 
 <span class="sd">    &gt;&gt;&gt; parse_commit_date(&#39;1337145807 +1100&#39;)</span>
 <span class="sd">    datetime.datetime(2012, 5, 16, 16, 23, 27, tzinfo=&lt;Timezone: 11:00&gt;)</span>
+<span class="sd">    &gt;&gt;&gt; parse_commit_date(&#39;3337145807 +1100&#39;) is None</span>
+<span class="sd">    True</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">ts</span><span class="p">,</span> <span class="n">tz</span> <span class="o">=</span> <span class="n">timestamp</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
     <span class="n">sign</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="k">if</span> <span class="n">tz</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="mi">1</span>
-    <span class="n">hours</span><span class="p">,</span> <span class="n">minutes</span> <span class="o">=</span> <span class="n">sign</span><span class="o">*</span><span class="nb">int</span><span class="p">(</span><span class="n">tz</span><span class="p">[</span><span class="o">-</span><span class="mi">4</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">]),</span> <span class="n">sign</span><span class="o">*</span><span class="nb">int</span><span class="p">(</span><span class="n">tz</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span>
-    <span class="c1"># comparison doesn&#39;t work correctly for timezone aware dates</span>
-    <span class="c1"># so, resorting to naive UTC implementation below</span>
-    <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">ts</span><span class="p">),</span> <span class="n">CommitTimezone</span><span class="p">(</span><span class="n">hours</span><span class="p">,</span> <span class="n">minutes</span><span class="p">))</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">ts</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span>
+        <span class="n">hours</span><span class="p">,</span> <span class="n">minutes</span> <span class="o">=</span> <span class="n">sign</span> <span class="o">*</span> <span class="nb">int</span><span class="p">(</span><span class="n">tz</span><span class="p">[</span><span class="o">-</span><span class="mi">4</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">]),</span> <span class="n">sign</span> <span class="o">*</span> <span class="nb">int</span><span class="p">(</span><span class="n">tz</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">CommitTimezone</span><span class="p">(</span><span class="n">hours</span><span class="p">,</span> <span class="n">minutes</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="c1"># i.e. if timestamp or timezone is invalid</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="c1"># timestamp is in the future</span>
+    <span class="k">if</span> <span class="n">ts</span> <span class="o">&gt;</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">():</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">return</span> <span class="n">dt</span>
 
 
 <span class="c1"># Pool of open TokyoCabinet databases to save few milliseconds on opening</span>
@@ -414,7 +426,7 @@
             <span class="n">offset</span><span class="p">,</span> <span class="n">length</span> <span class="o">=</span> <span class="n">unber</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">PATHS</span><span class="p">[</span><span class="s1">&#39;blob_offset&#39;</span><span class="p">]))</span>
         <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>  <span class="c1"># empty read -&gt; value not found</span>
-            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s1">&#39;Blob data not found (bad sha?)&#39;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">ObjectNotFound</span><span class="p">(</span><span class="s1">&#39;Blob data not found (bad sha?)&#39;</span><span class="p">)</span>
         <span class="c1"># no caching here to stay thread-safe</span>
         <span class="n">fh</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">resolve_path</span><span class="p">(</span><span class="n">PATHS</span><span class="p">[</span><span class="s1">&#39;blob_data&#39;</span><span class="p">]),</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span>
         <span class="n">fh</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">offset</span><span class="p">)</span>
@@ -641,15 +653,15 @@
 <span class="sd">            message:        str, first line of the commit message</span>
 <span class="sd">            full_message:   str, full commit message</span>
 <span class="sd">            author:         str, Name &lt;email&gt;</span>
-<span class="sd">            authored_at:    str, unix_epoch timezone</span>
+<span class="sd">            authored_at:    timezone-aware datetime or None (if invalid)</span>
 <span class="sd">            committer:      str, Name &lt;email&gt;</span>
-<span class="sd">            committed_at:   str, unix_epoch timezone</span>
+<span class="sd">            committed_at:   timezone-aware datetime or None (if invalid)</span>
 <span class="sd">            signature:      str or None, PGP signature</span>
 <span class="sd">        &gt;&gt;&gt; c = Commit(&#39;e38126dbca6572912013621d2aa9e6f7c50f36bc&#39;)</span>
 <span class="sd">        &gt;&gt;&gt; c.author.startswith(&#39;Marat&#39;)</span>
 <span class="sd">        True</span>
 <span class="sd">        &gt;&gt;&gt; c.authored_at</span>
-<span class="sd">        &#39;1337350448 +1100&#39;</span>
+<span class="sd">        datetime.datetime(2012, 5, 19, 1, 14, 8, tzinfo=&lt;Timezone: 11:00&gt;)</span>
 <span class="sd">        &gt;&gt;&gt; c.tree.sha</span>
 <span class="sd">        &#39;6845f55f47ddfdbe4628a83fdaba35fa4ae3c894&#39;</span>
 <span class="sd">        &gt;&gt;&gt; len(c.parent_shas)</span>
@@ -657,12 +669,15 @@
 <span class="sd">        &gt;&gt;&gt; c.parent_shas[0]</span>
 <span class="sd">        &#39;ab124ab4baa42cd9f554b7bb038e19d4e3647957&#39;</span>
 <span class="sd">        &gt;&gt;&gt; c.committed_at</span>
-<span class="sd">        &#39;1337350448 +1100&#39;</span>
+<span class="sd">        datetime.datetime(2012, 5, 19, 1, 14, 8, tzinfo=&lt;Timezone: 11:00&gt;)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">attr</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;tree&#39;</span><span class="p">,</span> <span class="s1">&#39;parent_shas&#39;</span><span class="p">,</span> <span class="s1">&#39;message&#39;</span><span class="p">,</span> <span class="s1">&#39;full_message&#39;</span><span class="p">,</span>
-                        <span class="s1">&#39;author&#39;</span><span class="p">,</span> <span class="s1">&#39;committer&#39;</span><span class="p">,</span> <span class="s1">&#39;authored_at&#39;</span><span class="p">,</span> <span class="s1">&#39;committed_at&#39;</span><span class="p">,</span>
-                        <span class="s1">&#39;signature&#39;</span><span class="p">):</span>
+        <span class="n">attrs</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;tree&#39;</span><span class="p">,</span> <span class="s1">&#39;parent_shas&#39;</span><span class="p">,</span> <span class="s1">&#39;message&#39;</span><span class="p">,</span> <span class="s1">&#39;full_message&#39;</span><span class="p">,</span> <span class="s1">&#39;author&#39;</span><span class="p">,</span>
+                 <span class="s1">&#39;committer&#39;</span><span class="p">,</span> <span class="s1">&#39;authored_at&#39;</span><span class="p">,</span> <span class="s1">&#39;committed_at&#39;</span><span class="p">,</span> <span class="s1">&#39;signature&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">attr</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">attrs</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">AttributeError</span>
+
+        <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">attrs</span><span class="p">:</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_message</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_message</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
@@ -697,13 +712,16 @@
             <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span>  <span class="c1"># multiple parents possible</span>
                 <span class="n">parent_shas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
             <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;author&quot;</span><span class="p">:</span>
+                <span class="c1"># author name can have arbitrary number of spaces while</span>
+                <span class="c1"># timestamp is guaranteed to have one, so rsplit</span>
                 <span class="n">chunks</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">author</span> <span class="o">=</span> <span class="n">chunks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">authored_at</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">chunks</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">authored_at</span> <span class="o">=</span> <span class="n">parse_commit_date</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">chunks</span><span class="p">[</span><span class="mi">1</span><span class="p">:]))</span>
             <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;committer&quot;</span><span class="p">:</span>
+                <span class="c1"># same logic as author</span>
                 <span class="n">chunks</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">committer</span> <span class="o">=</span> <span class="n">chunks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">committed_at</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">chunks</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">committed_at</span> <span class="o">=</span> <span class="n">parse_commit_date</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">chunks</span><span class="p">[</span><span class="mi">1</span><span class="p">:]))</span>
             <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;gpgsig&#39;</span><span class="p">:</span>
                 <span class="n">signature</span> <span class="o">=</span> <span class="n">value</span>
                 <span class="n">reading_signature</span> <span class="o">=</span> <span class="kc">True</span>
@@ -957,6 +975,8 @@
 
 <span class="sd">        In scenarios where branches are not important, it can save a lot</span>
 <span class="sd">        of computing.</span>
+
+<span class="sd">        Note: commits will come in order from the latest to the earliest.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">commit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span>
         <span class="k">while</span> <span class="n">commit</span><span class="p">:</span>
