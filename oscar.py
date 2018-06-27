@@ -7,7 +7,7 @@ from functools import wraps
 import time
 import warnings
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 __author__ = "Marat (@cmu.edu)"
 
 PATHS = {
