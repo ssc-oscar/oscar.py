@@ -180,6 +180,9 @@ class CommitTimezone(tzinfo):
         return "<Timezone: %02d:%02d>" % (h, m)
 
 
+DAY_Z = datetime.fromtimestamp(0, CommitTimezone(0, 0))
+
+
 def parse_commit_date(timestamp):
     """ Parse date string of authored_at/commited_at
 
@@ -885,13 +888,25 @@ class Project(_Base):
     @property
     def commits(self):
         """ A generator of all Commit objects in the project.
-        It has the same effect as iterating a `Project` instance itself.
+        It has the same effect as iterating a `Project` instance itself,
+        with some additional validation of commit dates.
 
         >>> tuple(Project('user2589_django-currencies').commits) # doctest: +NORMALIZE_WHITESPACE
         (<Commit: 2dbcd43f077f2b5511cc107d63a0b9539a6aa2a7>,
          <Commit: 7572fc070c44f85e2a540f9a5a05a95d1dd2662d>)
         """
-        return (c for c in self)
+        commits = tuple(c for c in self)
+        tails = tuple(c for c in commits
+                      if not c.parent_shas and c.authored_at is not None)
+        if tails:
+            min_date = min(c.authored_at for c in tails)
+        else:  # i.e. if all tails have invalid date
+            min_date = DAY_Z
+
+        for c in commits:
+            if c.authored_at and c.authored_at < min_date:
+                c.authored_at = None
+            yield c
 
     @cached_property
     def head(self):
@@ -914,7 +929,7 @@ class Project(_Base):
         # in this case, let's just use the latest one
         # actually, storing refs would make it much simpler
         return sorted((commits[sha] for sha in heads),
-                      key=lambda c: c.authored_at)[-1]
+                      key=lambda c: c.authored_at or DAY_Z)[-1]
 
     @cached_property
     def tail(self):
