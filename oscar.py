@@ -959,10 +959,33 @@ class Project(_Base):
 
         Note: commits will come in order from the latest to the earliest.
         """
-        commit = self.head
+        # Simplified version of self.head():
+        #   - slightly less precise,
+        #   - 20% faster
+        #
+        # out of 500 randomly sampled projects, 493 had the same head.
+        # In the remaining 7:
+        #     2 had the same commit chain length,
+        #     3 had one more commit
+        #     1 had two more commits
+        #     1 had three more commits
+        # Execution time:
+        #   simplified version (argmax): ~153 seconds
+        #   self.head(): ~190 seconds
+
+        # Sometimes (very rarely) commit dates are wrong, so the latest commit
+        # is not actually the head. The magic below is to account for this
+        commits = {c.sha: c for c in self.commits}
+        commit = max(commits.values(), key=lambda c: c.authored_at or DAY_Z)
         while commit:
             yield commit
-            commit = commit.parent_shas and commit.parents.next()
+            if not commit.parent_shas:
+                break
+            if commit.parent_shas[0] in commits:
+                # save a bit of time on instantiation
+                commit = commits[commit.parent_shas[0]]
+            else:
+                commit = Commit(commit.parent_shas[0])
 
 
 class File(_Base):
