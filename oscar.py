@@ -726,7 +726,9 @@ class Commit(GitObject):
         True
         """
         data = decomp(self.read(PATHS['commit_projects'], 3))
-        return tuple((data and data.split(";")) or [])
+        return tuple(project_name
+                     for project_name in (data and data.split(";")) or []
+                     if project_name and project_name != 'EMPTY')
 
     @property
     def projects(self):
