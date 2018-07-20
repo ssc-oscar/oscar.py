@@ -471,10 +471,8 @@ class Tree(GitObject):
         ...     for line in Tree("954829887af5d9071aa92c427133ca2cdd0813cc"))
         True
         """
-        try:
-            data = self.data
-        except ObjectNotFound:
-            data = ''
+        data = self.data
+
         i = 0
         while i < len(data):
             # mode
@@ -592,7 +590,7 @@ class Tree(GitObject):
         (<Blob: 2bdf5d686c6cd488b706be5c99c3bb1e166cf2f6>, ...,
          <Blob: c006bef767d08b41633b380058a171b7786b71ab>)
         """
-        return (Blob(sha) for sha in self.files.values())
+        return (Blob(sha) for sha in self.blob_shas)
 
 
 class Commit(GitObject):
@@ -759,7 +757,8 @@ class Commit(GitObject):
     def blob_shas(self):
         """ SHA hashes of all blobs in the commit
 
-        >>> Commit('af0048f4aac8f4760bf9b816e01524d7fb20a3fc').blob_shas  # doctest: +NORMALIZE_WHITESPACE
+        >>> Commit('af0048f4aac8f4760bf9b816e01524d7fb20a3fc').blob_shas
+        ...        # doctest: +NORMALIZE_WHITESPACE
         ('b2f49ffef1c8d7ce83a004b34035f917713e2766',
          'c92011c5ccc32a9248bd929a6e56f846ac5b8072',
          'bf3c2d2df2ef710f995b590ac3e2c851b592c871')
@@ -786,7 +785,8 @@ class Commit(GitObject):
     def blobs(self):
         """ A generator of `Blob` objects included in this commit
 
-        >>> tuple(Commit('af0048f4aac8f4760bf9b816e01524d7fb20a3fc').blobs)  # doctest: +NORMALIZE_WHITESPACE
+        >>> tuple(Commit('af0048f4aac8f4760bf9b816e01524d7fb20a3fc').blobs)
+        ...              # doctest: +NORMALIZE_WHITESPACE
         (<Blob: b2f49ffef1c8d7ce83a004b34035f917713e2766>,
          <Blob: c92011c5ccc32a9248bd929a6e56f846ac5b8072>,
          <Blob: bf3c2d2df2ef710f995b590ac3e2c851b592c871>)
@@ -840,8 +840,8 @@ class Project(_Base):
         True
         """
         for sha in self.commit_shas:
-            c = Commit(sha)
             try:
+                c = Commit(sha)
                 author = c.author
             except ObjectNotFound:
                 continue
@@ -880,7 +880,8 @@ class Project(_Base):
     def commit_shas(self):
         """ SHA1 of all commits in the project
 
-        >>> Project('user2589_django-currencies').commit_shas # doctest: +NORMALIZE_WHITESPACE
+        >>> Project('user2589_django-currencies').commit_shas
+        ...         # doctest: +NORMALIZE_WHITESPACE
         ('2dbcd43f077f2b5511cc107d63a0b9539a6aa2a7',
          '7572fc070c44f85e2a540f9a5a05a95d1dd2662d')
         """
@@ -893,7 +894,8 @@ class Project(_Base):
         It has the same effect as iterating a `Project` instance itself,
         with some additional validation of commit dates.
 
-        >>> tuple(Project('user2589_django-currencies').commits) # doctest: +NORMALIZE_WHITESPACE
+        >>> tuple(Project('user2589_django-currencies').commits)
+        ...       # doctest: +NORMALIZE_WHITESPACE
         (<Commit: 2dbcd43f077f2b5511cc107d63a0b9539a6aa2a7>,
          <Commit: 7572fc070c44f85e2a540f9a5a05a95d1dd2662d>)
         """
@@ -975,19 +977,22 @@ class Project(_Base):
         #   simplified version (argmax): ~153 seconds
         #   self.head(): ~190 seconds
 
-        # Sometimes (very rarely) commit dates are wrong, so the latest commit
-        # is not actually the head. The magic below is to account for this
+        # at this point we know all commits are in the dataset
+        # (validated in __iter___)
         commits = {c.sha: c for c in self.commits}
         commit = max(commits.values(), key=lambda c: c.authored_at or DAY_Z)
         while commit:
-            yield commit
-            if not commit.parent_shas:
+            try:  # here there is no guarantee commit is in the dataset
+                first_parent = commit.parent_shas and commit.parent_shas[0]
+            except ObjectNotFound:
                 break
-            if commit.parent_shas[0] in commits:
-                # save a bit of time on instantiation
-                commit = commits[commit.parent_shas[0]]
-            else:
-                commit = Commit(commit.parent_shas[0])
+
+            yield commit
+
+            if not first_parent:
+                break
+
+            commit = commits.get(first_parent, Commit(first_parent))
 
 
 class File(_Base):

@@ -127,3 +127,9 @@ which looks to be outdated
     package.json.{1..127}.tch
     setup.py.{1..127}.tch
 
+## Update queue
+
+Logs of processed projects are available in
+`da0_data/gitnub/list*` and `da0_data/gitnub/new*`.
+By checking dates on the log files, you can find
+when a project was updated. 
