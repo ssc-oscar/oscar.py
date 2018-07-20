@@ -129,7 +129,8 @@ hash or by a Commit object itself:</p>
 <dt id="oscar.Project.commit_shas">
 <code class="descname">commit_shas</code><a class="headerlink" href="#oscar.Project.commit_shas" title="Permalink to this definition">¶</a></dt>
 <dd><p>SHA1 of all commits in the project</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Project</span><span class="p">(</span><span class="s1">&#39;user2589_django-currencies&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">commit_shas</span> 
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Project</span><span class="p">(</span><span class="s1">&#39;user2589_django-currencies&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">commit_shas</span>
+<span class="gp">... </span>        
 <span class="go">(&#39;2dbcd43f077f2b5511cc107d63a0b9539a6aa2a7&#39;,</span>
 <span class="go"> &#39;7572fc070c44f85e2a540f9a5a05a95d1dd2662d&#39;)</span>
 </pre></div>
@@ -142,7 +143,8 @@ hash or by a Commit object itself:</p>
 <dd><p>A generator of all Commit objects in the project.
 It has the same effect as iterating a <cite>Project</cite> instance itself,
 with some additional validation of commit dates.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">tuple</span><span class="p">(</span><span class="n">Project</span><span class="p">(</span><span class="s1">&#39;user2589_django-currencies&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">commits</span><span class="p">)</span> 
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">tuple</span><span class="p">(</span><span class="n">Project</span><span class="p">(</span><span class="s1">&#39;user2589_django-currencies&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">commits</span><span class="p">)</span>
+<span class="gp">... </span>      
 <span class="go">(&lt;Commit: 2dbcd43f077f2b5511cc107d63a0b9539a6aa2a7&gt;,</span>
 <span class="go"> &lt;Commit: 7572fc070c44f85e2a540f9a5a05a95d1dd2662d&gt;)</span>
 </pre></div>
@@ -212,7 +214,8 @@ first access to <em>any</em> of them.</p>
 <dt id="oscar.Commit.blob_shas">
 <code class="descname">blob_shas</code><a class="headerlink" href="#oscar.Commit.blob_shas" title="Permalink to this definition">¶</a></dt>
 <dd><p>SHA hashes of all blobs in the commit</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Commit</span><span class="p">(</span><span class="s1">&#39;af0048f4aac8f4760bf9b816e01524d7fb20a3fc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">blob_shas</span>  
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Commit</span><span class="p">(</span><span class="s1">&#39;af0048f4aac8f4760bf9b816e01524d7fb20a3fc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">blob_shas</span>
+<span class="gp">... </span>       
 <span class="go">(&#39;b2f49ffef1c8d7ce83a004b34035f917713e2766&#39;,</span>
 <span class="go"> &#39;c92011c5ccc32a9248bd929a6e56f846ac5b8072&#39;,</span>
 <span class="go"> &#39;bf3c2d2df2ef710f995b590ac3e2c851b592c871&#39;)</span>
@@ -224,7 +227,8 @@ first access to <em>any</em> of them.</p>
 <dt id="oscar.Commit.blobs">
 <code class="descname">blobs</code><a class="headerlink" href="#oscar.Commit.blobs" title="Permalink to this definition">¶</a></dt>
 <dd><p>A generator of <cite>Blob</cite> objects included in this commit</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">tuple</span><span class="p">(</span><span class="n">Commit</span><span class="p">(</span><span class="s1">&#39;af0048f4aac8f4760bf9b816e01524d7fb20a3fc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">blobs</span><span class="p">)</span>  
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">tuple</span><span class="p">(</span><span class="n">Commit</span><span class="p">(</span><span class="s1">&#39;af0048f4aac8f4760bf9b816e01524d7fb20a3fc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">blobs</span><span class="p">)</span>
+<span class="gp">... </span>             
 <span class="go">(&lt;Blob: b2f49ffef1c8d7ce83a004b34035f917713e2766&gt;,</span>
 <span class="go"> &lt;Blob: c92011c5ccc32a9248bd929a6e56f846ac5b8072&gt;,</span>
 <span class="go"> &lt;Blob: bf3c2d2df2ef710f995b590ac3e2c851b592c871&gt;)</span>
@@ -519,15 +523,17 @@ author, so keep in mind this object represents an alias, not a person.</p>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-  <h3><a href="#">Table Of Contents</a></h3>
-  <ul>
-<li><a class="reference internal" href="#">Reference</a><ul>
-<li><a class="reference internal" href="#module-oscar">Common methods</a></li>
-<li><a class="reference internal" href="#gitobject-methods">GitObject methods</a></li>
-<li><a class="reference internal" href="#class-reference">Class reference</a></li>
-</ul>
-</li>
-</ul>
+<h1 class="logo"><a href="#">oscar</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
 <div class="relations">
 <h3>Related Topics</h3>
 <ul>
@@ -535,13 +541,6 @@ author, so keep in mind this object represents an alias, not a person.</p>
   </ul></li>
 </ul>
 </div>
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="_sources/index.rst.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <div class="searchformwrapper">
@@ -562,7 +561,7 @@ author, so keep in mind this object represents an alias, not a person.</p>
       &copy;2018, Marat (@cmu.edu).
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.5</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
       
       |

@@ -505,10 +505,8 @@
 <span class="sd">        ...     for line in Tree(&quot;954829887af5d9071aa92c427133ca2cdd0813cc&quot;))</span>
 <span class="sd">        True</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
-        <span class="k">except</span> <span class="n">ObjectNotFound</span><span class="p">:</span>
-            <span class="n">data</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+
         <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
             <span class="c1"># mode</span>
@@ -626,7 +624,7 @@
 <span class="sd">        (&lt;Blob: 2bdf5d686c6cd488b706be5c99c3bb1e166cf2f6&gt;, ...,</span>
 <span class="sd">         &lt;Blob: c006bef767d08b41633b380058a171b7786b71ab&gt;)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="p">(</span><span class="n">Blob</span><span class="p">(</span><span class="n">sha</span><span class="p">)</span> <span class="k">for</span> <span class="n">sha</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">values</span><span class="p">())</span></div>
+        <span class="k">return</span> <span class="p">(</span><span class="n">Blob</span><span class="p">(</span><span class="n">sha</span><span class="p">)</span> <span class="k">for</span> <span class="n">sha</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">blob_shas</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="Commit"><a class="viewcode-back" href="../index.html#oscar.Commit">[docs]</a><span class="k">class</span> <span class="nc">Commit</span><span class="p">(</span><span class="n">GitObject</span><span class="p">):</span>
@@ -793,7 +791,8 @@
     <span class="k">def</span> <span class="nf">blob_shas</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; SHA hashes of all blobs in the commit</span>
 
-<span class="sd">        &gt;&gt;&gt; Commit(&#39;af0048f4aac8f4760bf9b816e01524d7fb20a3fc&#39;).blob_shas  # doctest: +NORMALIZE_WHITESPACE</span>
+<span class="sd">        &gt;&gt;&gt; Commit(&#39;af0048f4aac8f4760bf9b816e01524d7fb20a3fc&#39;).blob_shas</span>
+<span class="sd">        ...        # doctest: +NORMALIZE_WHITESPACE</span>
 <span class="sd">        (&#39;b2f49ffef1c8d7ce83a004b34035f917713e2766&#39;,</span>
 <span class="sd">         &#39;c92011c5ccc32a9248bd929a6e56f846ac5b8072&#39;,</span>
 <span class="sd">         &#39;bf3c2d2df2ef710f995b590ac3e2c851b592c871&#39;)</span>
@@ -820,7 +819,8 @@
     <span class="k">def</span> <span class="nf">blobs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; A generator of `Blob` objects included in this commit</span>
 
-<span class="sd">        &gt;&gt;&gt; tuple(Commit(&#39;af0048f4aac8f4760bf9b816e01524d7fb20a3fc&#39;).blobs)  # doctest: +NORMALIZE_WHITESPACE</span>
+<span class="sd">        &gt;&gt;&gt; tuple(Commit(&#39;af0048f4aac8f4760bf9b816e01524d7fb20a3fc&#39;).blobs)</span>
+<span class="sd">        ...              # doctest: +NORMALIZE_WHITESPACE</span>
 <span class="sd">        (&lt;Blob: b2f49ffef1c8d7ce83a004b34035f917713e2766&gt;,</span>
 <span class="sd">         &lt;Blob: c92011c5ccc32a9248bd929a6e56f846ac5b8072&gt;,</span>
 <span class="sd">         &lt;Blob: bf3c2d2df2ef710f995b590ac3e2c851b592c871&gt;)</span>
@@ -874,8 +874,8 @@
 <span class="sd">        True</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">sha</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">commit_shas</span><span class="p">:</span>
-            <span class="n">c</span> <span class="o">=</span> <span class="n">Commit</span><span class="p">(</span><span class="n">sha</span><span class="p">)</span>
             <span class="k">try</span><span class="p">:</span>
+                <span class="n">c</span> <span class="o">=</span> <span class="n">Commit</span><span class="p">(</span><span class="n">sha</span><span class="p">)</span>
                 <span class="n">author</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">author</span>
             <span class="k">except</span> <span class="n">ObjectNotFound</span><span class="p">:</span>
                 <span class="k">continue</span>
@@ -914,7 +914,8 @@
     <span class="k">def</span> <span class="nf">commit_shas</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; SHA1 of all commits in the project</span>
 
-<span class="sd">        &gt;&gt;&gt; Project(&#39;user2589_django-currencies&#39;).commit_shas # doctest: +NORMALIZE_WHITESPACE</span>
+<span class="sd">        &gt;&gt;&gt; Project(&#39;user2589_django-currencies&#39;).commit_shas</span>
+<span class="sd">        ...         # doctest: +NORMALIZE_WHITESPACE</span>
 <span class="sd">        (&#39;2dbcd43f077f2b5511cc107d63a0b9539a6aa2a7&#39;,</span>
 <span class="sd">         &#39;7572fc070c44f85e2a540f9a5a05a95d1dd2662d&#39;)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -927,7 +928,8 @@
 <span class="sd">        It has the same effect as iterating a `Project` instance itself,</span>
 <span class="sd">        with some additional validation of commit dates.</span>
 
-<span class="sd">        &gt;&gt;&gt; tuple(Project(&#39;user2589_django-currencies&#39;).commits) # doctest: +NORMALIZE_WHITESPACE</span>
+<span class="sd">        &gt;&gt;&gt; tuple(Project(&#39;user2589_django-currencies&#39;).commits)</span>
+<span class="sd">        ...       # doctest: +NORMALIZE_WHITESPACE</span>
 <span class="sd">        (&lt;Commit: 2dbcd43f077f2b5511cc107d63a0b9539a6aa2a7&gt;,</span>
 <span class="sd">         &lt;Commit: 7572fc070c44f85e2a540f9a5a05a95d1dd2662d&gt;)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1009,19 +1011,22 @@
         <span class="c1">#   simplified version (argmax): ~153 seconds</span>
         <span class="c1">#   self.head(): ~190 seconds</span>
 
-        <span class="c1"># Sometimes (very rarely) commit dates are wrong, so the latest commit</span>
-        <span class="c1"># is not actually the head. The magic below is to account for this</span>
+        <span class="c1"># at this point we know all commits are in the dataset</span>
+        <span class="c1"># (validated in __iter___)</span>
         <span class="n">commits</span> <span class="o">=</span> <span class="p">{</span><span class="n">c</span><span class="o">.</span><span class="n">sha</span><span class="p">:</span> <span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">commits</span><span class="p">}</span>
         <span class="n">commit</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">commits</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">c</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">authored_at</span> <span class="ow">or</span> <span class="n">DAY_Z</span><span class="p">)</span>
         <span class="k">while</span> <span class="n">commit</span><span class="p">:</span>
-            <span class="k">yield</span> <span class="n">commit</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">commit</span><span class="o">.</span><span class="n">parent_shas</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>  <span class="c1"># here there is no guarantee commit is in the dataset</span>
+                <span class="n">first_parent</span> <span class="o">=</span> <span class="n">commit</span><span class="o">.</span><span class="n">parent_shas</span> <span class="ow">and</span> <span class="n">commit</span><span class="o">.</span><span class="n">parent_shas</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">except</span> <span class="n">ObjectNotFound</span><span class="p">:</span>
                 <span class="k">break</span>
-            <span class="k">if</span> <span class="n">commit</span><span class="o">.</span><span class="n">parent_shas</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="n">commits</span><span class="p">:</span>
-                <span class="c1"># save a bit of time on instantiation</span>
-                <span class="n">commit</span> <span class="o">=</span> <span class="n">commits</span><span class="p">[</span><span class="n">commit</span><span class="o">.</span><span class="n">parent_shas</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">commit</span> <span class="o">=</span> <span class="n">Commit</span><span class="p">(</span><span class="n">commit</span><span class="o">.</span><span class="n">parent_shas</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span></div>
+
+            <span class="k">yield</span> <span class="n">commit</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">first_parent</span><span class="p">:</span>
+                <span class="k">break</span>
+
+            <span class="n">commit</span> <span class="o">=</span> <span class="n">commits</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">first_parent</span><span class="p">,</span> <span class="n">Commit</span><span class="p">(</span><span class="n">first_parent</span><span class="p">))</span></div>
 
 
 <div class="viewcode-block" id="File"><a class="viewcode-back" href="../index.html#oscar.File">[docs]</a><span class="k">class</span> <span class="nc">File</span><span class="p">(</span><span class="n">_Base</span><span class="p">):</span>
@@ -1181,7 +1186,19 @@
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper"><div class="relations">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">oscar</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
 <h3>Related Topics</h3>
 <ul>
   <li><a href="../index.html">Documentation overview</a><ul>
@@ -1210,7 +1227,7 @@
       &copy;2018, Marat (@cmu.edu).
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.5</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
       
     </div>
