@@ -4,30 +4,40 @@ from tokyocabinet import hash as tch
 
 from datetime import datetime, timedelta, tzinfo
 from functools import wraps
+import time
 import warnings
 
-__version__ = "0.1.2"
+__version__ = "1.0.1"
 __author__ = "Marat (@cmu.edu)"
 
 PATHS = {
     # not critical - almost never used
     'all_sequential': '/data/All.blobs/{type}_{key}',  # cmt, tree
-    'index_line': '/fast{blob}/All.sha1/sha1.{type}_{key}.tch',
+    'blob_index_line': '/fast1/All.sha1/sha1.{type}_{key}.tch',
+    'tree_index_line': '/fast1/All.sha1/sha1.{type}_{key}.tch',
+    'commit_index_line': '/fast/All.sha1/sha1.{type}_{key}.tch',
+    'tag_index_line': '/fast/All.sha1/sha1.{type}_{key}.tch',
     # critical - contain actual objects
     'all_random': '/fast1/All.sha1c/{type}_{key}.tch',  # cmt, tree
-    'blob_offset': '/data/All.sha1o/sha1.blob_{key}.tch',
+    'blob_offset': '/fast1/All.sha1o/sha1.blob_{key}.tch',
     'blob_data': '/data/All.blobs/{type}_{key}.bin',
     # relations - good to have but not critical
-    'blob_commits': '/data/basemaps/b2cFullF.{key}.tch',
+    'blob_commits': '/data/basemaps/b2cFullH.{key}.tch',
     'tree_parents': '/data/basemaps/t2pt0-127.{key}.tch',
     'commit_projects': '/data/basemaps/Cmt2PrjH.{key}.tch',
-    'commit_children': '/data/basemaps/Cmt2Chld.tch',
-    'commit_blobs': '/data/basemaps/c2bFullF.{key}.tch',
+    'commit_children': '/data/basemaps/Cmt2ChldH.{key}.tch',
+    'commit_blobs': '/data/basemaps/c2bFullH.{key}.tch',
     'project_commits': '/data/basemaps/Prj2CmtH.{key}.tch',
+
+    # TODO: replace with H when it's ready
     'file_commits': '/data/basemaps/f2cFullF.{key}.tch',
     'author_commits': '/data/basemaps/Auth2CmtH.tch',
-    'author_files': '/data/basemaps/Auth2File.tch',
+    'author_files': '/data/basemaps/Auth2FileH.tch',
 }
+
+
+class ObjectNotFound(KeyError):
+    pass
 
 
 def unber(s):
@@ -170,6 +180,9 @@ class CommitTimezone(tzinfo):
         return "<Timezone: %02d:%02d>" % (h, m)
 
 
+DAY_Z = datetime.fromtimestamp(0, CommitTimezone(0, 0))
+
+
 def parse_commit_date(timestamp):
     """ Parse date string of authored_at/commited_at
 
@@ -183,17 +196,28 @@ def parse_commit_date(timestamp):
         e.g. '1337145807 +1100'
     :type timestamp: str
     :return: UTC datetime
-    :rtype: datetime.datetime
+    :rtype: datetime.datetime or None
 
     >>> parse_commit_date('1337145807 +1100')
     datetime.datetime(2012, 5, 16, 16, 23, 27, tzinfo=<Timezone: 11:00>)
+    >>> parse_commit_date('3337145807 +1100') is None
+    True
     """
     ts, tz = timestamp.split()
     sign = -1 if tz.startswith('-') else 1
-    hours, minutes = sign*int(tz[-4:-2]), sign*int(tz[-2])
-    # comparison doesn't work correctly for timezone aware dates
-    # so, resorting to naive UTC implementation below
-    return datetime.fromtimestamp(int(ts), CommitTimezone(hours, minutes))
+    try:
+        ts = int(ts)
+        hours, minutes = sign * int(tz[-4:-2]), sign * int(tz[-2])
+        dt = datetime.fromtimestamp(ts, CommitTimezone(hours, minutes))
+    except ValueError:
+        # i.e. if timestamp or timezone is invalid
+        return None
+
+    # timestamp is in the future
+    if ts > time.time():
+        return None
+
+    return dt
 
 
 # Pool of open TokyoCabinet databases to save few milliseconds on opening
@@ -210,7 +234,7 @@ def _get_tch(path):
     return _TCH_POOL[path]
 
 
-def read_tch(path, key):
+def read_tch(path, key, silent=False):
     """ Read a value from a Tokyo Cabinet file by the specified key
     Main purpose of this method is to cached open .tch handlers
     in _TCH_POOL to speedup reads
@@ -221,7 +245,9 @@ def read_tch(path, key):
     except tch.error:
         raise IOError("Tokyocabinet file " + path + " not found")
     except KeyError:
-        return ''
+        if silent:
+            return ''
+        raise ObjectNotFound(path + " " + key)
 
 
 def tch_keys(path, key_prefix=''):
@@ -320,30 +346,27 @@ class GitObject(_Base):
         'test'
         >>> go.resolve_path("test_{key}", 7)
         'test_5'
-        >>> go.resolve_path("/fast{blob}/All.sha1/{type}_{key}", 8)
+        >>> go.resolve_path("/fast/All.sha1/{type}_{key}", 8)
         '/fast/All.sha1/None_133'
-        >>> go.type = 'blob'
-        >>> go.resolve_path("/fast{blob}/All.sha1/{type}_{key}", 8)
-        '/fast1/All.sha1/blob_133'
         """
         return path.format(
-            blob=1 if self.type == 'blob' else '',
             type=self.type, key=prefix(self.bin_sha, key_length))
 
-    def read(self, path, key_length=7):
+    def read(self, path, key_length=7, silent=True):
         """ Resolve the path and read .tch"""
-        return read_tch(self.resolve_path(path, key_length), self.bin_sha)
+        return read_tch(
+            self.resolve_path(path, key_length), self.bin_sha, silent)
 
     def index_line(self):
         # get a line number in the index file
-        return self.read(PATHS['index_line'])
+        return self.read(PATHS[self.type + '_index_line'])
 
     @cached_property
     def data(self):
         if self.type not in ('commit', 'tree'):
             raise NotImplementedError
         # default implementation will only work for commits and trees
-        return decomp(self.read(PATHS['all_random']))
+        return decomp(self.read(PATHS['all_random'], silent=False))
 
     def __str__(self):
         """
@@ -372,7 +395,7 @@ class Blob(GitObject):
             offset, length = unber(
                 self.read(PATHS['blob_offset']))
         except ValueError:  # empty read -> value not found
-            raise KeyError('Blob data not found (bad sha?)')
+            raise ObjectNotFound('Blob data not found (bad sha?)')
         # no caching here to stay thread-safe
         fh = open(self.resolve_path(PATHS['blob_data']), 'rb')
         fh.seek(offset)
@@ -449,6 +472,7 @@ class Tree(GitObject):
         True
         """
         data = self.data
+
         i = 0
         while i < len(data):
             # mode
@@ -566,7 +590,7 @@ class Tree(GitObject):
         (<Blob: 2bdf5d686c6cd488b706be5c99c3bb1e166cf2f6>, ...,
          <Blob: c006bef767d08b41633b380058a171b7786b71ab>)
         """
-        return (Blob(sha) for sha in self.files.values())
+        return (Blob(sha) for sha in self.blob_shas)
 
 
 class Commit(GitObject):
@@ -596,14 +620,15 @@ class Commit(GitObject):
             message:        str, first line of the commit message
             full_message:   str, full commit message
             author:         str, Name <email>
-            authored_at:    str, unix_epoch timezone
+            authored_at:    timezone-aware datetime or None (if invalid)
             committer:      str, Name <email>
-            committed_at:   str, unix_epoch timezone
+            committed_at:   timezone-aware datetime or None (if invalid)
+            signature:      str or None, PGP signature
         >>> c = Commit('e38126dbca6572912013621d2aa9e6f7c50f36bc')
         >>> c.author.startswith('Marat')
         True
         >>> c.authored_at
-        '1337350448 +1100'
+        datetime.datetime(2012, 5, 19, 1, 14, 8, tzinfo=<Timezone: 11:00>)
         >>> c.tree.sha
         '6845f55f47ddfdbe4628a83fdaba35fa4ae3c894'
         >>> len(c.parent_shas)
@@ -611,29 +636,62 @@ class Commit(GitObject):
         >>> c.parent_shas[0]
         'ab124ab4baa42cd9f554b7bb038e19d4e3647957'
         >>> c.committed_at
-        '1337350448 +1100'
+        datetime.datetime(2012, 5, 19, 1, 14, 8, tzinfo=<Timezone: 11:00>)
         """
-        if attr not in ('tree', 'parent_shas', 'message', 'full_message',
-                        'author', 'committer', 'authored_at', 'committed_at'):
+        attrs = ('tree', 'parent_shas', 'message', 'full_message', 'author',
+                 'committer', 'authored_at', 'committed_at', 'signature')
+        if attr not in attrs:
             raise AttributeError
+
+        for a in attrs:
+            setattr(self, a, None)
 
         self.header, self.full_message = self.data.split("\n\n", 1)
         self.message = self.full_message.split("\n", 1)[0]
         parent_shas = []
+        signature = None
+        reading_signature = False
         for line in self.header.split("\n"):
-            key, value = line.strip().split(" ", 1)
+            if reading_signature:
+                # examples:
+                #   1cc6f4418dcc09f64dcbb0410fec76ceaa5034ab
+                #   cbbc685c45bdff4da5ea0984f1dd3a73486b4556
+                signature += line
+                if line.strip() == "-----END PGP SIGNATURE-----":
+                    self.signature = signature
+                    reading_signature = False
+                continue
+
+            if line.startswith(" "):  # mergetag object, not supported (yet?)
+                # example: c1313c68c7f784efaf700fbfb771065840fc260a
+                continue
+
+            line = line.strip()
+            if not line:  # sometimes there is an empty line after gpgsig
+                continue
+            try:
+                key, value = line.split(" ", 1)
+            except ValueError:
+                raise ValueError("Unexpected header in commit " + self.sha)
+
             if key == "tree":
                 self.tree = Tree(value)
             elif key == "parent":  # multiple parents possible
                 parent_shas.append(value)
             elif key == "author":
+                # author name can have arbitrary number of spaces while
+                # timestamp is guaranteed to have one, so rsplit
                 chunks = value.rsplit(" ", 2)
                 self.author = chunks[0]
-                self.authored_at = " ".join(chunks[1:])
+                self.authored_at = parse_commit_date(" ".join(chunks[1:]))
             elif key == "committer":
+                # same logic as author
                 chunks = value.rsplit(" ", 2)
                 self.committer = chunks[0]
-                self.committed_at = " ".join(chunks[1:])
+                self.committed_at = parse_commit_date(" ".join(chunks[1:]))
+            elif key == 'gpgsig':
+                signature = value
+                reading_signature = True
         self.parent_shas = tuple(parent_shas)
 
         return getattr(self, attr)
@@ -666,7 +724,9 @@ class Commit(GitObject):
         True
         """
         data = decomp(self.read(PATHS['commit_projects'], 3))
-        return tuple((data and data.split(";")) or [])
+        return tuple(project_name
+                     for project_name in (data and data.split(";")) or []
+                     if project_name and project_name != 'EMPTY')
 
     @property
     def projects(self):
@@ -682,8 +742,7 @@ class Commit(GitObject):
         >>> Commit('1e971a073f40d74a1e72e07c682e1cba0bae159b').child_shas
         ('9bd02434b834979bb69d0b752a403228f2e385e8',)
         """
-        # key_length will be ignored if =1
-        return slice20(self.read(PATHS['commit_children'], 1))
+        return slice20(self.read(PATHS['commit_children'], 3))
 
     @property
     def children(self):
@@ -698,7 +757,8 @@ class Commit(GitObject):
     def blob_shas(self):
         """ SHA hashes of all blobs in the commit
 
-        >>> Commit('af0048f4aac8f4760bf9b816e01524d7fb20a3fc').blob_shas  # doctest: +NORMALIZE_WHITESPACE
+        >>> Commit('af0048f4aac8f4760bf9b816e01524d7fb20a3fc').blob_shas
+        ...        # doctest: +NORMALIZE_WHITESPACE
         ('b2f49ffef1c8d7ce83a004b34035f917713e2766',
          'c92011c5ccc32a9248bd929a6e56f846ac5b8072',
          'bf3c2d2df2ef710f995b590ac3e2c851b592c871')
@@ -725,7 +785,8 @@ class Commit(GitObject):
     def blobs(self):
         """ A generator of `Blob` objects included in this commit
 
-        >>> tuple(Commit('af0048f4aac8f4760bf9b816e01524d7fb20a3fc').blobs)  # doctest: +NORMALIZE_WHITESPACE
+        >>> tuple(Commit('af0048f4aac8f4760bf9b816e01524d7fb20a3fc').blobs)
+        ...              # doctest: +NORMALIZE_WHITESPACE
         (<Blob: b2f49ffef1c8d7ce83a004b34035f917713e2766>,
          <Blob: c92011c5ccc32a9248bd929a6e56f846ac5b8072>,
          <Blob: bf3c2d2df2ef710f995b590ac3e2c851b592c871>)
@@ -779,8 +840,12 @@ class Project(_Base):
         True
         """
         for sha in self.commit_shas:
-            c = Commit(sha)
-            if c.author != 'GitHub Merge Button <merge-button@github.com>':
+            try:
+                c = Commit(sha)
+                author = c.author
+            except ObjectNotFound:
+                continue
+            if author != 'GitHub Merge Button <merge-button@github.com>':
                 yield c
 
     def __contains__(self, item):
@@ -815,36 +880,60 @@ class Project(_Base):
     def commit_shas(self):
         """ SHA1 of all commits in the project
 
-        >>> Project('user2589_django-currencies').commit_shas # doctest: +NORMALIZE_WHITESPACE
+        >>> Project('user2589_django-currencies').commit_shas
+        ...         # doctest: +NORMALIZE_WHITESPACE
         ('2dbcd43f077f2b5511cc107d63a0b9539a6aa2a7',
          '7572fc070c44f85e2a540f9a5a05a95d1dd2662d')
         """
         tch_path = PATHS['project_commits'].format(key=prefix(self.key, 3))
-        return slice20(read_tch(tch_path, self.key))
+        return slice20(read_tch(tch_path, self.key, silent=True))
 
     @property
     def commits(self):
         """ A generator of all Commit objects in the project.
-        It has the same effect as iterating a `Project` instance itself.
+        It has the same effect as iterating a `Project` instance itself,
+        with some additional validation of commit dates.
 
-        >>> tuple(Project('user2589_django-currencies').commits) # doctest: +NORMALIZE_WHITESPACE
+        >>> tuple(Project('user2589_django-currencies').commits)
+        ...       # doctest: +NORMALIZE_WHITESPACE
         (<Commit: 2dbcd43f077f2b5511cc107d63a0b9539a6aa2a7>,
          <Commit: 7572fc070c44f85e2a540f9a5a05a95d1dd2662d>)
         """
-        return (c for c in self)
+        commits = tuple(c for c in self)
+        tails = tuple(c for c in commits
+                      if not c.parent_shas and c.authored_at is not None)
+        if tails:
+            min_date = min(c.authored_at for c in tails)
+        else:  # i.e. if all tails have invalid date
+            min_date = DAY_Z
+
+        for c in commits:
+            if c.authored_at and c.authored_at < min_date:
+                c.authored_at = None
+            yield c
 
     @cached_property
     def head(self):
-        """ Get the last commit SHA, i.e. the repository HEAD
+        """ Get the HEAD commit of the repository
 
         >>> Project('user2589_minicms').head
-        'f2a7fcdc51450ab03cb364415f14e634fa69b62c'
+        <Commit: f2a7fcdc51450ab03cb364415f14e634fa69b62c>
+        >>> Project('RoseTHERESA_SimpleCMS').head
+        <Commit: a47afa002ccfd3e23920f323b172f78c5c970250>
         """
+        # Sometimes (very rarely) commit dates are wrong, so the latest commit
+        # is not actually the head. The magic below is to account for this
         commits = {c.sha: c for c in self.commits}
         parents = set().union(*(c.parent_shas for c in commits.values()))
         heads = set(commits.keys()) - parents
-        assert len(heads) == 1, "Unexpected number of heads (" + len(heads) + " instead of 1)"
-        return tuple(heads)[0]
+
+        # it is possible that there is more than one head.
+        # E.g. it happens when HEAD is moved manually (git reset)
+        # and continued with a separate chain of commits.
+        # in this case, let's just use the latest one
+        # actually, storing refs would make it much simpler
+        return sorted((commits[sha] for sha in heads),
+                      key=lambda c: c.authored_at or DAY_Z)[-1]
 
     @cached_property
     def tail(self):
@@ -871,11 +960,39 @@ class Project(_Base):
 
         In scenarios where branches are not important, it can save a lot
         of computing.
+
+        Note: commits will come in order from the latest to the earliest.
         """
-        commit = Commit(self.head)
+        # Simplified version of self.head():
+        #   - slightly less precise,
+        #   - 20% faster
+        #
+        # out of 500 randomly sampled projects, 493 had the same head.
+        # In the remaining 7:
+        #     2 had the same commit chain length,
+        #     3 had one more commit
+        #     1 had two more commits
+        #     1 had three more commits
+        # Execution time:
+        #   simplified version (argmax): ~153 seconds
+        #   self.head(): ~190 seconds
+
+        # at this point we know all commits are in the dataset
+        # (validated in __iter___)
+        commits = {c.sha: c for c in self.commits}
+        commit = max(commits.values(), key=lambda c: c.authored_at or DAY_Z)
         while commit:
+            try:  # here there is no guarantee commit is in the dataset
+                first_parent = commit.parent_shas and commit.parent_shas[0]
+            except ObjectNotFound:
+                break
+
             yield commit
-            commit = commit.parent_shas and commit.parents.next()
+
+            if not first_parent:
+                break
+
+            commit = commits.get(first_parent, Commit(first_parent))
 
 
 class File(_Base):
@@ -922,7 +1039,7 @@ class File(_Base):
         if not file_path.endswith("\n"):
             file_path += "\n"
         tch_path = PATHS['file_commits'].format(key=prefix(file_path, 3))
-        return slice20(read_tch(tch_path, file_path))
+        return slice20(read_tch(tch_path, file_path, silent=True))
 
     @property
     def commits(self):
@@ -937,7 +1054,17 @@ class File(_Base):
         >>> isinstance(cs[0], Commit)
         True
         """
-        return (Commit(sha) for sha in self.commit_shas)
+        for sha in self.commit_shas:
+            c = Commit(sha)
+            try:
+                author = c.author
+            except ObjectNotFound:
+                continue
+            if author != 'GitHub Merge Button <merge-button@github.com>':
+                yield c
+
+    def __str__(self):
+        return super(File, self).__str__().rstrip("\n\r")
 
 
 class Author(_Base):
@@ -978,7 +1105,7 @@ class Author(_Base):
         >>> len(commits[0]) == 40
         True
         """
-        return slice20(read_tch(PATHS['author_commits'], self.key))
+        return slice20(read_tch(PATHS['author_commits'], self.key, silent=True))
 
     @property
     def commits(self):
