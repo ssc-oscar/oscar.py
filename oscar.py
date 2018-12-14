@@ -886,7 +886,7 @@ class Project(_Base):
         ('2dbcd43f077f2b5511cc107d63a0b9539a6aa2a7',
          '7572fc070c44f85e2a540f9a5a05a95d1dd2662d')
         """
-        tch_path = PATHS['project_commits'].format(key=fnv1a_32(self.key)%32)
+        tch_path = PATHS['project_commits'].format(key=fnvhash.fnv1a_32(self.key)%32)
         return slice20(read_tch(tch_path, self.key, silent=True))
 
     @property
