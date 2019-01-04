@@ -1,9 +1,13 @@
 
 import lzf
+# da4 doesn't have libgit2-dev to install pygit2 yet
+# import pygit2
 from tokyocabinet import hash as tch
 
 from datetime import datetime, timedelta, tzinfo
 from functools import wraps
+import hashlib
+import os
 import time
 import warnings
 
@@ -368,6 +372,45 @@ class GitObject(_Base):
         # default implementation will only work for commits and trees
         return decomp(self.read(PATHS['all_random'], silent=False))
 
+    @classmethod
+    def string_sha(cls, data):
+        """Manually compute blob sha from its content passed as `data`.
+
+        The main use case for this method is to identify source of a file.
+
+        Blob SHA is computed from a string:
+        "blob <file content length as str><null byte><file content>"
+
+        # https://gist.github.com/masak/2415865
+        Commit SHAs are computed in a similar way
+        "commit <commit length as str><null byte><commit content>"
+
+        note that commit content includes committed/authored date
+
+        Args:
+            data (str): content of the GitObject to get hash for
+
+        Returns:
+            str: 40-byte hex SHA1 hash
+        """
+        sha1 = hashlib.sha1()
+        sha1.update("%s %d\x00" % (cls.type, len(data)))
+        sha1.update(data)
+        return sha1.hexdigest()
+
+    @classmethod
+    def file_sha(cls, path):
+        buffsize = 1024 ** 2
+        size = os.stat(path).st_size
+        fh = open(path, 'rb')
+        sha1 = hashlib.sha1()
+        sha1.update("%s %d\x00" % (cls.type, size))
+        while size > 0:
+            data = fh.read(min(size, buffsize))
+            if not data:
+                return sha1.hexdigest()
+            sha1.update(data)
+
     def __str__(self):
         """
         >>> print(Commit('f2a7fcdc51450ab03cb364415f14e634fa69b62c'))
@@ -386,7 +429,28 @@ class Blob(GitObject):
     type = 'blob'
 
     def __len__(self):
-        return len(self.data)
+        _, length = self.position
+        return length
+
+    @classmethod
+    def string_sha(cls, data):
+        """
+        >>> Blob.string_sha('Hello world!')
+        '6769dd60bdf536a83c9353272157893043e9f7d0'
+        """
+        # return pygit2.hash(data)
+        return super(Blob, cls).string_sha(data)
+
+    @classmethod
+    def file_sha(cls, path):
+        """Manually compute blob sha from a file content.
+
+        Similar to string_sha
+        >>> Blob.file_sha('LICENSE')
+        '94a9ed024d3859793618152ea559a168bbcbb5e2'
+        """
+        # return pygit2.hashfile(path)
+        return super(Blob, cls).file_sha(path)
 
     @cached_property
     def data(self):
