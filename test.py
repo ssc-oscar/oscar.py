@@ -259,6 +259,14 @@ class TestRelations(unittest.TestCase):
             diff, "File2Cmt indicates file %s was NOT changed in "
                   "commits %s, but it was" % (fname, ",".join(diff)))
 
+    def test_file_commits_delete(self):
+        fname = "minicms/static/minicms/markdown.css"
+        # deleted by this commit
+        sha = '1837bfa6553a9f272c5dcc1f6259ba17357cf8ed'
+        self.assertIn(sha, File(fname).commit_shas,
+                      "File %s was deleted by commit %s but was not listed "
+                      "as changing it." % (fname, sha))
+
     def test_project_commits(self):
         """ Test if all commits in a project are listed in Prj2Cmt """
         # select something long abandoned and with <100 commits

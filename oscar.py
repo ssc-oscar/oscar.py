@@ -624,7 +624,7 @@ class Tree(GitObject):
         40000 templates 7ff5e4c9bd3ce6ab500b754831d231022b58f689
         40000 templatetags e5e994b0be2c9ce6af6f753275e7d8c29ccf75ce
         100644 urls.py e9cb0c23a7f6683911305efff91dcabadb938794
-        100644 utils.py 2cfbd298f18a75d1f0f51c2f6a1f2fcdf41a9559
+        100644 scraper.py 2cfbd298f18a75d1f0f51c2f6a1f2fcdf41a9559
         100644 views.py 973a78a1fe9e69d4d3b25c92b3889f7e91142439
         """
         return "\n".join(" ".join(line) for line in self)
@@ -633,7 +633,7 @@ class Tree(GitObject):
     def files(self):
         """ A dict of all files and their content/blob sha under this tree.
         It includes recursive files (i.e. files in subdirectories).
-        It does not include subdirectories themselves.
+        It does NOT include subdirectories themselves.
         """
         return {fname: sha
                 for mode, fname, sha in self.traverse() if mode != "40000"}
