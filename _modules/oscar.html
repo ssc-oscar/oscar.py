@@ -13,6 +13,7 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
    
@@ -40,6 +41,7 @@
 <span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">wraps</span>
 <span class="kn">import</span> <span class="nn">time</span>
 <span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">fnvhash</span>
 
 <span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;1.0.1&quot;</span>
 <span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Marat (@cmu.edu)&quot;</span>
@@ -61,7 +63,7 @@
     <span class="s1">&#39;commit_projects&#39;</span><span class="p">:</span> <span class="s1">&#39;/data/basemaps/Cmt2PrjH.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span>
     <span class="s1">&#39;commit_children&#39;</span><span class="p">:</span> <span class="s1">&#39;/data/basemaps/Cmt2ChldH.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span>
     <span class="s1">&#39;commit_blobs&#39;</span><span class="p">:</span> <span class="s1">&#39;/data/basemaps/c2bFullH.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;project_commits&#39;</span><span class="p">:</span> <span class="s1">&#39;/data/basemaps/Prj2CmtH.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;project_commits&#39;</span><span class="p">:</span> <span class="s1">&#39;/da0_data/basemaps/p2cFullK.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span>
 
     <span class="c1"># TODO: replace with H when it&#39;s ready</span>
     <span class="s1">&#39;file_commits&#39;</span><span class="p">:</span> <span class="s1">&#39;/data/basemaps/f2cFullF.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span>
@@ -919,7 +921,7 @@
 <span class="sd">        (&#39;2dbcd43f077f2b5511cc107d63a0b9539a6aa2a7&#39;,</span>
 <span class="sd">         &#39;7572fc070c44f85e2a540f9a5a05a95d1dd2662d&#39;)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">tch_path</span> <span class="o">=</span> <span class="n">PATHS</span><span class="p">[</span><span class="s1">&#39;project_commits&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">prefix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+        <span class="n">tch_path</span> <span class="o">=</span> <span class="n">PATHS</span><span class="p">[</span><span class="s1">&#39;project_commits&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">fnvhash</span><span class="o">.</span><span class="n">fnv1a_32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">)</span><span class="o">%</span><span class="mi">32</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">slice20</span><span class="p">(</span><span class="n">read_tch</span><span class="p">(</span><span class="n">tch_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">silent</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
 
     <span class="nd">@property</span>
@@ -1219,6 +1221,14 @@
     </div>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
         </div>
       </div>
       <div class="clearer"></div>
@@ -1227,8 +1237,8 @@
       &copy;2018, Marat (@cmu.edu).
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
     </div>
 

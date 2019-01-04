@@ -13,6 +13,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
    
@@ -112,7 +113,7 @@ It is mostly important for <cite>Blob</cite> to access the file content.</p>
 </dd>
 </dl>
 <p>Projects are iterable:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">commit</span> <span class="ow">in</span> <span class="n">Project</span><span class="p">(</span><span class="s1">&#39;user2589_minicms&#39;</span><span class="p">):</span>  
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">commit</span> <span class="ow">in</span> <span class="n">Project</span><span class="p">(</span><span class="s1">&#39;user2589_minicms&#39;</span><span class="p">):</span>  <span class="c1"># doctest: +SKIP</span>
 <span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="n">commit</span><span class="o">.</span><span class="n">sha</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -130,7 +131,7 @@ hash or by a Commit object itself:</p>
 <code class="descname">commit_shas</code><a class="headerlink" href="#oscar.Project.commit_shas" title="Permalink to this definition">¶</a></dt>
 <dd><p>SHA1 of all commits in the project</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Project</span><span class="p">(</span><span class="s1">&#39;user2589_django-currencies&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">commit_shas</span>
-<span class="gp">... </span>        
+<span class="gp">... </span>        <span class="c1"># doctest: +NORMALIZE_WHITESPACE</span>
 <span class="go">(&#39;2dbcd43f077f2b5511cc107d63a0b9539a6aa2a7&#39;,</span>
 <span class="go"> &#39;7572fc070c44f85e2a540f9a5a05a95d1dd2662d&#39;)</span>
 </pre></div>
@@ -144,7 +145,7 @@ hash or by a Commit object itself:</p>
 It has the same effect as iterating a <cite>Project</cite> instance itself,
 with some additional validation of commit dates.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">tuple</span><span class="p">(</span><span class="n">Project</span><span class="p">(</span><span class="s1">&#39;user2589_django-currencies&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">commits</span><span class="p">)</span>
-<span class="gp">... </span>      
+<span class="gp">... </span>      <span class="c1"># doctest: +NORMALIZE_WHITESPACE</span>
 <span class="go">(&lt;Commit: 2dbcd43f077f2b5511cc107d63a0b9539a6aa2a7&gt;,</span>
 <span class="go"> &lt;Commit: 7572fc070c44f85e2a540f9a5a05a95d1dd2662d&gt;)</span>
 </pre></div>
@@ -215,7 +216,7 @@ first access to <em>any</em> of them.</p>
 <code class="descname">blob_shas</code><a class="headerlink" href="#oscar.Commit.blob_shas" title="Permalink to this definition">¶</a></dt>
 <dd><p>SHA hashes of all blobs in the commit</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Commit</span><span class="p">(</span><span class="s1">&#39;af0048f4aac8f4760bf9b816e01524d7fb20a3fc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">blob_shas</span>
-<span class="gp">... </span>       
+<span class="gp">... </span>       <span class="c1"># doctest: +NORMALIZE_WHITESPACE</span>
 <span class="go">(&#39;b2f49ffef1c8d7ce83a004b34035f917713e2766&#39;,</span>
 <span class="go"> &#39;c92011c5ccc32a9248bd929a6e56f846ac5b8072&#39;,</span>
 <span class="go"> &#39;bf3c2d2df2ef710f995b590ac3e2c851b592c871&#39;)</span>
@@ -228,7 +229,7 @@ first access to <em>any</em> of them.</p>
 <code class="descname">blobs</code><a class="headerlink" href="#oscar.Commit.blobs" title="Permalink to this definition">¶</a></dt>
 <dd><p>A generator of <cite>Blob</cite> objects included in this commit</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">tuple</span><span class="p">(</span><span class="n">Commit</span><span class="p">(</span><span class="s1">&#39;af0048f4aac8f4760bf9b816e01524d7fb20a3fc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">blobs</span><span class="p">)</span>
-<span class="gp">... </span>             
+<span class="gp">... </span>             <span class="c1"># doctest: +NORMALIZE_WHITESPACE</span>
 <span class="go">(&lt;Blob: b2f49ffef1c8d7ce83a004b34035f917713e2766&gt;,</span>
 <span class="go"> &lt;Blob: c92011c5ccc32a9248bd929a6e56f846ac5b8072&gt;,</span>
 <span class="go"> &lt;Blob: bf3c2d2df2ef710f995b590ac3e2c851b592c871&gt;)</span>
@@ -346,7 +347,7 @@ subtrees but not the subtrees themselves:</p>
 <dd><p>A generator of Blob objects with file content.
 It does include files in subdirectories.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">tuple</span><span class="p">(</span><span class="n">Tree</span><span class="p">(</span><span class="s1">&#39;d20520ef8c1537a42628b72d481b8174c0a1de84&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">blobs</span>
-<span class="gp">... </span>      <span class="p">)</span>  
+<span class="gp">... </span>      <span class="p">)</span>  <span class="c1"># doctest: +ELLIPSIS, +NORMALIZE_WHITESPACE</span>
 <span class="go">(&lt;Blob: 2bdf5d686c6cd488b706be5c99c3bb1e166cf2f6&gt;, ...,</span>
 <span class="go"> &lt;Blob: c006bef767d08b41633b380058a171b7786b71ab&gt;)</span>
 </pre></div>
@@ -405,8 +406,8 @@ iteration, but will recursively include subtrees content.</p>
 <dt id="oscar.File">
 <em class="property">class </em><code class="descclassname">oscar.</code><code class="descname">File</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oscar.html#File"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oscar.File" title="Permalink to this definition">¶</a></dt>
 <dd><p>Files are initialized with a path, starting from a commit root tree:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">File</span><span class="p">(</span><span class="s1">&#39;.gitignore&#39;</span><span class="p">)</span>  
-<span class="gp">&gt;&gt;&gt; </span><span class="n">File</span><span class="p">(</span><span class="s1">&#39;docs/Index.rst&#39;</span><span class="p">)</span>  
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">File</span><span class="p">(</span><span class="s1">&#39;.gitignore&#39;</span><span class="p">)</span>  <span class="c1"># doctest: +SKIP</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">File</span><span class="p">(</span><span class="s1">&#39;docs/Index.rst&#39;</span><span class="p">)</span>  <span class="c1"># doctest: +SKIP</span>
 </pre></div>
 </div>
 <dl class="attribute">
@@ -476,7 +477,7 @@ introduced or modified.</p>
 <em class="property">class </em><code class="descclassname">oscar.</code><code class="descname">Author</code><span class="sig-paren">(</span><em>full_email</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oscar.html#Author"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oscar.Author" title="Permalink to this definition">¶</a></dt>
 <dd><p>Authors are initialized with a combination of name and email, as they
 appear in git configuration.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Author</span><span class="p">(</span><span class="s1">&#39;John Doe &lt;john.doe@aol.com&gt;&#39;</span><span class="p">)</span>  
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Author</span><span class="p">(</span><span class="s1">&#39;John Doe &lt;john.doe@aol.com&gt;&#39;</span><span class="p">)</span>  <span class="c1"># doctest: +SKIP</span>
 </pre></div>
 </div>
 <p>At this point we don’t have a relation to map all aliases of the same
@@ -553,6 +554,14 @@ author, so keep in mind this object represents an alias, not a person.</p>
     </div>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
         </div>
       </div>
       <div class="clearer"></div>
@@ -561,8 +570,8 @@ author, so keep in mind this object represents an alias, not a person.</p>
       &copy;2018, Marat (@cmu.edu).
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
       <a href="_sources/index.rst.txt"
