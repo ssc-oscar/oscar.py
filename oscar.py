@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, tzinfo
 from functools import wraps
 import time
 import warnings
+import fnvhash
 
 __version__ = "1.0.1"
 __author__ = "Marat (@cmu.edu)"
@@ -27,7 +28,7 @@ PATHS = {
     'commit_projects': '/data/basemaps/Cmt2PrjH.{key}.tch',
     'commit_children': '/data/basemaps/Cmt2ChldH.{key}.tch',
     'commit_blobs': '/data/basemaps/c2bFullH.{key}.tch',
-    'project_commits': '/data/basemaps/Prj2CmtH.{key}.tch',
+    'project_commits': '/da0_data/basemaps/p2cFullK.{key}.tch',
 
     # TODO: replace with H when it's ready
     'file_commits': '/data/basemaps/f2cFullF.{key}.tch',
@@ -885,7 +886,7 @@ class Project(_Base):
         ('2dbcd43f077f2b5511cc107d63a0b9539a6aa2a7',
          '7572fc070c44f85e2a540f9a5a05a95d1dd2662d')
         """
-        tch_path = PATHS['project_commits'].format(key=prefix(self.key, 3))
+        tch_path = PATHS['project_commits'].format(key=fnvhash.fnv1a_32(self.key)%32)
         return slice20(read_tch(tch_path, self.key, silent=True))
 
     @property
