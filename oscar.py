@@ -5,6 +5,7 @@ import lzf
 from tokyocabinet import hash as tch
 
 from datetime import datetime, timedelta, tzinfo
+import difflib
 from functools import wraps
 import hashlib
 import os
@@ -453,13 +454,18 @@ class Blob(GitObject):
         return super(Blob, cls).file_sha(path)
 
     @cached_property
-    def data(self):
-        """ Content of the blob """
+    def position(self):
+        """ Get offset and length of the blob data in the storage """
         try:
-            offset, length = unber(
-                self.read(PATHS['blob_offset']))
+            offset, length = unber(self.read(PATHS['blob_offset']))
         except ValueError:  # empty read -> value not found
             raise ObjectNotFound('Blob data not found (bad sha?)')
+        return offset, length
+
+    @cached_property
+    def data(self):
+        """ Content of the blob """
+        offset, length = self.position
         # no caching here to stay thread-safe
         fh = open(self.resolve_path(PATHS['blob_data']), 'rb')
         fh.seek(offset)
@@ -688,6 +694,8 @@ class Commit(GitObject):
             committer:      str, Name <email>
             committed_at:   timezone-aware datetime or None (if invalid)
             signature:      str or None, PGP signature
+
+        Commit: https://github.com/user2589/minicms/commit/e38126db
         >>> c = Commit('e38126dbca6572912013621d2aa9e6f7c50f36bc')
         >>> c.author.startswith('Marat')
         True
@@ -760,12 +768,98 @@ class Commit(GitObject):
 
         return getattr(self, attr)
 
+    def __sub__(self, parent, threshold=0.5):
+        """ Compare two Commits.
+
+        Args:
+            parent (Commit): another commit to compare to.
+                Expected order is `diff = child_commit - parent_commit`
+
+        Returns:
+            Generator[Tuple[Optional[str], Optional[str], Optional[str], Optional[str]]]:
+                4-tuples: `(old_path, new_path, old_sha, new_sha)`
+
+            Examples:
+            - a new file 'setup.py' was created:
+                `(None, 'setup.py', None, 'file_sha')`
+            - an existing 'setup.py' was deleted:
+                `('setup.py', None, 'old_file_sha', None)`
+            - setup.py.old was renamed to setup.py, content unchanged:
+                `('setup.py.old', 'setup.py', 'file_sha', 'file_sha')`
+            - setup.py was edited:
+                `('setup.py', 'setup.py', 'old_file_sha', 'new_file_sha')`
+            - setup.py.old was edited and renamed to setup.py:
+                `('setup.py.old', 'setup.py', 'old_file_sha', 'new_file_sha')`
+
+        Detecting the last one is computationally expensive. You can adjust this
+        behaviour by passing the `threshold` parameter, which is 0.5 by default.
+        It means that if roughly 50% of the file content is the same,
+        it is considered a match. `threshold=1` means that only exact
+        matches are considered, effectively disabling this comparison.
+        If threshold is set to 0, any pair of deleted and added file will be
+        considered renamed and edited; this last case doesn't make much sense so
+        don't set it too low.
+        """
+        if parent.sha not in self.parent_shas:
+            warnings.warn("Comparing non-adjacent commits might be "
+                          "computationally expensive. Proceed with caution.")
+
+        # filename: (blob sha before, blob sha after)
+        new_files = self.tree.files
+        new_paths = set(new_files.keys())
+        old_files = parent.tree.files
+        old_paths = set(old_files.keys())
+
+        # unchanged_paths
+        for fname in new_paths.intersection(old_paths):
+            if new_files[fname] != old_files[fname]:
+                # i.e. the Blob sha is the same
+                yield (fname, fname, old_files[fname], new_files[fname])
+
+        added_paths = new_paths - old_paths
+        deleted_paths = old_paths - new_paths
+
+        if threshold >= 1:  # i.e. only exact matches are considered
+            for fname in added_paths:
+                yield (None, fname, None, new_files[fname])
+            for fname in deleted_paths:
+                yield (fname, None, old_files[fname], None)
+            return
+
+        # search for matches
+        sm = difflib.SequenceMatcher()
+        added_blobs = {f: Blob(new_files[f]) for f in added_paths}
+        deleted_blobs = {f: Blob(old_files[f]) for f in deleted_paths}
+        # for each added blob, try to find a match in deleted blobs
+        #   if there is a match, signal a rename and remove from deleted
+        #   if there is no match, signal a new file
+        # unused deleted blobs are indeed deleted
+        for added_fname, added_blob in added_blobs.items():
+            sm.set_seq1(added_blob)
+            matched = False
+            for deleted_fname, deleted_blob in deleted_blobs.items():
+                sm.set_seq2(deleted_blob)
+                # use quick checks first (lower bound by length diff)
+                if sm.real_quick_ratio() > threshold \
+                        and sm.quick_ratio() > threshold \
+                        and sm.ratio() > threshold:
+                    yield (deleted_fname, added_fname, deleted_blob, added_blob)
+                    del(deleted_blobs[deleted_fname])
+                    matched = True
+                    break
+            if not matched:  # this is a new file
+                yield (None, added_fname, None, added_blob)
+
+        for deleted_fname, deleted_blob in deleted_blobs.items():
+            yield (deleted_fname, None, deleted_blob, None)
+
     @property
     def parents(self):
         """ A generator of parent commits.
         If you only need hashes (and not `Commit` objects),
         use `.parent_sha` instead
 
+        Commit: https://github.com/user2589/minicms/commit/e38126db
         >>> c = Commit('e38126dbca6572912013621d2aa9e6f7c50f36bc')
         >>> tuple(c.parents)
         (<Commit: ab124ab4baa42cd9f554b7bb038e19d4e3647957>,)
@@ -779,6 +873,7 @@ class Commit(GitObject):
         This property can be used to find all forks of a project
         by its first commit.
 
+        Commit: https://github.com/user2589/minicms/commit/f2a7fcdc
         >>> c = Commit('f2a7fcdc51450ab03cb364415f14e634fa69b62c')
         >>> isinstance(c.project_names, tuple)
         True
@@ -803,6 +898,7 @@ class Commit(GitObject):
         """ Children commit binary sha hashes.
         Basically, this is a reverse parent_shas
 
+        Commit: https://github.com/user2589/minicms/commit/1e971a07
         >>> Commit('1e971a073f40d74a1e72e07c682e1cba0bae159b').child_shas
         ('9bd02434b834979bb69d0b752a403228f2e385e8',)
         """
@@ -812,6 +908,7 @@ class Commit(GitObject):
     def children(self):
         """ A generator of children `Commit` objects
 
+        Commit: https://github.com/user2589/minicms/commit/1e971a07
         >>> tuple(Commit('1e971a073f40d74a1e72e07c682e1cba0bae159b').children)
         (<Commit: 9bd02434b834979bb69d0b752a403228f2e385e8>,)
         """
@@ -881,6 +978,7 @@ class Project(_Base):
     Commits can be checked for membership in a project, either by their SHA
     hash or by a Commit object itself:
 
+        Commit: https://github.com/user2589/minicms/commit/e38126db
         >>> sha = 'e38126dbca6572912013621d2aa9e6f7c50f36bc'
         >>> sha in Project('user2589_minicms')
         True
