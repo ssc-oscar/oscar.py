@@ -29,7 +29,6 @@ PATHS = {
     'blob_data': '/data/All.blobs/{type}_{key}.bin',
     # relations - good to have but not critical
     'blob_commits': '/data/basemaps/b2cFullH.{key}.tch',
-    'tree_parents': '/data/basemaps/t2pt0-127.{key}.tch',
     'commit_projects': '/data/basemaps/Cmt2PrjH.{key}.tch',
     'commit_children': '/data/basemaps/Cmt2ChldH.{key}.tch',
     'commit_blobs': '/data/basemaps/c2bFullH.{key}.tch',
@@ -38,7 +37,6 @@ PATHS = {
     # TODO: replace with H when it's ready
     'file_commits': '/data/basemaps/f2cFullF.{key}.tch',
     'author_commits': '/data/basemaps/Auth2CmtH.tch',
-    'author_files': '/data/basemaps/Auth2FileH.tch',
 }
 
 
@@ -607,20 +605,6 @@ class Tree(GitObject):
         """
         files = sorted(self.traverse(), key=lambda x: x[1])
         return "\n".join(" ".join(line) for line in files)
-
-    @cached_property
-    def parent_tree_shas(self):
-        """ Tuple of SHA hashes of parent trees
-        i.e. trees including this one as a subdirectory.
-        """
-        return slice20(self.read(PATHS['tree_parents'], 3))
-
-    @property
-    def parent_trees(self):
-        """ Get parent trees
-        :return: generator of parent Tree objects
-        """
-        return (Tree(sha) for sha in self.parent_tree_shas)
 
     def __str__(self):
         """
@@ -1281,30 +1265,3 @@ class Author(_Base):
         True
         """
         return (Commit(sha) for sha in self.commit_shas)
-
-    @cached_property
-    def file_names(self):
-        """ All file names the Author has changed
-
-        >>> fnames = Author('user2589 <valiev.m@gmail.com>').file_names
-        >>> len(fnames) > 50
-        True
-        >>> isinstance(fnames, tuple)
-        True
-        >>> isinstance(fnames[0], str)
-        True
-        """
-        data = decomp(read_tch(PATHS['author_files'], self.key))
-        return tuple((data and data.split(";")) or [])
-
-    @property
-    def files(self):
-        """ All File objects changed by the Author
-
-        >>> fnames = tuple(Author('user2589 <valiev.m@gmail.com>').files)
-        >>> len(fnames) > 50
-        True
-        >>> isinstance(fnames[0], File)
-        True
-        """
-        return (File(fname) for fname in self.file_names)

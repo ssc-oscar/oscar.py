@@ -47,14 +47,12 @@ class TestStatus(unittest.TestCase):
         check(PATHS['blob_commits'].format(**kwargs), 2)
         check(PATHS['commit_blobs'].format(**kwargs), 2)
         # key length: 3 bit
-        check(PATHS['tree_parents'].format(**kwargs), 2)
         check(PATHS['commit_projects'].format(**kwargs), 2)
         check(PATHS['project_commits'].format(**kwargs), 2)
         check(PATHS['file_commits'].format(**kwargs), 2)
         check(PATHS['commit_children'].format(**kwargs), 2)
         # key length: 0
         check(PATHS['author_commits'].format(**kwargs), 2)
-        check(PATHS['author_files'].format(**kwargs), 2)
 
         kwargs = {'type': 'tag', 'key': 0}
         check(PATHS['tag_index_line'].format(**kwargs), 1)
@@ -104,20 +102,6 @@ class TestRelations(unittest.TestCase):
             self.assertFalse(
                 diff, "Author2Cmt does not list commits %s as authored by %s,"
                       "but they are" % (",".join(diff), author))
-
-    def test_author_file(self):
-        """ Test if all files changed by an author are listed in Auth2File """
-        author_name = 'user2589 <valiev.m@gmail.com>'
-        project = 'user2589_minicms'
-        relation = set(Author(author_name).file_names)
-        for commit in Project(project).commits:
-            parents = commit.parents
-            for fname, sha in commit.tree.files.items():
-                if all(p.tree.files.get(fname) != sha for p in parents):
-                    self.assertIn(fname, relation,
-                                  "Auth2File doesn't list file %s as authored "
-                                  "by %s, but it was in commit %s" % (
-                                      fname, author_name, commit.sha))
 
     def test_blob_commits_change(self):
         """ Test if all commits modifying a blob are listed in Blob2Cmt """
@@ -285,18 +269,6 @@ class TestRelations(unittest.TestCase):
         self.assertFalse(
             diff, "Prj2Cmt doesn't list commits %s in project %s but they're "
                   "on github" % (",".join(diff), project))
-
-    def test_tree_parent_tree(self):
-        c = Commit('e38126dbca6572912013621d2aa9e6f7c50f36bc')
-        trees = {fname: sha
-                 for mode, fname, sha in c.tree.traverse() if mode == "40000"}
-        for fname, sha in trees.items():
-            if "/" in fname:
-                parent_sha = trees[fname.rsplit("/", 1)[0]]
-                self.assertIn(
-                    parent_sha, Tree(sha).parent_tree_shas,
-                    "Tree %s includes tree %s, but not included in its parents"
-                    "" % (parent_sha, sha))
 
 
 if __name__ == "__main__":
