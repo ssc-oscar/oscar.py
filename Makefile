@@ -58,5 +58,6 @@ travis_env:
 	sudo apt-get update && sudo apt-get install libtokyocabinet-dev libgit2-dev
 	pip install pygit2==0.24.2
 	pip install -r requirements.txt
-	pip install python-semantic-release
+	# Python2 compatibility was broken in 4.0.0
+	pip install python-semantic-release==3.11.2
 	pip install sphinx sphinx-autobuild
