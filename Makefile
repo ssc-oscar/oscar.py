@@ -37,7 +37,7 @@ html:
 
 .PHONY: install
 install:
-	sudo apt-get update && sudo apt-get install libtokyocabinet-dev
+	sudo apt-get update && sudo apt-get install libtokyocabinet-dev libgit2-dev
 	pip install -r requirements.txt
 
 .PHONY: install_dev
