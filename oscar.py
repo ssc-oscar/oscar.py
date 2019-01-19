@@ -18,26 +18,46 @@ __author__ = "Marat (@cmu.edu)"
 __license__ = "GPL v3"
 
 PATHS = {
-    # not critical - almost never used
-    'all_sequential': '/data/All.blobs/{type}_{key}',  # cmt, tree
-    'blob_index_line': '/fast1/All.sha1/sha1.{type}_{key}.tch',
-    'tree_index_line': '/fast1/All.sha1/sha1.{type}_{key}.tch',
-    'commit_index_line': '/fast/All.sha1/sha1.{type}_{key}.tch',
-    'tag_index_line': '/fast/All.sha1/sha1.{type}_{key}.tch',
-    # critical - contain actual objects
-    'all_random': '/fast1/All.sha1c/{type}_{key}.tch',  # cmt, tree
-    'blob_offset': '/fast1/All.sha1o/sha1.blob_{key}.tch',
-    'blob_data': '/data/All.blobs/{type}_{key}.bin',
-    # relations - good to have but not critical
-    'blob_commits': '/data/basemaps/b2cFullH.{key}.tch',
-    'commit_projects': '/data/basemaps/Cmt2PrjH.{key}.tch',
-    'commit_children': '/data/basemaps/Cmt2ChldH.{key}.tch',
-    'commit_blobs': '/data/basemaps/c2bFullH.{key}.tch',
-    'project_commits': '/da0_data/basemaps/p2cFullK.{key}.tch',
+    # data_type: (path, prefix_bit_length)
+    # prefix length means that the data are split into 2**n files,
+    # e.g. key is in 0..31 for prefix length of 5 bit.
 
-    # TODO: replace with H when it's ready
-    'file_commits': '/data/basemaps/f2cFullF.{key}.tch',
-    'author_commits': '/data/basemaps/Auth2CmtH.tch',
+    # not critical - almost never used
+    'commit_sequential_idx': ('/data/All.blobs/commit_{key}.idx', 7),
+    'commit_sequential_bin': ('/data/All.blobs/commit_{key}.bin', 7),
+    'tree_sequential_idx': ('/data/All.blobs/blob_{key}.idx', 7),
+    'tree_sequential_bin': ('/data/All.blobs/blob_{key}.bin', 7),
+
+    # critical - contain actual objects
+    'commit_random': ('/fast1/All.sha1c/commit_{key}.tch', 7),
+    'tree_random': ('/fast1/All.sha1c/tree_{key}.tch', 7),
+
+    'blob_offset': ('/fast1/All.sha1o/sha1.blob_{key}.tch', 7),
+    'blob_data': ('/data/All.blobs/blob_{key}.bin', 7),
+    # the rest of x_data is currently unused:
+    # 'commit_data': ('/data/All.blobs/commit_{key}.bin',  # 7)
+    # 'tree_data': ('/data/All.blobs/tree_{key}.bin', 7)
+    # 'tag_data': ('/data/All.blobs/tag_{key}.bin', 7)
+
+    # relations - good to have but not critical
+    'commit_projects': ('/da0_data/basemaps/c2pK.{key}.tch', 5),
+    'commit_children': ('/da0_data/basemaps/c2ccFullK.{key}.tch', 5),
+    'commit_blobs': ('/da0_data/basemaps/c2bFullK.{key}.tch', 5),
+    'commit_files': ('/da0_data/basemaps/c2fFullK.{key}.tch', 5),
+    'project_commits': ('/da0_data/basemaps/p2cFullK.{key}.tch', 5),
+    'author_commits': ('/da0_data/basemaps/a2cFullK.{key}.tch', 5),
+    # TODO: deprecated?
+    'blob_commits': ('/data/basemaps/b2cFullJ.{key}.tch', 5),
+    'file_commits': ('/data/basemaps/f2cFullH.{key}.tch', 3),
+
+    # another way to get commit parents, currently unused
+    # 'commit_parents': ('/da0_data/basemaps/c2pcK.{key}.tch', 7)
+
+    # currently not used. TODO: check if can be helpful
+    # 'blob_index_line': ('/fast1/All.sha1/sha1.blob_{key}.tch', 7)
+    # 'tree_index_line': ('/fast1/All.sha1/sha1.tree_{key}.tch', 7)
+    # 'commit_index_line': ('/fast/All.sha1/sha1.commit_{key}.tch', 7),
+    # 'tag_index_line': ('/fast/All.sha1/sha1.tag_{key}.tch', 7)
 }
 
 
@@ -151,20 +171,6 @@ def slice20(raw_data):
                  for i in range(0, len(raw_data), 20))
 
 
-def prefix(value, key_length):
-    # type: (str, int) -> int
-    """ Calculate 'filesystem sharding' prefix using bit magic
-    >>> prefix('\xff', 7)
-    127
-    >>> prefix('\xff', 3)
-    7
-    """
-    return ord(value[0]) & (2**key_length - 1)
-
-
-ZERO_TD = timedelta(0)
-
-
 class CommitTimezone(tzinfo):
     # a lightweight version of pytz._FixedOffset
     def __init__(self, hours, minutes):
@@ -178,7 +184,7 @@ class CommitTimezone(tzinfo):
 
     def dst(self, dt):
         # daylight saving time - no info
-        return ZERO_TD
+        return timedelta(0)
 
     def __repr__(self):
         h, m = divmod(self.offset.seconds // 60, 60)
@@ -259,9 +265,23 @@ def tch_keys(path, key_prefix=''):
     return _get_tch(path).fwmkeys(key_prefix)
 
 
+def resolve_path(dtype, object_key, use_fnv=False):
+    # type: (str, str, bool) -> str
+    """ Get path to a file using data type and object key (for sharding) """
+    path, prefix_length = PATHS[dtype]
+
+    p = fnvhash.fnv1a_32(object_key) if use_fnv else ord(object_key[0])
+    prefix = p & (2**prefix_length - 1)
+
+    return path.format(key=prefix)
+
+
 class _Base(object):
     type = None
     key = None
+    # fnv keys are used for non-git objects, such as files, projects and authors
+    use_fnv_keys = True
+    _keys_registry_dtype = None
 
     def __init__(self, key):
         """
@@ -293,6 +313,13 @@ class _Base(object):
     def __str__(self):
         return self.key
 
+    def resolve_path(self, dtype):
+        return resolve_path(dtype, self.key, self.use_fnv_keys)
+
+    def read_tch(self, dtype, silent=True):
+        """ Resolve the path and read .tch"""
+        return read_tch(self.resolve_path(dtype), self.key, silent)
+
     @classmethod
     def all(cls):
         """ Iterate all objects of the given type
@@ -314,6 +341,7 @@ class _Base(object):
 
 
 class GitObject(_Base):
+    use_fnv_keys = False
 
     @classmethod
     def all(cls):
@@ -356,36 +384,23 @@ class GitObject(_Base):
             self.bin_sha = sha
         else:
             raise ValueError("Invalid SHA1 hash: %s" % sha)
+        self.key = self.sha
         super(GitObject, self).__init__(sha)
 
-    def resolve_path(self, path, key_length=7):
-        """Format given path with object type and key
-        >>> go = GitObject('8528315640bac6eae17297270d4ee1892abf6add')
-        >>> go.resolve_path("test")
-        'test'
-        >>> go.resolve_path("test_{key}", 7)
-        'test_5'
-        >>> go.resolve_path("/fast/All.sha1/{type}_{key}", 8)
-        '/fast/All.sha1/None_133'
-        """
-        return path.format(
-            type=self.type, key=prefix(self.bin_sha, key_length))
+    def resolve_path(self, dtype):
+        # overriding to use bin_sha instead of the key (which is sha)
+        return resolve_path(dtype, self.bin_sha, self.use_fnv_keys)
 
-    def read(self, path, key_length=7, silent=True):
+    def read_tch(self, dtype, silent=True):
         """ Resolve the path and read .tch"""
-        return read_tch(
-            self.resolve_path(path, key_length), self.bin_sha, silent)
-
-    def index_line(self):
-        # get a line number in the index file
-        return self.read(PATHS[self.type + '_index_line'])
+        return read_tch(self.resolve_path(dtype), self.bin_sha, silent)
 
     @cached_property
     def data(self):
         if self.type not in ('commit', 'tree'):
             raise NotImplementedError
         # default implementation will only work for commits and trees
-        return decomp(self.read(PATHS['all_random'], silent=False))
+        return decomp(self.read_tch(self.type + '_random', silent=False))
 
     @classmethod
     def string_sha(cls, data):
@@ -471,7 +486,7 @@ class Blob(GitObject):
     def position(self):
         """ Get offset and length of the blob data in the storage """
         try:
-            offset, length = unber(self.read(PATHS['blob_offset']))
+            offset, length = unber(self.read_tch(PATHS['blob_offset']))
         except ValueError:  # empty read -> value not found
             raise ObjectNotFound('Blob data not found (bad sha?)')
         return offset, length
@@ -481,9 +496,9 @@ class Blob(GitObject):
         """ Content of the blob """
         offset, length = self.position
         # no caching here to stay thread-safe
-        fh = open(self.resolve_path(PATHS['blob_data']), 'rb')
-        fh.seek(offset)
-        return decomp(fh.read(length))
+        with open(self.resolve_path('blob_data'), 'rb') as fh:
+            fh.seek(offset)
+            return decomp(fh.read(length))
 
     @cached_property
     def commit_shas(self):
@@ -492,7 +507,7 @@ class Blob(GitObject):
 
         **NOTE: commits removing this blob are not included**
         """
-        return slice20(self.read(PATHS['blob_commits'], 4))
+        return slice20(self.read_tch('blob_commits'))
 
     @property
     def commits(self):
@@ -630,7 +645,7 @@ class Tree(GitObject):
         40000 templates 7ff5e4c9bd3ce6ab500b754831d231022b58f689
         40000 templatetags e5e994b0be2c9ce6af6f753275e7d8c29ccf75ce
         100644 urls.py e9cb0c23a7f6683911305efff91dcabadb938794
-        100644 scraper.py 2cfbd298f18a75d1f0f51c2f6a1f2fcdf41a9559
+        100644 utils.py 2cfbd298f18a75d1f0f51c2f6a1f2fcdf41a9559
         100644 views.py 973a78a1fe9e69d4d3b25c92b3889f7e91142439
         """
         return "\n".join(" ".join(line) for line in self)
@@ -882,7 +897,7 @@ class Commit(GitObject):
         >>> 'user2589_minicms' in c.project_names
         True
         """
-        data = decomp(self.read(PATHS['commit_projects'], 3))
+        data = decomp(self.read_tch('commit_projects'))
         return tuple(project_name
                      for project_name in (data and data.split(";")) or []
                      if project_name and project_name != 'EMPTY')
@@ -902,7 +917,7 @@ class Commit(GitObject):
         >>> Commit('1e971a073f40d74a1e72e07c682e1cba0bae159b').child_shas
         ('9bd02434b834979bb69d0b752a403228f2e385e8',)
         """
-        return slice20(self.read(PATHS['commit_children'], 3))
+        return slice20(self.read_tch('commit_children'))
 
     @property
     def children(self):
@@ -926,6 +941,14 @@ class Commit(GitObject):
         """
         return self.tree.blob_shas
 
+    @cached_property
+    def changed_file_names(self):
+        data = decomp(self.read_tch('commit_files'))
+        return tuple((data and data.split(";")) or [])
+
+    def files_changed(self):
+        return (File(filename) for filename in self.changed_file_names)
+
     @property
     def blob_shas_rel(self):
         """
@@ -940,7 +963,7 @@ class Commit(GitObject):
             "This relation is known to miss every first file in all trees. "
             "Consider using Commit.tree.blobs as a slower but more accurate "
             "alternative", DeprecationWarning)
-        return slice20(self.read(PATHS['commit_blobs'], 4))
+        return slice20(self.read_tch('commit_blobs'))
 
     @property
     def blobs(self):
@@ -986,6 +1009,7 @@ class Project(_Base):
         True
     """
     type = 'project'
+    _keys_registry_dtype = 'project_commits'
 
     def __init__(self, uri):
         self.uri = uri
@@ -1033,7 +1057,7 @@ class Project(_Base):
         ('2dbcd43f077f2b5511cc107d63a0b9539a6aa2a7',
          '7572fc070c44f85e2a540f9a5a05a95d1dd2662d')
         """
-        tch_path = PATHS['project_commits'].format(key=fnvhash.fnv1a_32(self.key)%32)
+        tch_path = self.resolve_path('project_commits')
         return slice20(read_tch(tch_path, self.key, silent=True))
 
     @property
@@ -1177,15 +1201,15 @@ class File(_Base):
         file_path = self.key
         if not file_path.endswith("\n"):
             file_path += "\n"
-        tch_path = PATHS['file_commits'].format(key=prefix(file_path, 3))
+        tch_path = resolve_path('file_commits', file_path, self.use_fnv_keys)
         return slice20(read_tch(tch_path, file_path, silent=True))
 
     @property
     def commits(self):
         """ All commits changing the file
 
-        **NOTE: this relation considers only diff with the first parent,
-        which substantially limits its application**
+        .. note: this relation considers only diff with the first parent,
+            which substantially limits its application
 
         >>> cs = tuple(File('minicms/templatetags/minicms_tags.py').commits)
         >>> len(cs) > 0
@@ -1237,7 +1261,7 @@ class Author(_Base):
         >>> len(commits[0]) == 40
         True
         """
-        return slice20(read_tch(PATHS['author_commits'], self.key, silent=True))
+        return slice20(self.read_tch('author_commits', silent=True))
 
     @property
     def commits(self):

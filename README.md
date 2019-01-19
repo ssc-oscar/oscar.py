@@ -12,6 +12,7 @@ files are stored.
 
 ### Installation
 
+    # pip is not available on OSCAR servers
     easy_install --user --upgrade oscar
 
 ### Reference

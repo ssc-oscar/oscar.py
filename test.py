@@ -20,46 +20,40 @@ class TestStatus(unittest.TestCase):
             3: logging.critical,
         }
 
-        def check(path, level):
-            if not os.path.isfile(path):
+        def check(dtype, level):
+            path, prefix_length = PATHS[dtype]
+            if not os.path.isfile(path.format(key=0)):
                 levels[level]("Does not exist: %s", path)
 
-        kwargs = {'type': 'commit', 'key': 0}
-        # key lenght: 7 bit, with few exceptions
-        check(PATHS['all_random'].format(**kwargs), 3)
-        check(PATHS['blob_data'].format(**kwargs), 1)
-        check(PATHS['all_sequential'].format(**kwargs) + '.idx', 1)
-        check(PATHS['commit_index_line'].format(**kwargs), 1)
+        check('commit_sequential_idx', 1)
+        check('commit_sequential_bin', 1)
+        check('tree_sequential_idx', 1)
+        check('tree_sequential_bin', 1)
 
-        kwargs['type'] = 'tree'
-        check(PATHS['all_random'].format(**kwargs), 3)
-        check(PATHS['blob_data'].format(**kwargs), 1)
-        check(PATHS['all_sequential'].format(**kwargs) + '.idx', 1)
-        check(PATHS['tree_index_line'].format(**kwargs), 1)
+        check('commit_random', 3)
+        check('tree_random', 3)
 
-        kwargs = {'type': 'blob', 'key': 0}
-        check(PATHS['blob_data'].format(**kwargs), 3)
-        check(PATHS['blob_offset'].format(**kwargs), 3)
-        check(PATHS['blob_index_line'].format(**kwargs), 1)
+        check('blob_offset', 3)
+        check('blob_data', 3)
 
-        # type-agnostic
-        # key length: 4 bit
-        check(PATHS['blob_commits'].format(**kwargs), 2)
-        check(PATHS['commit_blobs'].format(**kwargs), 2)
-        # key length: 3 bit
-        check(PATHS['commit_projects'].format(**kwargs), 2)
-        check(PATHS['project_commits'].format(**kwargs), 2)
-        check(PATHS['file_commits'].format(**kwargs), 2)
-        check(PATHS['commit_children'].format(**kwargs), 2)
-        # key length: 0
-        check(PATHS['author_commits'].format(**kwargs), 2)
+        check('commit_projects', 2)
+        check('commit_children', 2)
+        check('commit_blobs', 2)
+        check('commit_files', 2)
+        check('project_commits', 2)
+        check('author_commits', 2)
 
-        kwargs = {'type': 'tag', 'key': 0}
-        check(PATHS['tag_index_line'].format(**kwargs), 1)
+        check('blob_commits', 2)
+        check('file_commits', 2)
 
 
 def check_status():
     return unittest.TestLoader().loadTestsFromTestCase(TestStatus)
+
+
+class TestCommit(unittest.TestCase):
+    def test_sub(self):
+        pass
 
 
 class TestRelations(unittest.TestCase):
@@ -216,6 +210,21 @@ class TestRelations(unittest.TestCase):
             self.assertFalse(
                 diff, "Cmt2Chld doesn't list commits %s as children of commit "
                       "%s, but they are" % (",".join(diff), sha))
+
+    def test_commit_files(self):
+        project = 'user2589_minicms'
+        commits = {c.sha: c for c in Project(project).commits}
+        children = defaultdict(set)
+
+        for sha, c in commits.items():
+            for parent_sha in c.parent_shas:
+                children[parent_sha].add(c.sha)
+
+        for sha, c in commits.items():
+            # filter out commits outside of the project, just in case
+            relation = set(c.changed_file_names)
+
+        # TODO: complete this test
 
     def test_file_commits(self):
         """ Test if all commits modifying a file are listed in File2Cmt """
