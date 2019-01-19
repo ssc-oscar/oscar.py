@@ -58,5 +58,5 @@ travis_env:
 	sudo apt-get update && sudo apt-get install libtokyocabinet-dev libgit2-dev
 	pip install pygit2==0.24.2
 	pip install -r requirements.txt
+	pip install python-semantic-release
 	pip install sphinx sphinx-autobuild
-	pip install requests  # required by tests
