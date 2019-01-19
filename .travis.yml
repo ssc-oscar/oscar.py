@@ -6,7 +6,7 @@ python:
 sudo: required
 
 install:
-  - make install_dev
+  - make travis_env
 
 cache:
   - packages

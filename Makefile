@@ -1,4 +1,9 @@
 
+SERVER = da4
+REMOTE_PATH = '/data/play/mvaliev/oscar.py/'
+
+PACKAGE = oscar
+TESTROOT = oscar.py
 
 .PHONY: deploy
 deploy:
@@ -46,3 +51,12 @@ install_dev:
 	pip install sphinx sphinx-autobuild
 	pip install requests  # required by tests
 	# documentation builder
+
+.PHONY: travis_env
+travis_env:
+	# the latest libgit2 travis can offer is 0.24
+	sudo apt-get update && sudo apt-get install libtokyocabinet-dev libgit2-dev
+	pip install pygit2=0.24.2
+	pip install -r requirements.txt
+	pip install sphinx sphinx-autobuild
+	pip install requests  # required by tests
