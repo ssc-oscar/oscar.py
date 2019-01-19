@@ -1,15 +1,16 @@
 
+import re
 from setuptools import setup
+
+head = open('oscar.py').read(2048)
+pattern = r"""__%s__\s*=\s*['"]([^'"]*)['"]"""
+kwargs = {keyword: re.search(pattern % keyword, head).group(1)
+          for keyword in ('version', 'author', 'license')}
 
 # options reference: https://docs.python.org/2/distutils/
 # see also: https://packaging.python.org/tutorials/distributing-packages/
 setup(
-    # whenever you're updating the next three lines
-    # please also update oscar.py
     name="oscar",
-    version="1.0.1",
-    author='Marat (@cmu.edu)',
-
     description="A Python interface to OSCAR data",
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
@@ -23,9 +24,9 @@ setup(
     ],
     python_requires='~=2.7',
     py_modules=['oscar'],
-    license="GPL v3.0",
     author_email='marat@cmu.edu',
     url='https://github.com/ssc-oscar/oscar.py',
     install_requires=['python-lzf', 'tokyocabinet'],
-    test_suite='test.TestStatus'
+    test_suite='test.TestStatus',
+    **kwargs
 )

@@ -1,9 +1,11 @@
 language: python
+python:
+  - 2.7
 
 sudo: required
 
 install:
-  - make travis_env
+  - make install_dev
 
 cache:
   - packages
@@ -13,10 +15,23 @@ script:
   - make html
 
 deploy:
-  provider: pages
-  skip-cleanup: true
-  github-token: $GITHUB_TOKEN
-  keep-history: true
-  on:
-    branch: master
-  local-dir: docs/build/html
+  - provider: pages
+    skip-cleanup: true
+    github-token: $GH_TOKEN
+    keep-history: true
+    on:
+      branch: master
+    local-dir: docs/build/html
+
+  - provider: script
+    skip_cleanup: true
+    on:
+      branch: master
+    script: make publish
+
+  - provider: releases
+    skip-cleanup: true
+    api_key: $GH_TOKEN
+    on:
+      tags: true
+    file: dist/*
