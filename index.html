@@ -67,10 +67,18 @@ Objects of the same type and having the same key will be considered equivalent:<
 <p>It is possible to iterate all objects of a given type using <cite>.all()</cite></p>
 <dl class="classmethod">
 <dt id="oscar._Base.all">
-<em class="property">classmethod </em><code class="descclassname">_Base.</code><code class="descname">all</code><span class="sig-paren">(</span><em>key_prefix=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oscar.html#_Base.all"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oscar._Base.all" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="descclassname">_Base.</code><code class="descname">all</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/oscar.html#_Base.all"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oscar._Base.all" title="Permalink to this definition">¶</a></dt>
 <dd><p>Iterate all objects of the given type</p>
 <p>This might be useful to get a list of all projects, or a list of
 all file names.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">a generator of <cite>Project</cite> objects</td>
+</tr>
+</tbody>
+</table>
 <p>E.g. to iterate all repositories of user2589 on github:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">project</span> <span class="ow">in</span> <span class="n">Project</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="s1">&#39;user2589_&#39;</span><span class="p">):</span>
 <span class="gp">... </span>    <span class="nb">print</span> <span class="n">project</span><span class="o">.</span><span class="n">uri</span>
@@ -119,13 +127,13 @@ It is mostly important for <cite>Blob</cite> to access the file content.</p>
 </div>
 <p>Commits can be checked for membership in a project, either by their SHA
 hash or by a Commit object itself:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sha</span> <span class="o">=</span> <span class="s1">&#39;e38126dbca6572912013621d2aa9e6f7c50f36bc&#39;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">sha</span> <span class="ow">in</span> <span class="n">Project</span><span class="p">(</span><span class="s1">&#39;user2589_minicms&#39;</span><span class="p">)</span>
-<span class="go">True</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">Commit</span><span class="p">(</span><span class="n">sha</span><span class="p">)</span> <span class="ow">in</span> <span class="n">Project</span><span class="p">(</span><span class="s1">&#39;user2589_minicms&#39;</span><span class="p">)</span>
-<span class="go">True</span>
-</pre></div>
-</div>
+<blockquote>
+<div>Commit: <a class="reference external" href="https://github.com/user2589/minicms/commit/e38126db">https://github.com/user2589/minicms/commit/e38126db</a>
+&gt;&gt;&gt; sha = ‘e38126dbca6572912013621d2aa9e6f7c50f36bc’
+&gt;&gt;&gt; sha in Project(‘user2589_minicms’)
+True
+&gt;&gt;&gt; Commit(sha) in Project(‘user2589_minicms’)
+True</div></blockquote>
 <dl class="attribute">
 <dt id="oscar.Project.commit_shas">
 <code class="descname">commit_shas</code><a class="headerlink" href="#oscar.Project.commit_shas" title="Permalink to this definition">¶</a></dt>
@@ -242,20 +250,18 @@ first access to <em>any</em> of them.</p>
 <code class="descname">child_shas</code><a class="headerlink" href="#oscar.Commit.child_shas" title="Permalink to this definition">¶</a></dt>
 <dd><p>Children commit binary sha hashes.
 Basically, this is a reverse parent_shas</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Commit</span><span class="p">(</span><span class="s1">&#39;1e971a073f40d74a1e72e07c682e1cba0bae159b&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">child_shas</span>
-<span class="go">(&#39;9bd02434b834979bb69d0b752a403228f2e385e8&#39;,)</span>
-</pre></div>
-</div>
+<p>Commit: <a class="reference external" href="https://github.com/user2589/minicms/commit/1e971a07">https://github.com/user2589/minicms/commit/1e971a07</a>
+&gt;&gt;&gt; Commit(‘1e971a073f40d74a1e72e07c682e1cba0bae159b’).child_shas
+(‘9bd02434b834979bb69d0b752a403228f2e385e8’,)</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="oscar.Commit.children">
 <code class="descname">children</code><a class="headerlink" href="#oscar.Commit.children" title="Permalink to this definition">¶</a></dt>
 <dd><p>A generator of children <cite>Commit</cite> objects</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">tuple</span><span class="p">(</span><span class="n">Commit</span><span class="p">(</span><span class="s1">&#39;1e971a073f40d74a1e72e07c682e1cba0bae159b&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">children</span><span class="p">)</span>
-<span class="go">(&lt;Commit: 9bd02434b834979bb69d0b752a403228f2e385e8&gt;,)</span>
-</pre></div>
-</div>
+<p>Commit: <a class="reference external" href="https://github.com/user2589/minicms/commit/1e971a07">https://github.com/user2589/minicms/commit/1e971a07</a>
+&gt;&gt;&gt; tuple(Commit(‘1e971a073f40d74a1e72e07c682e1cba0bae159b’).children)
+(&lt;Commit: 9bd02434b834979bb69d0b752a403228f2e385e8&gt;,)</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -264,11 +270,10 @@ Basically, this is a reverse parent_shas</p>
 <dd><p>A generator of parent commits.
 If you only need hashes (and not <cite>Commit</cite> objects),
 use <cite>.parent_sha</cite> instead</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">c</span> <span class="o">=</span> <span class="n">Commit</span><span class="p">(</span><span class="s1">&#39;e38126dbca6572912013621d2aa9e6f7c50f36bc&#39;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">tuple</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">parents</span><span class="p">)</span>
-<span class="go">(&lt;Commit: ab124ab4baa42cd9f554b7bb038e19d4e3647957&gt;,)</span>
-</pre></div>
-</div>
+<p>Commit: <a class="reference external" href="https://github.com/user2589/minicms/commit/e38126db">https://github.com/user2589/minicms/commit/e38126db</a>
+&gt;&gt;&gt; c = Commit(‘e38126dbca6572912013621d2aa9e6f7c50f36bc’)
+&gt;&gt;&gt; tuple(c.parents)
+(&lt;Commit: ab124ab4baa42cd9f554b7bb038e19d4e3647957&gt;,)</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -277,15 +282,14 @@ use <cite>.parent_sha</cite> instead</p>
 <dd><p>URIs of projects including this commit.
 This property can be used to find all forks of a project
 by its first commit.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">c</span> <span class="o">=</span> <span class="n">Commit</span><span class="p">(</span><span class="s1">&#39;f2a7fcdc51450ab03cb364415f14e634fa69b62c&#39;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">project_names</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span>
-<span class="go">True</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">project_names</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
-<span class="go">True</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="s1">&#39;user2589_minicms&#39;</span> <span class="ow">in</span> <span class="n">c</span><span class="o">.</span><span class="n">project_names</span>
-<span class="go">True</span>
-</pre></div>
-</div>
+<p>Commit: <a class="reference external" href="https://github.com/user2589/minicms/commit/f2a7fcdc">https://github.com/user2589/minicms/commit/f2a7fcdc</a>
+&gt;&gt;&gt; c = Commit(‘f2a7fcdc51450ab03cb364415f14e634fa69b62c’)
+&gt;&gt;&gt; isinstance(c.project_names, tuple)
+True
+&gt;&gt;&gt; len(c.project_names) &gt; 0
+True
+&gt;&gt;&gt; ‘user2589_minicms’ in c.project_names
+True</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -359,21 +363,7 @@ It does include files in subdirectories.</p>
 <code class="descname">files</code><a class="headerlink" href="#oscar.Tree.files" title="Permalink to this definition">¶</a></dt>
 <dd><p>A dict of all files and their content/blob sha under this tree.
 It includes recursive files (i.e. files in subdirectories).
-It does not include subdirectories themselves.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="oscar.Tree.parent_tree_shas">
-<code class="descname">parent_tree_shas</code><a class="headerlink" href="#oscar.Tree.parent_tree_shas" title="Permalink to this definition">¶</a></dt>
-<dd><p>Tuple of SHA hashes of parent trees
-i.e. trees including this one as a subdirectory.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="oscar.Tree.parent_trees">
-<code class="descname">parent_trees</code><a class="headerlink" href="#oscar.Tree.parent_trees" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get parent trees
-:return: generator of parent Tree objects</p>
+It does NOT include subdirectories themselves.</p>
 </dd></dl>
 
 <dl class="method">
@@ -433,8 +423,6 @@ which substantially limits its application</strong></p>
 <dt id="oscar.File.commits">
 <code class="descname">commits</code><a class="headerlink" href="#oscar.File.commits" title="Permalink to this definition">¶</a></dt>
 <dd><p>All commits changing the file</p>
-<p><strong>NOTE: this relation considers only diff with the first parent,
-which substantially limits its application</strong></p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">cs</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">File</span><span class="p">(</span><span class="s1">&#39;minicms/templatetags/minicms_tags.py&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">commits</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">cs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
 <span class="go">True</span>

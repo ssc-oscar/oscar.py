@@ -35,40 +35,64 @@
   <h1>Source code for oscar</h1><div class="highlight"><pre>
 <span></span>
 <span class="kn">import</span> <span class="nn">lzf</span>
+<span class="c1"># da4 doesn&#39;t have libgit2-dev to install pygit2 yet</span>
+<span class="c1"># import pygit2</span>
 <span class="kn">from</span> <span class="nn">tokyocabinet</span> <span class="k">import</span> <span class="nb">hash</span> <span class="k">as</span> <span class="n">tch</span>
 
 <span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span><span class="p">,</span> <span class="n">tzinfo</span>
+<span class="kn">import</span> <span class="nn">difflib</span>
 <span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">wraps</span>
+<span class="kn">import</span> <span class="nn">hashlib</span>
+<span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">time</span>
 <span class="kn">import</span> <span class="nn">warnings</span>
 <span class="kn">import</span> <span class="nn">fnvhash</span>
 
 <span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;1.0.1&quot;</span>
 <span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Marat (@cmu.edu)&quot;</span>
+<span class="n">__license__</span> <span class="o">=</span> <span class="s2">&quot;GPL v3&quot;</span>
 
 <span class="n">PATHS</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="c1"># not critical - almost never used</span>
-    <span class="s1">&#39;all_sequential&#39;</span><span class="p">:</span> <span class="s1">&#39;/data/All.blobs/</span><span class="si">{type}</span><span class="s1">_</span><span class="si">{key}</span><span class="s1">&#39;</span><span class="p">,</span>  <span class="c1"># cmt, tree</span>
-    <span class="s1">&#39;blob_index_line&#39;</span><span class="p">:</span> <span class="s1">&#39;/fast1/All.sha1/sha1.</span><span class="si">{type}</span><span class="s1">_</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;tree_index_line&#39;</span><span class="p">:</span> <span class="s1">&#39;/fast1/All.sha1/sha1.</span><span class="si">{type}</span><span class="s1">_</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;commit_index_line&#39;</span><span class="p">:</span> <span class="s1">&#39;/fast/All.sha1/sha1.</span><span class="si">{type}</span><span class="s1">_</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;tag_index_line&#39;</span><span class="p">:</span> <span class="s1">&#39;/fast/All.sha1/sha1.</span><span class="si">{type}</span><span class="s1">_</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span>
-    <span class="c1"># critical - contain actual objects</span>
-    <span class="s1">&#39;all_random&#39;</span><span class="p">:</span> <span class="s1">&#39;/fast1/All.sha1c/</span><span class="si">{type}</span><span class="s1">_</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span>  <span class="c1"># cmt, tree</span>
-    <span class="s1">&#39;blob_offset&#39;</span><span class="p">:</span> <span class="s1">&#39;/fast1/All.sha1o/sha1.blob_</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;blob_data&#39;</span><span class="p">:</span> <span class="s1">&#39;/data/All.blobs/</span><span class="si">{type}</span><span class="s1">_</span><span class="si">{key}</span><span class="s1">.bin&#39;</span><span class="p">,</span>
-    <span class="c1"># relations - good to have but not critical</span>
-    <span class="s1">&#39;blob_commits&#39;</span><span class="p">:</span> <span class="s1">&#39;/data/basemaps/b2cFullH.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;tree_parents&#39;</span><span class="p">:</span> <span class="s1">&#39;/data/basemaps/t2pt0-127.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;commit_projects&#39;</span><span class="p">:</span> <span class="s1">&#39;/data/basemaps/Cmt2PrjH.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;commit_children&#39;</span><span class="p">:</span> <span class="s1">&#39;/data/basemaps/Cmt2ChldH.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;commit_blobs&#39;</span><span class="p">:</span> <span class="s1">&#39;/data/basemaps/c2bFullH.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;project_commits&#39;</span><span class="p">:</span> <span class="s1">&#39;/da0_data/basemaps/p2cFullK.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span>
+    <span class="c1"># data_type: (path, prefix_bit_length)</span>
+    <span class="c1"># prefix length means that the data are split into 2**n files,</span>
+    <span class="c1"># e.g. key is in 0..31 for prefix length of 5 bit.</span>
 
-    <span class="c1"># TODO: replace with H when it&#39;s ready</span>
-    <span class="s1">&#39;file_commits&#39;</span><span class="p">:</span> <span class="s1">&#39;/data/basemaps/f2cFullF.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;author_commits&#39;</span><span class="p">:</span> <span class="s1">&#39;/data/basemaps/Auth2CmtH.tch&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;author_files&#39;</span><span class="p">:</span> <span class="s1">&#39;/data/basemaps/Auth2FileH.tch&#39;</span><span class="p">,</span>
+    <span class="c1"># not critical - almost never used</span>
+    <span class="s1">&#39;commit_sequential_idx&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/data/All.blobs/commit_</span><span class="si">{key}</span><span class="s1">.idx&#39;</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
+    <span class="s1">&#39;commit_sequential_bin&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/data/All.blobs/commit_</span><span class="si">{key}</span><span class="s1">.bin&#39;</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
+    <span class="s1">&#39;tree_sequential_idx&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/data/All.blobs/blob_</span><span class="si">{key}</span><span class="s1">.idx&#39;</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
+    <span class="s1">&#39;tree_sequential_bin&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/data/All.blobs/blob_</span><span class="si">{key}</span><span class="s1">.bin&#39;</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
+
+    <span class="c1"># critical - contain actual objects</span>
+    <span class="s1">&#39;commit_random&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/fast1/All.sha1c/commit_</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
+    <span class="s1">&#39;tree_random&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/fast1/All.sha1c/tree_</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
+
+    <span class="s1">&#39;blob_offset&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/fast1/All.sha1o/sha1.blob_</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
+    <span class="s1">&#39;blob_data&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/data/All.blobs/blob_</span><span class="si">{key}</span><span class="s1">.bin&#39;</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
+    <span class="c1"># the rest of x_data is currently unused:</span>
+    <span class="c1"># &#39;commit_data&#39;: (&#39;/data/All.blobs/commit_{key}.bin&#39;,  # 7)</span>
+    <span class="c1"># &#39;tree_data&#39;: (&#39;/data/All.blobs/tree_{key}.bin&#39;, 7)</span>
+    <span class="c1"># &#39;tag_data&#39;: (&#39;/data/All.blobs/tag_{key}.bin&#39;, 7)</span>
+
+    <span class="c1"># relations - good to have but not critical</span>
+    <span class="s1">&#39;commit_projects&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/da0_data/basemaps/c2pK.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+    <span class="s1">&#39;commit_children&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/da0_data/basemaps/c2ccFullK.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+    <span class="s1">&#39;commit_blobs&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/da0_data/basemaps/c2bFullK.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+    <span class="s1">&#39;commit_files&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/da0_data/basemaps/c2fFullK.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+    <span class="s1">&#39;project_commits&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/da0_data/basemaps/p2cFullK.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+    <span class="s1">&#39;author_commits&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/da0_data/basemaps/a2cFullK.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+    <span class="c1"># TODO: deprecated?</span>
+    <span class="s1">&#39;blob_commits&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/data/basemaps/b2cFullJ.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+    <span class="s1">&#39;file_commits&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/data/basemaps/f2cFullH.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
+
+    <span class="c1"># another way to get commit parents, currently unused</span>
+    <span class="c1"># &#39;commit_parents&#39;: (&#39;/da0_data/basemaps/c2pcK.{key}.tch&#39;, 7)</span>
+
+    <span class="c1"># currently not used. TODO: check if can be helpful</span>
+    <span class="c1"># &#39;blob_index_line&#39;: (&#39;/fast1/All.sha1/sha1.blob_{key}.tch&#39;, 7)</span>
+    <span class="c1"># &#39;tree_index_line&#39;: (&#39;/fast1/All.sha1/sha1.tree_{key}.tch&#39;, 7)</span>
+    <span class="c1"># &#39;commit_index_line&#39;: (&#39;/fast/All.sha1/sha1.commit_{key}.tch&#39;, 7),</span>
+    <span class="c1"># &#39;tag_index_line&#39;: (&#39;/fast/All.sha1/sha1.tag_{key}.tch&#39;, 7)</span>
 <span class="p">}</span>
 
 
@@ -182,20 +206,6 @@
                  <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw_data</span><span class="p">),</span> <span class="mi">20</span><span class="p">))</span>
 
 
-<span class="k">def</span> <span class="nf">prefix</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">key_length</span><span class="p">):</span>
-    <span class="c1"># type: (str, int) -&gt; int</span>
-    <span class="sd">&quot;&quot;&quot; Calculate &#39;filesystem sharding&#39; prefix using bit magic</span>
-<span class="sd">    &gt;&gt;&gt; prefix(&#39;\xff&#39;, 7)</span>
-<span class="sd">    127</span>
-<span class="sd">    &gt;&gt;&gt; prefix(&#39;\xff&#39;, 3)</span>
-<span class="sd">    7</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="nb">ord</span><span class="p">(</span><span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="n">key_length</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-
-
-<span class="n">ZERO_TD</span> <span class="o">=</span> <span class="n">timedelta</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-
-
 <span class="k">class</span> <span class="nc">CommitTimezone</span><span class="p">(</span><span class="n">tzinfo</span><span class="p">):</span>
     <span class="c1"># a lightweight version of pytz._FixedOffset</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hours</span><span class="p">,</span> <span class="n">minutes</span><span class="p">):</span>
@@ -209,7 +219,7 @@
 
     <span class="k">def</span> <span class="nf">dst</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="p">):</span>
         <span class="c1"># daylight saving time - no info</span>
-        <span class="k">return</span> <span class="n">ZERO_TD</span>
+        <span class="k">return</span> <span class="n">timedelta</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">h</span><span class="p">,</span> <span class="n">m</span> <span class="o">=</span> <span class="nb">divmod</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="o">.</span><span class="n">seconds</span> <span class="o">//</span> <span class="mi">60</span><span class="p">,</span> <span class="mi">60</span><span class="p">)</span>
@@ -290,9 +300,23 @@
     <span class="k">return</span> <span class="n">_get_tch</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">fwmkeys</span><span class="p">(</span><span class="n">key_prefix</span><span class="p">)</span>
 
 
+<span class="k">def</span> <span class="nf">resolve_path</span><span class="p">(</span><span class="n">dtype</span><span class="p">,</span> <span class="n">object_key</span><span class="p">,</span> <span class="n">use_fnv</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="c1"># type: (str, str, bool) -&gt; str</span>
+    <span class="sd">&quot;&quot;&quot; Get path to a file using data type and object key (for sharding) &quot;&quot;&quot;</span>
+    <span class="n">path</span><span class="p">,</span> <span class="n">prefix_length</span> <span class="o">=</span> <span class="n">PATHS</span><span class="p">[</span><span class="n">dtype</span><span class="p">]</span>
+
+    <span class="n">p</span> <span class="o">=</span> <span class="n">fnvhash</span><span class="o">.</span><span class="n">fnv1a_32</span><span class="p">(</span><span class="n">object_key</span><span class="p">)</span> <span class="k">if</span> <span class="n">use_fnv</span> <span class="k">else</span> <span class="nb">ord</span><span class="p">(</span><span class="n">object_key</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">prefix</span> <span class="o">=</span> <span class="n">p</span> <span class="o">&amp;</span> <span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="n">prefix_length</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">path</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">prefix</span><span class="p">)</span>
+
+
 <span class="k">class</span> <span class="nc">_Base</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="nb">type</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">key</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="c1"># fnv keys are used for non-git objects, such as files, projects and authors</span>
+    <span class="n">use_fnv_keys</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">_keys_registry_dtype</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -324,25 +348,46 @@
     <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">key</span>
 
+    <span class="k">def</span> <span class="nf">resolve_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dtype</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">resolve_path</span><span class="p">(</span><span class="n">dtype</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_fnv_keys</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">read_tch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">silent</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Resolve the path and read .tch&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">read_tch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">resolve_path</span><span class="p">(</span><span class="n">dtype</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">silent</span><span class="p">)</span>
+
 <div class="viewcode-block" id="_Base.all"><a class="viewcode-back" href="../index.html#oscar._Base.all">[docs]</a>    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">all</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">key_prefix</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">all</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Iterate all objects of the given type</span>
 
 <span class="sd">        This might be useful to get a list of all projects, or a list of</span>
 <span class="sd">        all file names.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            a generator of `Project` objects</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_keys_registry_dtype</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="bp">NotImplemented</span>
+
+        <span class="n">base_path</span><span class="p">,</span> <span class="n">prefix_length</span> <span class="o">=</span> <span class="n">PATHS</span><span class="p">[</span><span class="bp">cls</span><span class="o">.</span><span class="n">_keys_registry_dtype</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">file_prefix</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span> <span class="o">**</span> <span class="n">prefix_length</span><span class="p">):</span>
+            <span class="n">tch_path</span> <span class="o">=</span> <span class="n">base_path</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">file_prefix</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">tch_keys</span><span class="p">(</span><span class="n">tch_path</span><span class="p">):</span>
+                <span class="k">yield</span> <span class="bp">cls</span><span class="p">(</span><span class="n">key</span><span class="p">)</span></div>
 
 
 <span class="k">class</span> <span class="nc">GitObject</span><span class="p">(</span><span class="n">_Base</span><span class="p">):</span>
+    <span class="n">use_fnv_keys</span> <span class="o">=</span> <span class="kc">False</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">all</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">ignored_prefix</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">all</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Iterate ALL objects of this type (all projects, all times) &quot;&quot;&quot;</span>
-        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">128</span><span class="p">):</span>
-            <span class="n">path</span> <span class="o">=</span> <span class="n">PATHS</span><span class="p">[</span><span class="s1">&#39;all_sequential&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="bp">cls</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">key</span><span class="p">)</span>
-            <span class="n">datafile</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span> <span class="o">+</span> <span class="s1">&#39;.bin&#39;</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span> <span class="o">+</span> <span class="s1">&#39;.idx&#39;</span><span class="p">):</span>
+        <span class="n">base_idx_path</span><span class="p">,</span> <span class="n">prefix_length</span> <span class="o">=</span> <span class="n">PATHS</span><span class="p">[</span><span class="bp">cls</span><span class="o">.</span><span class="n">type</span> <span class="o">+</span> <span class="s1">&#39;_sequential_idx&#39;</span><span class="p">]</span>
+        <span class="n">base_bin_path</span><span class="p">,</span> <span class="n">prefix_length</span> <span class="o">=</span> <span class="n">PATHS</span><span class="p">[</span><span class="bp">cls</span><span class="o">.</span><span class="n">type</span> <span class="o">+</span> <span class="s1">&#39;_sequential_bin&#39;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="n">prefix_length</span><span class="p">):</span>
+            <span class="n">idx_path</span> <span class="o">=</span> <span class="n">base_idx_path</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">key</span><span class="p">)</span>
+            <span class="n">bin_path</span> <span class="o">=</span> <span class="n">base_bin_path</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">key</span><span class="p">)</span>
+            <span class="n">datafile</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">bin_path</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">open</span><span class="p">(</span><span class="n">idx_path</span><span class="p">):</span>
                 <span class="n">chunks</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;;&quot;</span><span class="p">)</span>
                 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">chunks</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">4</span><span class="p">:</span>  <span class="c1"># cls.type == &quot;blob&quot;:</span>
                     <span class="c1"># usually, it&#39;s true for blobs;</span>
@@ -355,6 +400,7 @@
                 <span class="n">obj</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">decomp</span><span class="p">(</span><span class="n">datafile</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">comp_length</span><span class="p">)))</span>
 
                 <span class="k">yield</span> <span class="n">obj</span>
+            <span class="n">datafile</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sha</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -373,36 +419,62 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">bin_sha</span> <span class="o">=</span> <span class="n">sha</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid SHA1 hash: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">sha</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sha</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">GitObject</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">sha</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">resolve_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">key_length</span><span class="o">=</span><span class="mi">7</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Format given path with object type and key</span>
-<span class="sd">        &gt;&gt;&gt; go = GitObject(&#39;8528315640bac6eae17297270d4ee1892abf6add&#39;)</span>
-<span class="sd">        &gt;&gt;&gt; go.resolve_path(&quot;test&quot;)</span>
-<span class="sd">        &#39;test&#39;</span>
-<span class="sd">        &gt;&gt;&gt; go.resolve_path(&quot;test_{key}&quot;, 7)</span>
-<span class="sd">        &#39;test_5&#39;</span>
-<span class="sd">        &gt;&gt;&gt; go.resolve_path(&quot;/fast/All.sha1/{type}_{key}&quot;, 8)</span>
-<span class="sd">        &#39;/fast/All.sha1/None_133&#39;</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">path</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-            <span class="nb">type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">prefix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bin_sha</span><span class="p">,</span> <span class="n">key_length</span><span class="p">))</span>
+    <span class="k">def</span> <span class="nf">resolve_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dtype</span><span class="p">):</span>
+        <span class="c1"># overriding to use bin_sha instead of the key (which is sha)</span>
+        <span class="k">return</span> <span class="n">resolve_path</span><span class="p">(</span><span class="n">dtype</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_sha</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_fnv_keys</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">key_length</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span> <span class="n">silent</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">read_tch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">silent</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Resolve the path and read .tch&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">read_tch</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">resolve_path</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">key_length</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_sha</span><span class="p">,</span> <span class="n">silent</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">index_line</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="c1"># get a line number in the index file</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">PATHS</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">+</span> <span class="s1">&#39;_index_line&#39;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">read_tch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">resolve_path</span><span class="p">(</span><span class="n">dtype</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_sha</span><span class="p">,</span> <span class="n">silent</span><span class="p">)</span>
 
     <span class="nd">@cached_property</span>
     <span class="k">def</span> <span class="nf">data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;commit&#39;</span><span class="p">,</span> <span class="s1">&#39;tree&#39;</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">NotImplementedError</span>
         <span class="c1"># default implementation will only work for commits and trees</span>
-        <span class="k">return</span> <span class="n">decomp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">PATHS</span><span class="p">[</span><span class="s1">&#39;all_random&#39;</span><span class="p">],</span> <span class="n">silent</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">decomp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_tch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">+</span> <span class="s1">&#39;_random&#39;</span><span class="p">,</span> <span class="n">silent</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">string_sha</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Manually compute blob sha from its content passed as `data`.</span>
+
+<span class="sd">        The main use case for this method is to identify source of a file.</span>
+
+<span class="sd">        Blob SHA is computed from a string:</span>
+<span class="sd">        &quot;blob &lt;file content length as str&gt;&lt;null byte&gt;&lt;file content&gt;&quot;</span>
+
+<span class="sd">        # https://gist.github.com/masak/2415865</span>
+<span class="sd">        Commit SHAs are computed in a similar way</span>
+<span class="sd">        &quot;commit &lt;commit length as str&gt;&lt;null byte&gt;&lt;commit content&gt;&quot;</span>
+
+<span class="sd">        note that commit content includes committed/authored date</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data (str): content of the GitObject to get hash for</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: 40-byte hex SHA1 hash</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">sha1</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha1</span><span class="p">()</span>
+        <span class="n">sha1</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> </span><span class="si">%d</span><span class="se">\x00</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)))</span>
+        <span class="n">sha1</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">sha1</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">file_sha</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="n">buffsize</span> <span class="o">=</span> <span class="mi">1024</span> <span class="o">**</span> <span class="mi">2</span>
+        <span class="n">size</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">st_size</span>
+        <span class="n">fh</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span>
+        <span class="n">sha1</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha1</span><span class="p">()</span>
+        <span class="n">sha1</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> </span><span class="si">%d</span><span class="se">\x00</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">size</span><span class="p">))</span>
+        <span class="k">while</span> <span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">fh</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="n">buffsize</span><span class="p">))</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">sha1</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+            <span class="n">sha1</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -422,20 +494,46 @@
     <span class="nb">type</span> <span class="o">=</span> <span class="s1">&#39;blob&#39;</span>
 
     <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">length</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">position</span>
+        <span class="k">return</span> <span class="n">length</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">string_sha</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        &gt;&gt;&gt; Blob.string_sha(&#39;Hello world!&#39;)</span>
+<span class="sd">        &#39;6769dd60bdf536a83c9353272157893043e9f7d0&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># return pygit2.hash(data)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">Blob</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="n">string_sha</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">file_sha</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Manually compute blob sha from a file content.</span>
+
+<span class="sd">        Similar to string_sha</span>
+<span class="sd">        &gt;&gt;&gt; Blob.file_sha(&#39;LICENSE&#39;)</span>
+<span class="sd">        &#39;94a9ed024d3859793618152ea559a168bbcbb5e2&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># return pygit2.hashfile(path)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">Blob</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="n">file_sha</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">position</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Get offset and length of the blob data in the storage &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">offset</span><span class="p">,</span> <span class="n">length</span> <span class="o">=</span> <span class="n">unber</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_tch</span><span class="p">(</span><span class="n">PATHS</span><span class="p">[</span><span class="s1">&#39;blob_offset&#39;</span><span class="p">]))</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>  <span class="c1"># empty read -&gt; value not found</span>
+            <span class="k">raise</span> <span class="n">ObjectNotFound</span><span class="p">(</span><span class="s1">&#39;Blob data not found (bad sha?)&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">offset</span><span class="p">,</span> <span class="n">length</span>
 
     <span class="nd">@cached_property</span>
     <span class="k">def</span> <span class="nf">data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Content of the blob &quot;&quot;&quot;</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">offset</span><span class="p">,</span> <span class="n">length</span> <span class="o">=</span> <span class="n">unber</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">PATHS</span><span class="p">[</span><span class="s1">&#39;blob_offset&#39;</span><span class="p">]))</span>
-        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>  <span class="c1"># empty read -&gt; value not found</span>
-            <span class="k">raise</span> <span class="n">ObjectNotFound</span><span class="p">(</span><span class="s1">&#39;Blob data not found (bad sha?)&#39;</span><span class="p">)</span>
+        <span class="n">offset</span><span class="p">,</span> <span class="n">length</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">position</span>
         <span class="c1"># no caching here to stay thread-safe</span>
-        <span class="n">fh</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">resolve_path</span><span class="p">(</span><span class="n">PATHS</span><span class="p">[</span><span class="s1">&#39;blob_data&#39;</span><span class="p">]),</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span>
-        <span class="n">fh</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">offset</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">decomp</span><span class="p">(</span><span class="n">fh</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">length</span><span class="p">))</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">resolve_path</span><span class="p">(</span><span class="s1">&#39;blob_data&#39;</span><span class="p">),</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+            <span class="n">fh</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">offset</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">decomp</span><span class="p">(</span><span class="n">fh</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">length</span><span class="p">))</span>
 
     <span class="nd">@cached_property</span>
     <span class="k">def</span> <span class="nf">commit_shas</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -444,7 +542,7 @@
 
 <span class="sd">        **NOTE: commits removing this blob are not included**</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">slice20</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">PATHS</span><span class="p">[</span><span class="s1">&#39;blob_commits&#39;</span><span class="p">],</span> <span class="mi">4</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">slice20</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_tch</span><span class="p">(</span><span class="s1">&#39;blob_commits&#39;</span><span class="p">))</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">commits</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -573,20 +671,6 @@
         <span class="n">files</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">traverse</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
         <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">files</span><span class="p">)</span>
 
-    <span class="nd">@cached_property</span>
-    <span class="k">def</span> <span class="nf">parent_tree_shas</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Tuple of SHA hashes of parent trees</span>
-<span class="sd">        i.e. trees including this one as a subdirectory.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">slice20</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">PATHS</span><span class="p">[</span><span class="s1">&#39;tree_parents&#39;</span><span class="p">],</span> <span class="mi">3</span><span class="p">))</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">parent_trees</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Get parent trees</span>
-<span class="sd">        :return: generator of parent Tree objects</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="p">(</span><span class="n">Tree</span><span class="p">(</span><span class="n">sha</span><span class="p">)</span> <span class="k">for</span> <span class="n">sha</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent_tree_shas</span><span class="p">)</span>
-
     <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        &gt;&gt;&gt; print(Tree(&quot;954829887af5d9071aa92c427133ca2cdd0813cc&quot;))</span>
@@ -605,7 +689,7 @@
     <span class="k">def</span> <span class="nf">files</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; A dict of all files and their content/blob sha under this tree.</span>
 <span class="sd">        It includes recursive files (i.e. files in subdirectories).</span>
-<span class="sd">        It does not include subdirectories themselves.</span>
+<span class="sd">        It does NOT include subdirectories themselves.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">{</span><span class="n">fname</span><span class="p">:</span> <span class="n">sha</span>
                 <span class="k">for</span> <span class="n">mode</span><span class="p">,</span> <span class="n">fname</span><span class="p">,</span> <span class="n">sha</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">traverse</span><span class="p">()</span> <span class="k">if</span> <span class="n">mode</span> <span class="o">!=</span> <span class="s2">&quot;40000&quot;</span><span class="p">}</span>
@@ -660,6 +744,8 @@
 <span class="sd">            committer:      str, Name &lt;email&gt;</span>
 <span class="sd">            committed_at:   timezone-aware datetime or None (if invalid)</span>
 <span class="sd">            signature:      str or None, PGP signature</span>
+
+<span class="sd">        Commit: https://github.com/user2589/minicms/commit/e38126db</span>
 <span class="sd">        &gt;&gt;&gt; c = Commit(&#39;e38126dbca6572912013621d2aa9e6f7c50f36bc&#39;)</span>
 <span class="sd">        &gt;&gt;&gt; c.author.startswith(&#39;Marat&#39;)</span>
 <span class="sd">        True</span>
@@ -732,12 +818,98 @@
 
         <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span>
 
+    <span class="k">def</span> <span class="nf">__sub__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.5</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Compare two Commits.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            parent (Commit): another commit to compare to.</span>
+<span class="sd">                Expected order is `diff = child_commit - parent_commit`</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Generator[Tuple[Optional[str], Optional[str], Optional[str], Optional[str]]]:</span>
+<span class="sd">                4-tuples: `(old_path, new_path, old_sha, new_sha)`</span>
+
+<span class="sd">            Examples:</span>
+<span class="sd">            - a new file &#39;setup.py&#39; was created:</span>
+<span class="sd">                `(None, &#39;setup.py&#39;, None, &#39;file_sha&#39;)`</span>
+<span class="sd">            - an existing &#39;setup.py&#39; was deleted:</span>
+<span class="sd">                `(&#39;setup.py&#39;, None, &#39;old_file_sha&#39;, None)`</span>
+<span class="sd">            - setup.py.old was renamed to setup.py, content unchanged:</span>
+<span class="sd">                `(&#39;setup.py.old&#39;, &#39;setup.py&#39;, &#39;file_sha&#39;, &#39;file_sha&#39;)`</span>
+<span class="sd">            - setup.py was edited:</span>
+<span class="sd">                `(&#39;setup.py&#39;, &#39;setup.py&#39;, &#39;old_file_sha&#39;, &#39;new_file_sha&#39;)`</span>
+<span class="sd">            - setup.py.old was edited and renamed to setup.py:</span>
+<span class="sd">                `(&#39;setup.py.old&#39;, &#39;setup.py&#39;, &#39;old_file_sha&#39;, &#39;new_file_sha&#39;)`</span>
+
+<span class="sd">        Detecting the last one is computationally expensive. You can adjust this</span>
+<span class="sd">        behaviour by passing the `threshold` parameter, which is 0.5 by default.</span>
+<span class="sd">        It means that if roughly 50% of the file content is the same,</span>
+<span class="sd">        it is considered a match. `threshold=1` means that only exact</span>
+<span class="sd">        matches are considered, effectively disabling this comparison.</span>
+<span class="sd">        If threshold is set to 0, any pair of deleted and added file will be</span>
+<span class="sd">        considered renamed and edited; this last case doesn&#39;t make much sense so</span>
+<span class="sd">        don&#39;t set it too low.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">parent</span><span class="o">.</span><span class="n">sha</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent_shas</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Comparing non-adjacent commits might be &quot;</span>
+                          <span class="s2">&quot;computationally expensive. Proceed with caution.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># filename: (blob sha before, blob sha after)</span>
+        <span class="n">new_files</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">files</span>
+        <span class="n">new_paths</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">new_files</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="n">old_files</span> <span class="o">=</span> <span class="n">parent</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">files</span>
+        <span class="n">old_paths</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">old_files</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
+        <span class="c1"># unchanged_paths</span>
+        <span class="k">for</span> <span class="n">fname</span> <span class="ow">in</span> <span class="n">new_paths</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">old_paths</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">new_files</span><span class="p">[</span><span class="n">fname</span><span class="p">]</span> <span class="o">!=</span> <span class="n">old_files</span><span class="p">[</span><span class="n">fname</span><span class="p">]:</span>
+                <span class="c1"># i.e. the Blob sha is the same</span>
+                <span class="k">yield</span> <span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">fname</span><span class="p">,</span> <span class="n">old_files</span><span class="p">[</span><span class="n">fname</span><span class="p">],</span> <span class="n">new_files</span><span class="p">[</span><span class="n">fname</span><span class="p">])</span>
+
+        <span class="n">added_paths</span> <span class="o">=</span> <span class="n">new_paths</span> <span class="o">-</span> <span class="n">old_paths</span>
+        <span class="n">deleted_paths</span> <span class="o">=</span> <span class="n">old_paths</span> <span class="o">-</span> <span class="n">new_paths</span>
+
+        <span class="k">if</span> <span class="n">threshold</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># i.e. only exact matches are considered</span>
+            <span class="k">for</span> <span class="n">fname</span> <span class="ow">in</span> <span class="n">added_paths</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">fname</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">new_files</span><span class="p">[</span><span class="n">fname</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">fname</span> <span class="ow">in</span> <span class="n">deleted_paths</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">old_files</span><span class="p">[</span><span class="n">fname</span><span class="p">],</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="c1"># search for matches</span>
+        <span class="n">sm</span> <span class="o">=</span> <span class="n">difflib</span><span class="o">.</span><span class="n">SequenceMatcher</span><span class="p">()</span>
+        <span class="n">added_blobs</span> <span class="o">=</span> <span class="p">{</span><span class="n">f</span><span class="p">:</span> <span class="n">Blob</span><span class="p">(</span><span class="n">new_files</span><span class="p">[</span><span class="n">f</span><span class="p">])</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">added_paths</span><span class="p">}</span>
+        <span class="n">deleted_blobs</span> <span class="o">=</span> <span class="p">{</span><span class="n">f</span><span class="p">:</span> <span class="n">Blob</span><span class="p">(</span><span class="n">old_files</span><span class="p">[</span><span class="n">f</span><span class="p">])</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">deleted_paths</span><span class="p">}</span>
+        <span class="c1"># for each added blob, try to find a match in deleted blobs</span>
+        <span class="c1">#   if there is a match, signal a rename and remove from deleted</span>
+        <span class="c1">#   if there is no match, signal a new file</span>
+        <span class="c1"># unused deleted blobs are indeed deleted</span>
+        <span class="k">for</span> <span class="n">added_fname</span><span class="p">,</span> <span class="n">added_blob</span> <span class="ow">in</span> <span class="n">added_blobs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">sm</span><span class="o">.</span><span class="n">set_seq1</span><span class="p">(</span><span class="n">added_blob</span><span class="p">)</span>
+            <span class="n">matched</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">for</span> <span class="n">deleted_fname</span><span class="p">,</span> <span class="n">deleted_blob</span> <span class="ow">in</span> <span class="n">deleted_blobs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">sm</span><span class="o">.</span><span class="n">set_seq2</span><span class="p">(</span><span class="n">deleted_blob</span><span class="p">)</span>
+                <span class="c1"># use quick checks first (lower bound by length diff)</span>
+                <span class="k">if</span> <span class="n">sm</span><span class="o">.</span><span class="n">real_quick_ratio</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">threshold</span> \
+                        <span class="ow">and</span> <span class="n">sm</span><span class="o">.</span><span class="n">quick_ratio</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">threshold</span> \
+                        <span class="ow">and</span> <span class="n">sm</span><span class="o">.</span><span class="n">ratio</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">:</span>
+                    <span class="k">yield</span> <span class="p">(</span><span class="n">deleted_fname</span><span class="p">,</span> <span class="n">added_fname</span><span class="p">,</span> <span class="n">deleted_blob</span><span class="p">,</span> <span class="n">added_blob</span><span class="p">)</span>
+                    <span class="k">del</span><span class="p">(</span><span class="n">deleted_blobs</span><span class="p">[</span><span class="n">deleted_fname</span><span class="p">])</span>
+                    <span class="n">matched</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="k">break</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">matched</span><span class="p">:</span>  <span class="c1"># this is a new file</span>
+                <span class="k">yield</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">added_fname</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">added_blob</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">deleted_fname</span><span class="p">,</span> <span class="n">deleted_blob</span> <span class="ow">in</span> <span class="n">deleted_blobs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">yield</span> <span class="p">(</span><span class="n">deleted_fname</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">deleted_blob</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">parents</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; A generator of parent commits.</span>
 <span class="sd">        If you only need hashes (and not `Commit` objects),</span>
 <span class="sd">        use `.parent_sha` instead</span>
 
+<span class="sd">        Commit: https://github.com/user2589/minicms/commit/e38126db</span>
 <span class="sd">        &gt;&gt;&gt; c = Commit(&#39;e38126dbca6572912013621d2aa9e6f7c50f36bc&#39;)</span>
 <span class="sd">        &gt;&gt;&gt; tuple(c.parents)</span>
 <span class="sd">        (&lt;Commit: ab124ab4baa42cd9f554b7bb038e19d4e3647957&gt;,)</span>
@@ -751,6 +923,7 @@
 <span class="sd">        This property can be used to find all forks of a project</span>
 <span class="sd">        by its first commit.</span>
 
+<span class="sd">        Commit: https://github.com/user2589/minicms/commit/f2a7fcdc</span>
 <span class="sd">        &gt;&gt;&gt; c = Commit(&#39;f2a7fcdc51450ab03cb364415f14e634fa69b62c&#39;)</span>
 <span class="sd">        &gt;&gt;&gt; isinstance(c.project_names, tuple)</span>
 <span class="sd">        True</span>
@@ -759,7 +932,7 @@
 <span class="sd">        &gt;&gt;&gt; &#39;user2589_minicms&#39; in c.project_names</span>
 <span class="sd">        True</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="n">decomp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">PATHS</span><span class="p">[</span><span class="s1">&#39;commit_projects&#39;</span><span class="p">],</span> <span class="mi">3</span><span class="p">))</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">decomp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_tch</span><span class="p">(</span><span class="s1">&#39;commit_projects&#39;</span><span class="p">))</span>
         <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">project_name</span>
                      <span class="k">for</span> <span class="n">project_name</span> <span class="ow">in</span> <span class="p">(</span><span class="n">data</span> <span class="ow">and</span> <span class="n">data</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;;&quot;</span><span class="p">))</span> <span class="ow">or</span> <span class="p">[]</span>
                      <span class="k">if</span> <span class="n">project_name</span> <span class="ow">and</span> <span class="n">project_name</span> <span class="o">!=</span> <span class="s1">&#39;EMPTY&#39;</span><span class="p">)</span>
@@ -775,15 +948,17 @@
         <span class="sd">&quot;&quot;&quot; Children commit binary sha hashes.</span>
 <span class="sd">        Basically, this is a reverse parent_shas</span>
 
+<span class="sd">        Commit: https://github.com/user2589/minicms/commit/1e971a07</span>
 <span class="sd">        &gt;&gt;&gt; Commit(&#39;1e971a073f40d74a1e72e07c682e1cba0bae159b&#39;).child_shas</span>
 <span class="sd">        (&#39;9bd02434b834979bb69d0b752a403228f2e385e8&#39;,)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">slice20</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">PATHS</span><span class="p">[</span><span class="s1">&#39;commit_children&#39;</span><span class="p">],</span> <span class="mi">3</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">slice20</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_tch</span><span class="p">(</span><span class="s1">&#39;commit_children&#39;</span><span class="p">))</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; A generator of children `Commit` objects</span>
 
+<span class="sd">        Commit: https://github.com/user2589/minicms/commit/1e971a07</span>
 <span class="sd">        &gt;&gt;&gt; tuple(Commit(&#39;1e971a073f40d74a1e72e07c682e1cba0bae159b&#39;).children)</span>
 <span class="sd">        (&lt;Commit: 9bd02434b834979bb69d0b752a403228f2e385e8&gt;,)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -801,6 +976,14 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">blob_shas</span>
 
+    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">changed_file_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">decomp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_tch</span><span class="p">(</span><span class="s1">&#39;commit_files&#39;</span><span class="p">))</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">((</span><span class="n">data</span> <span class="ow">and</span> <span class="n">data</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;;&quot;</span><span class="p">))</span> <span class="ow">or</span> <span class="p">[])</span>
+
+    <span class="k">def</span> <span class="nf">files_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">File</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span> <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">changed_file_names</span><span class="p">)</span>
+
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">blob_shas_rel</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -815,7 +998,7 @@
             <span class="s2">&quot;This relation is known to miss every first file in all trees. &quot;</span>
             <span class="s2">&quot;Consider using Commit.tree.blobs as a slower but more accurate &quot;</span>
             <span class="s2">&quot;alternative&quot;</span><span class="p">,</span> <span class="ne">DeprecationWarning</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">slice20</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">PATHS</span><span class="p">[</span><span class="s1">&#39;commit_blobs&#39;</span><span class="p">],</span> <span class="mi">4</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">slice20</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_tch</span><span class="p">(</span><span class="s1">&#39;commit_blobs&#39;</span><span class="p">))</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">blobs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -853,6 +1036,7 @@
 <span class="sd">    Commits can be checked for membership in a project, either by their SHA</span>
 <span class="sd">    hash or by a Commit object itself:</span>
 
+<span class="sd">        Commit: https://github.com/user2589/minicms/commit/e38126db</span>
 <span class="sd">        &gt;&gt;&gt; sha = &#39;e38126dbca6572912013621d2aa9e6f7c50f36bc&#39;</span>
 <span class="sd">        &gt;&gt;&gt; sha in Project(&#39;user2589_minicms&#39;)</span>
 <span class="sd">        True</span>
@@ -860,6 +1044,7 @@
 <span class="sd">        True</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="nb">type</span> <span class="o">=</span> <span class="s1">&#39;project&#39;</span>
+    <span class="n">_keys_registry_dtype</span> <span class="o">=</span> <span class="s1">&#39;project_commits&#39;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">uri</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">uri</span> <span class="o">=</span> <span class="n">uri</span>
@@ -898,20 +1083,6 @@
             <span class="k">return</span> <span class="kc">False</span>
         <span class="k">return</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">commit_shas</span>
 
-    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">all</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name_prefix</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Get all project URIs, with URI starting with an optional prefix</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            name_prefix (str): optional URI prefix</span>
-<span class="sd">        Returns:</span>
-<span class="sd">            a generator of `Project` objects</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">for</span> <span class="n">key_prefix</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">8</span><span class="p">):</span>
-            <span class="n">tch_path</span> <span class="o">=</span> <span class="n">PATHS</span><span class="p">[</span><span class="s1">&#39;project_commits&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">key_prefix</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">uri</span> <span class="ow">in</span> <span class="n">tch_keys</span><span class="p">(</span><span class="n">tch_path</span><span class="p">,</span> <span class="n">name_prefix</span><span class="p">):</span>
-                <span class="k">yield</span> <span class="bp">cls</span><span class="p">(</span><span class="n">uri</span><span class="p">)</span>
-
     <span class="nd">@cached_property</span>
     <span class="k">def</span> <span class="nf">commit_shas</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; SHA1 of all commits in the project</span>
@@ -921,7 +1092,7 @@
 <span class="sd">        (&#39;2dbcd43f077f2b5511cc107d63a0b9539a6aa2a7&#39;,</span>
 <span class="sd">         &#39;7572fc070c44f85e2a540f9a5a05a95d1dd2662d&#39;)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">tch_path</span> <span class="o">=</span> <span class="n">PATHS</span><span class="p">[</span><span class="s1">&#39;project_commits&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">fnvhash</span><span class="o">.</span><span class="n">fnv1a_32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">)</span><span class="o">%</span><span class="mi">32</span><span class="p">)</span>
+        <span class="n">tch_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolve_path</span><span class="p">(</span><span class="s1">&#39;project_commits&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">slice20</span><span class="p">(</span><span class="n">read_tch</span><span class="p">(</span><span class="n">tch_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">silent</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
 
     <span class="nd">@property</span>
@@ -1039,20 +1210,11 @@
 <span class="sd">        &gt;&gt;&gt; File(&#39;docs/Index.rst&#39;)  # doctest: +SKIP</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="nb">type</span> <span class="o">=</span> <span class="s1">&#39;file&#39;</span>
+    <span class="n">_keys_registry_dtype</span> <span class="o">=</span> <span class="s1">&#39;file_commits&#39;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">path</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">File</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
-
-    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">all</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">fname_prefix</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Get all file names, starting with an optional prefix</span>
-<span class="sd">        This method is heavy so it is moved to integration tests</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">for</span> <span class="n">key_prefix</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">8</span><span class="p">):</span>
-            <span class="n">tch_path</span> <span class="o">=</span> <span class="n">PATHS</span><span class="p">[</span><span class="s1">&#39;file_commits&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">key_prefix</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">fname</span> <span class="ow">in</span> <span class="n">tch_keys</span><span class="p">(</span><span class="n">tch_path</span><span class="p">,</span> <span class="n">fname_prefix</span><span class="p">):</span>
-                <span class="k">yield</span> <span class="bp">cls</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
 
     <span class="nd">@cached_property</span>
     <span class="k">def</span> <span class="nf">commit_shas</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1074,15 +1236,15 @@
         <span class="n">file_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">key</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">file_path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">):</span>
             <span class="n">file_path</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
-        <span class="n">tch_path</span> <span class="o">=</span> <span class="n">PATHS</span><span class="p">[</span><span class="s1">&#39;file_commits&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">prefix</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+        <span class="n">tch_path</span> <span class="o">=</span> <span class="n">resolve_path</span><span class="p">(</span><span class="s1">&#39;file_commits&#39;</span><span class="p">,</span> <span class="n">file_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_fnv_keys</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">slice20</span><span class="p">(</span><span class="n">read_tch</span><span class="p">(</span><span class="n">tch_path</span><span class="p">,</span> <span class="n">file_path</span><span class="p">,</span> <span class="n">silent</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">commits</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; All commits changing the file</span>
 
-<span class="sd">        **NOTE: this relation considers only diff with the first parent,</span>
-<span class="sd">        which substantially limits its application**</span>
+<span class="sd">        .. note: this relation considers only diff with the first parent,</span>
+<span class="sd">            which substantially limits its application</span>
 
 <span class="sd">        &gt;&gt;&gt; cs = tuple(File(&#39;minicms/templatetags/minicms_tags.py&#39;).commits)</span>
 <span class="sd">        &gt;&gt;&gt; len(cs) &gt; 0</span>
@@ -1114,18 +1276,11 @@
 <span class="sd">    author, so keep in mind this object represents an alias, not a person.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="nb">type</span> <span class="o">=</span> <span class="s1">&#39;author&#39;</span>
+    <span class="n">_keys_registry_dtype</span> <span class="o">=</span> <span class="s1">&#39;author_commits&#39;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">full_email</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">full_email</span> <span class="o">=</span> <span class="n">full_email</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">Author</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">full_email</span><span class="p">)</span>
-
-    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">all</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name_prefix</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Get all author names, starting with an optional prefix</span>
-<span class="sd">        This method is heavy so it is moved to integration tests</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">tch_keys</span><span class="p">(</span><span class="n">PATHS</span><span class="p">[</span><span class="s1">&#39;author_commits&#39;</span><span class="p">],</span> <span class="n">name_prefix</span><span class="p">):</span>
-            <span class="k">yield</span> <span class="bp">cls</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
 
     <span class="nd">@cached_property</span>
     <span class="k">def</span> <span class="nf">commit_shas</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1141,7 +1296,7 @@
 <span class="sd">        &gt;&gt;&gt; len(commits[0]) == 40</span>
 <span class="sd">        True</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">slice20</span><span class="p">(</span><span class="n">read_tch</span><span class="p">(</span><span class="n">PATHS</span><span class="p">[</span><span class="s1">&#39;author_commits&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">silent</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">slice20</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_tch</span><span class="p">(</span><span class="s1">&#39;author_commits&#39;</span><span class="p">,</span> <span class="n">silent</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">commits</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1153,34 +1308,7 @@
 <span class="sd">        &gt;&gt;&gt; isinstance(commits[0], Commit)</span>
 <span class="sd">        True</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="p">(</span><span class="n">Commit</span><span class="p">(</span><span class="n">sha</span><span class="p">)</span> <span class="k">for</span> <span class="n">sha</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">commit_shas</span><span class="p">)</span>
-
-    <span class="nd">@cached_property</span>
-    <span class="k">def</span> <span class="nf">file_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; All file names the Author has changed</span>
-
-<span class="sd">        &gt;&gt;&gt; fnames = Author(&#39;user2589 &lt;valiev.m@gmail.com&gt;&#39;).file_names</span>
-<span class="sd">        &gt;&gt;&gt; len(fnames) &gt; 50</span>
-<span class="sd">        True</span>
-<span class="sd">        &gt;&gt;&gt; isinstance(fnames, tuple)</span>
-<span class="sd">        True</span>
-<span class="sd">        &gt;&gt;&gt; isinstance(fnames[0], str)</span>
-<span class="sd">        True</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="n">decomp</span><span class="p">(</span><span class="n">read_tch</span><span class="p">(</span><span class="n">PATHS</span><span class="p">[</span><span class="s1">&#39;author_files&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">))</span>
-        <span class="k">return</span> <span class="nb">tuple</span><span class="p">((</span><span class="n">data</span> <span class="ow">and</span> <span class="n">data</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;;&quot;</span><span class="p">))</span> <span class="ow">or</span> <span class="p">[])</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">files</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; All File objects changed by the Author</span>
-
-<span class="sd">        &gt;&gt;&gt; fnames = tuple(Author(&#39;user2589 &lt;valiev.m@gmail.com&gt;&#39;).files)</span>
-<span class="sd">        &gt;&gt;&gt; len(fnames) &gt; 50</span>
-<span class="sd">        True</span>
-<span class="sd">        &gt;&gt;&gt; isinstance(fnames[0], File)</span>
-<span class="sd">        True</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="p">(</span><span class="n">File</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span> <span class="k">for</span> <span class="n">fname</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_names</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="p">(</span><span class="n">Commit</span><span class="p">(</span><span class="n">sha</span><span class="p">)</span> <span class="k">for</span> <span class="n">sha</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">commit_shas</span><span class="p">)</span></div>
 </pre></div>
 
           </div>
