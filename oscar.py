@@ -293,24 +293,37 @@ class _Base(object):
         return self.key
 
     @classmethod
-    def all(cls, key_prefix=''):
+    def all(cls):
         """ Iterate all objects of the given type
 
         This might be useful to get a list of all projects, or a list of
         all file names.
+
+        Returns:
+            a generator of `Project` objects
         """
-        raise NotImplementedError
+        if not cls._keys_registry_dtype:
+            raise NotImplemented
+
+        base_path, prefix_length = PATHS[cls._keys_registry_dtype]
+        for file_prefix in range(2 ** prefix_length):
+            tch_path = base_path.format(key=file_prefix)
+            for key in tch_keys(tch_path):
+                yield cls(key)
 
 
 class GitObject(_Base):
 
     @classmethod
-    def all(cls, ignored_prefix=''):
+    def all(cls):
         """ Iterate ALL objects of this type (all projects, all times) """
-        for key in range(128):
-            path = PATHS['all_sequential'].format(type=cls.type, key=key)
-            datafile = open(path + '.bin')
-            for line in open(path + '.idx'):
+        base_idx_path, prefix_length = PATHS[cls.type + '_sequential_idx']
+        base_bin_path, prefix_length = PATHS[cls.type + '_sequential_bin']
+        for key in range(2**prefix_length):
+            idx_path = base_idx_path.format(key=key)
+            bin_path = base_bin_path.format(key=key)
+            datafile = open(bin_path)
+            for line in open(idx_path):
                 chunks = line.strip().split(";")
                 if len(chunks) > 4:  # cls.type == "blob":
                     # usually, it's true for blobs;
@@ -323,6 +336,7 @@ class GitObject(_Base):
                 obj._data = decomp(datafile.read(int(comp_length)))
 
                 yield obj
+            datafile.close()
 
     def __init__(self, sha):
         """
@@ -1009,20 +1023,6 @@ class Project(_Base):
             return False
         return key in self.commit_shas
 
-    @classmethod
-    def all(cls, name_prefix=''):
-        """ Get all project URIs, with URI starting with an optional prefix
-
-        Args:
-            name_prefix (str): optional URI prefix
-        Returns:
-            a generator of `Project` objects
-        """
-        for key_prefix in range(8):
-            tch_path = PATHS['project_commits'].format(key=key_prefix)
-            for uri in tch_keys(tch_path, name_prefix):
-                yield cls(uri)
-
     @cached_property
     def commit_shas(self):
         """ SHA1 of all commits in the project
@@ -1150,20 +1150,11 @@ class File(_Base):
         >>> File('docs/Index.rst')  # doctest: +SKIP
     """
     type = 'file'
+    _keys_registry_dtype = 'file_commits'
 
     def __init__(self, path):
         self.path = path
         super(File, self).__init__(path)
-
-    @classmethod
-    def all(cls, fname_prefix=''):
-        """ Get all file names, starting with an optional prefix
-        This method is heavy so it is moved to integration tests
-        """
-        for key_prefix in range(8):
-            tch_path = PATHS['file_commits'].format(key=key_prefix)
-            for fname in tch_keys(tch_path, fname_prefix):
-                yield cls(fname)
 
     @cached_property
     def commit_shas(self):
@@ -1225,18 +1216,11 @@ class Author(_Base):
     author, so keep in mind this object represents an alias, not a person.
     """
     type = 'author'
+    _keys_registry_dtype = 'author_commits'
 
     def __init__(self, full_email):
         self.full_email = full_email
         super(Author, self).__init__(full_email)
-
-    @classmethod
-    def all(cls, name_prefix=''):
-        """ Get all author names, starting with an optional prefix
-        This method is heavy so it is moved to integration tests
-        """
-        for name in tch_keys(PATHS['author_commits'], name_prefix):
-            yield cls(name)
 
     @cached_property
     def commit_shas(self):
