@@ -22,13 +22,13 @@ PATHS = {
     # prefix length means that the data are split into 2**n files,
     # e.g. key is in 0..31 for prefix length of 5 bit.
 
-    # not critical - almost never used
+    # The most critical: raw data for the initial storage, use in sweeps, 100TB da4+ backup
     'commit_sequential_idx': ('/data/All.blobs/commit_{key}.idx', 7),
     'commit_sequential_bin': ('/data/All.blobs/commit_{key}.bin', 7),
     'tree_sequential_idx': ('/data/All.blobs/blob_{key}.idx', 7),
     'tree_sequential_bin': ('/data/All.blobs/blob_{key}.bin', 7),
 
-    # critical - contain actual objects
+    # critical - random access to trees and commits on da3 and da4, 10TB
     'commit_random': ('/fast/All.sha1c/commit_{key}.tch', 7),
     'tree_random': ('/fast/All.sha1c/tree_{key}.tch', 7),
 
@@ -46,18 +46,17 @@ PATHS = {
     'commit_files': ('/da0_data/basemaps/c2fFullM.{key}.tch', 5),
     'project_commits': ('/da0_data/basemaps/p2cFullN.{key}.tch', 5),
     'author_commits': ('/da0_data/basemaps/a2cFullN.{key}.tch', 5),
-    # TODO: deprecated?
     'blob_commits': ('/data/basemaps/b2cFullM.{key}.tch', 5),
     'file_commits': ('/data/basemaps/f2cFullM.{key}.tch', 5),
 
     # another way to get commit parents, currently unused
     # 'commit_parents': ('/da0_data/basemaps/c2pcK.{key}.tch', 7)
 
-    # currently not used. TODO: check if can be helpful
-    # 'blob_index_line': ('/fast1/All.sha1/sha1.blob_{key}.tch', 7)
-    # 'tree_index_line': ('/fast1/All.sha1/sha1.tree_{key}.tch', 7)
-    # 'commit_index_line': ('/fast/All.sha1/sha1.commit_{key}.tch', 7),
-    # 'tag_index_line': ('/fast/All.sha1/sha1.tag_{key}.tch', 7)
+    # SHA1 cache, on da3 and d4  668G
+    'blob_index_line': ('/fast/All.sha1/sha1.blob_{key}.tch', 7)
+    'tree_index_line': ('/fast/All.sha1/sha1.tree_{key}.tch', 7)
+    'commit_index_line': ('/fast/All.sha1/sha1.commit_{key}.tch', 7),
+    'tag_index_line': ('/fast/All.sha1/sha1.tag_{key}.tch', 7)
 }
 
 
