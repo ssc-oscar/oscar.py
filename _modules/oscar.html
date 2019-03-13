@@ -64,10 +64,10 @@
     <span class="s1">&#39;tree_sequential_bin&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/data/All.blobs/blob_</span><span class="si">{key}</span><span class="s1">.bin&#39;</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
 
     <span class="c1"># critical - contain actual objects</span>
-    <span class="s1">&#39;commit_random&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/fast1/All.sha1c/commit_</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
-    <span class="s1">&#39;tree_random&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/fast1/All.sha1c/tree_</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
+    <span class="s1">&#39;commit_random&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/fast/All.sha1c/commit_</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
+    <span class="s1">&#39;tree_random&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/fast/All.sha1c/tree_</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
 
-    <span class="s1">&#39;blob_offset&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/fast1/All.sha1o/sha1.blob_</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
+    <span class="s1">&#39;blob_offset&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/fast/All.sha1o/sha1.blob_</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
     <span class="s1">&#39;blob_data&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/data/All.blobs/blob_</span><span class="si">{key}</span><span class="s1">.bin&#39;</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
     <span class="c1"># the rest of x_data is currently unused:</span>
     <span class="c1"># &#39;commit_data&#39;: (&#39;/data/All.blobs/commit_{key}.bin&#39;,  # 7)</span>
@@ -75,15 +75,15 @@
     <span class="c1"># &#39;tag_data&#39;: (&#39;/data/All.blobs/tag_{key}.bin&#39;, 7)</span>
 
     <span class="c1"># relations - good to have but not critical</span>
-    <span class="s1">&#39;commit_projects&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/da0_data/basemaps/c2pK.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
-    <span class="s1">&#39;commit_children&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/da0_data/basemaps/c2ccFullK.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
-    <span class="s1">&#39;commit_blobs&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/da0_data/basemaps/c2bFullK.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
-    <span class="s1">&#39;commit_files&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/da0_data/basemaps/c2fFullK.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
-    <span class="s1">&#39;project_commits&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/da0_data/basemaps/p2cFullK.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
-    <span class="s1">&#39;author_commits&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/da0_data/basemaps/a2cFullK.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+    <span class="s1">&#39;commit_projects&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/da0_data/basemaps/c2pFullN.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+    <span class="s1">&#39;commit_children&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/da0_data/basemaps/c2ccFullN.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+    <span class="s1">&#39;commit_blobs&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/da0_data/basemaps/c2bFullM.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+    <span class="s1">&#39;commit_files&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/da0_data/basemaps/c2fFullM.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+    <span class="s1">&#39;project_commits&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/da0_data/basemaps/p2cFullN.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+    <span class="s1">&#39;author_commits&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/da0_data/basemaps/a2cFullN.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
     <span class="c1"># TODO: deprecated?</span>
-    <span class="s1">&#39;blob_commits&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/data/basemaps/b2cFullJ.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
-    <span class="s1">&#39;file_commits&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/data/basemaps/f2cFullH.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
+    <span class="s1">&#39;blob_commits&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/data/basemaps/b2cFullM.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+    <span class="s1">&#39;file_commits&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/data/basemaps/f2cFullM.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
 
     <span class="c1"># another way to get commit parents, currently unused</span>
     <span class="c1"># &#39;commit_parents&#39;: (&#39;/da0_data/basemaps/c2pcK.{key}.tch&#39;, 7)</span>
@@ -1365,7 +1365,7 @@
       &copy;2018, Marat (@cmu.edu).
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.3</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
     </div>
