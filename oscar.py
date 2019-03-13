@@ -29,10 +29,10 @@ PATHS = {
     'tree_sequential_bin': ('/data/All.blobs/blob_{key}.bin', 7),
 
     # critical - contain actual objects
-    'commit_random': ('/fast1/All.sha1c/commit_{key}.tch', 7),
-    'tree_random': ('/fast1/All.sha1c/tree_{key}.tch', 7),
+    'commit_random': ('/fast/All.sha1c/commit_{key}.tch', 7),
+    'tree_random': ('/fast/All.sha1c/tree_{key}.tch', 7),
 
-    'blob_offset': ('/fast1/All.sha1o/sha1.blob_{key}.tch', 7),
+    'blob_offset': ('/fast/All.sha1o/sha1.blob_{key}.tch', 7),
     'blob_data': ('/data/All.blobs/blob_{key}.bin', 7),
     # the rest of x_data is currently unused:
     # 'commit_data': ('/data/All.blobs/commit_{key}.bin',  # 7)
@@ -40,15 +40,15 @@ PATHS = {
     # 'tag_data': ('/data/All.blobs/tag_{key}.bin', 7)
 
     # relations - good to have but not critical
-    'commit_projects': ('/da0_data/basemaps/c2pK.{key}.tch', 5),
-    'commit_children': ('/da0_data/basemaps/c2ccFullK.{key}.tch', 5),
-    'commit_blobs': ('/da0_data/basemaps/c2bFullK.{key}.tch', 5),
-    'commit_files': ('/da0_data/basemaps/c2fFullK.{key}.tch', 5),
-    'project_commits': ('/da0_data/basemaps/p2cFullK.{key}.tch', 5),
-    'author_commits': ('/da0_data/basemaps/a2cFullK.{key}.tch', 5),
+    'commit_projects': ('/da0_data/basemaps/c2pFullN.{key}.tch', 5),
+    'commit_children': ('/da0_data/basemaps/c2ccFullN.{key}.tch', 5),
+    'commit_blobs': ('/da0_data/basemaps/c2bFullM.{key}.tch', 5),
+    'commit_files': ('/da0_data/basemaps/c2fFullM.{key}.tch', 5),
+    'project_commits': ('/da0_data/basemaps/p2cFullN.{key}.tch', 5),
+    'author_commits': ('/da0_data/basemaps/a2cFullN.{key}.tch', 5),
     # TODO: deprecated?
-    'blob_commits': ('/data/basemaps/b2cFullJ.{key}.tch', 5),
-    'file_commits': ('/data/basemaps/f2cFullH.{key}.tch', 3),
+    'blob_commits': ('/data/basemaps/b2cFullM.{key}.tch', 5),
+    'file_commits': ('/data/basemaps/f2cFullM.{key}.tch', 3),
 
     # another way to get commit parents, currently unused
     # 'commit_parents': ('/da0_data/basemaps/c2pcK.{key}.tch', 7)
