@@ -48,7 +48,7 @@ PATHS = {
     'author_commits': ('/da0_data/basemaps/a2cFullN.{key}.tch', 5),
     # TODO: deprecated?
     'blob_commits': ('/data/basemaps/b2cFullM.{key}.tch', 5),
-    'file_commits': ('/data/basemaps/f2cFullM.{key}.tch', 3),
+    'file_commits': ('/data/basemaps/f2cFullM.{key}.tch', 5),
 
     # another way to get commit parents, currently unused
     # 'commit_parents': ('/da0_data/basemaps/c2pcK.{key}.tch', 7)
