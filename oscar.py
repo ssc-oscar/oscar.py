@@ -53,8 +53,8 @@ PATHS = {
     # 'commit_parents': ('/da0_data/basemaps/c2pcK.{key}.tch', 7)
 
     # SHA1 cache, on da3 and d4  668G
-    'blob_index_line': ('/fast/All.sha1/sha1.blob_{key}.tch', 7)
-    'tree_index_line': ('/fast/All.sha1/sha1.tree_{key}.tch', 7)
+    'blob_index_line': ('/fast/All.sha1/sha1.blob_{key}.tch', 7),
+    'tree_index_line': ('/fast/All.sha1/sha1.tree_{key}.tch', 7),
     'commit_index_line': ('/fast/All.sha1/sha1.commit_{key}.tch', 7),
     'tag_index_line': ('/fast/All.sha1/sha1.tag_{key}.tch', 7)
 }
