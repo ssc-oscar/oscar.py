@@ -57,13 +57,13 @@
     <span class="c1"># prefix length means that the data are split into 2**n files,</span>
     <span class="c1"># e.g. key is in 0..31 for prefix length of 5 bit.</span>
 
-    <span class="c1"># not critical - almost never used</span>
+    <span class="c1"># The most critical: raw data for the initial storage, use in sweeps, 100TB da4+ backup</span>
     <span class="s1">&#39;commit_sequential_idx&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/data/All.blobs/commit_</span><span class="si">{key}</span><span class="s1">.idx&#39;</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
     <span class="s1">&#39;commit_sequential_bin&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/data/All.blobs/commit_</span><span class="si">{key}</span><span class="s1">.bin&#39;</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
     <span class="s1">&#39;tree_sequential_idx&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/data/All.blobs/blob_</span><span class="si">{key}</span><span class="s1">.idx&#39;</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
     <span class="s1">&#39;tree_sequential_bin&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/data/All.blobs/blob_</span><span class="si">{key}</span><span class="s1">.bin&#39;</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
 
-    <span class="c1"># critical - contain actual objects</span>
+    <span class="c1"># critical - random access to trees and commits on da3 and da4, 10TB</span>
     <span class="s1">&#39;commit_random&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/fast/All.sha1c/commit_</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
     <span class="s1">&#39;tree_random&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/fast/All.sha1c/tree_</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
 
@@ -81,18 +81,17 @@
     <span class="s1">&#39;commit_files&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/da0_data/basemaps/c2fFullM.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
     <span class="s1">&#39;project_commits&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/da0_data/basemaps/p2cFullN.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
     <span class="s1">&#39;author_commits&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/da0_data/basemaps/a2cFullN.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
-    <span class="c1"># TODO: deprecated?</span>
     <span class="s1">&#39;blob_commits&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/data/basemaps/b2cFullM.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
     <span class="s1">&#39;file_commits&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/data/basemaps/f2cFullM.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
 
     <span class="c1"># another way to get commit parents, currently unused</span>
     <span class="c1"># &#39;commit_parents&#39;: (&#39;/da0_data/basemaps/c2pcK.{key}.tch&#39;, 7)</span>
 
-    <span class="c1"># currently not used. TODO: check if can be helpful</span>
-    <span class="c1"># &#39;blob_index_line&#39;: (&#39;/fast1/All.sha1/sha1.blob_{key}.tch&#39;, 7)</span>
-    <span class="c1"># &#39;tree_index_line&#39;: (&#39;/fast1/All.sha1/sha1.tree_{key}.tch&#39;, 7)</span>
-    <span class="c1"># &#39;commit_index_line&#39;: (&#39;/fast/All.sha1/sha1.commit_{key}.tch&#39;, 7),</span>
-    <span class="c1"># &#39;tag_index_line&#39;: (&#39;/fast/All.sha1/sha1.tag_{key}.tch&#39;, 7)</span>
+    <span class="c1"># SHA1 cache, on da3 and d4  668G</span>
+    <span class="s1">&#39;blob_index_line&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/fast/All.sha1/sha1.blob_</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
+    <span class="s1">&#39;tree_index_line&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/fast/All.sha1/sha1.tree_</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
+    <span class="s1">&#39;commit_index_line&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/fast/All.sha1/sha1.commit_</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
+    <span class="s1">&#39;tag_index_line&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/fast/All.sha1/sha1.tag_</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">7</span><span class="p">)</span>
 <span class="p">}</span>
 
 
