@@ -40,14 +40,23 @@ PATHS = {
     # 'tag_data': ('/data/All.blobs/tag_{key}.bin', 7)
 
     # relations - good to have but not critical
-    'commit_projects': ('/da0_data/basemaps/c2pFullN.{key}.tch', 5),
-    'commit_children': ('/da0_data/basemaps/c2ccFullN.{key}.tch', 5),
-    'commit_blobs': ('/da0_data/basemaps/c2bFullM.{key}.tch', 5),
-    'commit_files': ('/da0_data/basemaps/c2fFullM.{key}.tch', 5),
-    'project_commits': ('/da0_data/basemaps/p2cFullN.{key}.tch', 5),
-    'author_commits': ('/da0_data/basemaps/a2cFullN.{key}.tch', 5),
+    'commit_projects': ('/da0_data/basemaps/c2pFullO.{key}.tch', 5),
+    'commit_children': ('/da0_data/basemaps/c2ccFullO.{key}.tch', 5),
+    'commit_blobs': ('/da0_data/basemaps/c2bFullO.{key}.tch', 5),
+    'commit_files': ('/da0_data/basemaps/c2fFullN.{key}.tch', 5),
+    'project_commits': ('/da0_data/basemaps/p2cFullO.{key}.tch', 5),
+    'author_commits': ('/da0_data/basemaps/a2cFullO.{key}.tch', 5),
     'blob_commits': ('/data/basemaps/b2cFullM.{key}.tch', 5),
-    'file_commits': ('/data/basemaps/f2cFullM.{key}.tch', 5),
+    'file_commits': ('/data/basemaps/f2cFullO.{key}.tch', 5),
+
+	####  dictionary entries added after 5/12/19  #####
+	'author_projects': ('/data/basemaps/a2pFullO.{key}.tch', 5),	
+	'file_blobs': ('/data/basemaps/f2bFullO.{key}.tch', 5)
+	'file_commits': ('/data/basemaps/f2cFullO.{key}.tch', 5)
+	'commit_times': ('/data/basemaps/c2taFullO.{key}.tch', 5)
+	'project_authors': ('/data/basemaps/p2aFullO.{key}.tch', 5)
+	'blob_commits': ('/data/basemaps/b2cFullM.{key}.tch', 5)
+	'blob_files': ('/data/basemaps/b2fFullN.{key}.tch', 5)
 
     # another way to get commit parents, currently unused
     # 'commit_parents': ('/da0_data/basemaps/c2pcK.{key}.tch', 7)
