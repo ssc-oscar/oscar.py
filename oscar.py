@@ -49,14 +49,12 @@ PATHS = {
     'blob_commits': ('/data/basemaps/b2cFullM.{key}.tch', 5),
     'file_commits': ('/data/basemaps/f2cFullO.{key}.tch', 5),
 
-	####  dictionary entries added after 5/12/19  #####
+	####	dictionary entries added after 5/12/19  #####
 	'author_projects': ('/data/basemaps/a2pFullO.{key}.tch', 5),	
-	'file_blobs': ('/data/basemaps/f2bFullO.{key}.tch', 5)
-	'file_commits': ('/data/basemaps/f2cFullO.{key}.tch', 5)
-	'commit_times': ('/data/basemaps/c2taFullO.{key}.tch', 5)
-	'project_authors': ('/data/basemaps/p2aFullO.{key}.tch', 5)
-	'blob_commits': ('/data/basemaps/b2cFullM.{key}.tch', 5)
-	'blob_files': ('/data/basemaps/b2fFullN.{key}.tch', 5)
+	'file_blobs': ('/data/basemaps/f2bFullO.{key}.tch', 5),
+	'commit_times': ('/data/basemaps/c2taFullO.{key}.tch', 5),
+	'project_authors': ('/data/basemaps/p2aFullO.{key}.tch', 5),
+	'blob_files': ('/data/basemaps/b2fFullN.{key}.tch', 5),
 
     # another way to get commit parents, currently unused
     # 'commit_parents': ('/da0_data/basemaps/c2pcK.{key}.tch', 7)
