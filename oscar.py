@@ -999,7 +999,9 @@ class Project(_Base):
         - Github: `{user}_{repo}`, e.g. `user2589_minicms`
         - Gitlab: `gl_{user}_{repo}`
         - Bitbucket: `bb_{user}_{repo}`
-        - Bioconductor: `bc_{user}_{repo}`
+        - Bioconductor: `bioconductor.org_{user}_{repo}`
+        - kde: `kde.org_{user}_{repo}`
+        # @dkennard, please add others: see run.sh in gather repo
 
     Projects are iterable:
 
