@@ -46,6 +46,7 @@ PATHS = {
     'commit_files': ('/da0_data/basemaps/c2fFullN.{key}.tch', 5),
     'project_commits': ('/da0_data/basemaps/p2cFullO.{key}.tch', 5),
     'author_commits': ('/da0_data/basemaps/a2cFullO.{key}.tch', 5),
+    'author_projects': ('/da0_data/basemaps/a2pFullO.{key}.tch', 5),
     'blob_commits': ('/data/basemaps/b2cFullM.{key}.tch', 5),
     'file_commits': ('/data/basemaps/f2cFullO.{key}.tch', 5),
 
@@ -1282,3 +1283,12 @@ class Author(_Base):
         True
         """
         return (Commit(sha) for sha in self.commit_shas)
+    
+    @cached_property
+    def project_names(self):
+        """ URIs of projects where author has committed to 
+A generator of all Commit objects authored by the Author
+        """
+        data = decomp(self.read_tch('author_projects'))
+        return tuple(project_name
+          for project_name in (data and data.split(";")) or [] if project_name and project_name != 'EMPTY')
