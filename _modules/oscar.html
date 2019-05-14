@@ -81,6 +81,7 @@
     <span class="s1">&#39;commit_files&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/da0_data/basemaps/c2fFullN.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
     <span class="s1">&#39;project_commits&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/da0_data/basemaps/p2cFullO.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
     <span class="s1">&#39;author_commits&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/da0_data/basemaps/a2cFullO.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+    <span class="s1">&#39;author_projects&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/da0_data/basemaps/a2pFullO.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
     <span class="s1">&#39;blob_commits&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/data/basemaps/b2cFullM.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
     <span class="s1">&#39;file_commits&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/data/basemaps/f2cFullO.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
 
@@ -1316,7 +1317,16 @@
 <span class="sd">        &gt;&gt;&gt; isinstance(commits[0], Commit)</span>
 <span class="sd">        True</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="p">(</span><span class="n">Commit</span><span class="p">(</span><span class="n">sha</span><span class="p">)</span> <span class="k">for</span> <span class="n">sha</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">commit_shas</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="p">(</span><span class="n">Commit</span><span class="p">(</span><span class="n">sha</span><span class="p">)</span> <span class="k">for</span> <span class="n">sha</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">commit_shas</span><span class="p">)</span>
+    
+    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">project_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; URIs of projects where author has committed to </span>
+<span class="sd">A generator of all Commit objects authored by the Author</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">decomp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_tch</span><span class="p">(</span><span class="s1">&#39;author_projects&#39;</span><span class="p">))</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">project_name</span>
+          <span class="k">for</span> <span class="n">project_name</span> <span class="ow">in</span> <span class="p">(</span><span class="n">data</span> <span class="ow">and</span> <span class="n">data</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;;&quot;</span><span class="p">))</span> <span class="ow">or</span> <span class="p">[]</span> <span class="k">if</span> <span class="n">project_name</span> <span class="ow">and</span> <span class="n">project_name</span> <span class="o">!=</span> <span class="s1">&#39;EMPTY&#39;</span><span class="p">)</span></div>
 </pre></div>
 
           </div>
