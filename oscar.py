@@ -1016,7 +1016,8 @@ class Project(_Base):
         True
         >>> Commit(sha) in Project('user2589_minicms')
         True
-    """
+		"""
+
     type = 'project'
     _keys_registry_dtype = 'project_commits'
 
@@ -1174,6 +1175,44 @@ class Project(_Base):
                 break
 
             commit = commits.get(first_parent, Commit(first_parent))
+
+    def toURL(self):
+		'''
+		Get the URL for a given project URI
+
+		>>> Project('CS340-19_lectures').toURL()
+		'http://github.com/CS340-19/lectures'
+		'''
+		p_name = self.uri
+		found = False
+		toUrlMap = {
+			"bb": "bitbucket.org", "gl": "gitlab.org",
+			"android.googlesource.com": "android.googlesource.com",
+			"bioconductor.org": "bioconductor.org",
+			"drupal.com": "git.drupal.org", "git.eclipse.org": "git.eclipse.org",
+			"git.kernel.org": "git.kernel.org",
+			"git.postgresql.org": "git.postgresql.org" ,
+			"git.savannah.gnu.org": "git.savannah.gnu.org",
+			"git.zx2c4.com": "git.zx2c4.com" ,
+			"gitlab.gnome.org": "gitlab.gnome.org",
+			"kde.org": "anongit.kde.org",
+			"repo.or.cz": "repo.or.cz",
+			"salsa.debian.org": "salsa.debian.org",
+			"sourceforge.net": "git.code.sf.net/p"}
+
+		for URL in toUrlMap.keys():
+			URL_ = URL + "_"
+			if p_name.startswith(URL_) and (p_name.count('_') > 2 or URL == "sourceforge.net"):
+				replacement = toUrlMap[URL] + "/"
+				p_name = p_name.replace(URL_, replacement)
+				found = True
+				break
+
+		if not found: 
+			p_name = "github.com/" + p_name
+ 
+		p_name = p_name.replace('_', '/')
+		return "https://" + p_name	
 
 
 class File(_Base):
