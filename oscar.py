@@ -1202,7 +1202,7 @@ class Project(_Base):
 
 		for URL in toUrlMap.keys():
 			URL_ = URL + "_"
-			if p_name.startswith(URL_) and (p_name.count('_') > 2 or URL == "sourceforge.net"):
+			if p_name.startswith(URL_) and (p_name.count('_') >= 2 or URL == "sourceforge.net"):
 				replacement = toUrlMap[URL] + "/"
 				p_name = p_name.replace(URL_, replacement)
 				found = True
