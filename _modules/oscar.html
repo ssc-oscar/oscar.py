@@ -1051,7 +1051,8 @@
 <span class="sd">        True</span>
 <span class="sd">        &gt;&gt;&gt; Commit(sha) in Project(&#39;user2589_minicms&#39;)</span>
 <span class="sd">        True</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+
     <span class="nb">type</span> <span class="o">=</span> <span class="s1">&#39;project&#39;</span>
     <span class="n">_keys_registry_dtype</span> <span class="o">=</span> <span class="s1">&#39;project_commits&#39;</span>
 
@@ -1208,7 +1209,45 @@
             <span class="k">if</span> <span class="ow">not</span> <span class="n">first_parent</span><span class="p">:</span>
                 <span class="k">break</span>
 
-            <span class="n">commit</span> <span class="o">=</span> <span class="n">commits</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">first_parent</span><span class="p">,</span> <span class="n">Commit</span><span class="p">(</span><span class="n">first_parent</span><span class="p">))</span></div>
+            <span class="n">commit</span> <span class="o">=</span> <span class="n">commits</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">first_parent</span><span class="p">,</span> <span class="n">Commit</span><span class="p">(</span><span class="n">first_parent</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">toURL</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">		Get the URL for a given project URI</span>
+
+<span class="sd">		&gt;&gt;&gt; Project(&#39;CS340-19_lectures&#39;).toURL()</span>
+<span class="sd">		&#39;http://github.com/CS340-19/lectures&#39;</span>
+<span class="sd">		&#39;&#39;&#39;</span>
+		<span class="n">p_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uri</span>
+		<span class="n">found</span> <span class="o">=</span> <span class="kc">False</span>
+		<span class="n">toUrlMap</span> <span class="o">=</span> <span class="p">{</span>
+			<span class="s2">&quot;bb&quot;</span><span class="p">:</span> <span class="s2">&quot;bitbucket.org&quot;</span><span class="p">,</span> <span class="s2">&quot;gl&quot;</span><span class="p">:</span> <span class="s2">&quot;gitlab.org&quot;</span><span class="p">,</span>
+			<span class="s2">&quot;android.googlesource.com&quot;</span><span class="p">:</span> <span class="s2">&quot;android.googlesource.com&quot;</span><span class="p">,</span>
+			<span class="s2">&quot;bioconductor.org&quot;</span><span class="p">:</span> <span class="s2">&quot;bioconductor.org&quot;</span><span class="p">,</span>
+			<span class="s2">&quot;drupal.com&quot;</span><span class="p">:</span> <span class="s2">&quot;git.drupal.org&quot;</span><span class="p">,</span> <span class="s2">&quot;git.eclipse.org&quot;</span><span class="p">:</span> <span class="s2">&quot;git.eclipse.org&quot;</span><span class="p">,</span>
+			<span class="s2">&quot;git.kernel.org&quot;</span><span class="p">:</span> <span class="s2">&quot;git.kernel.org&quot;</span><span class="p">,</span>
+			<span class="s2">&quot;git.postgresql.org&quot;</span><span class="p">:</span> <span class="s2">&quot;git.postgresql.org&quot;</span> <span class="p">,</span>
+			<span class="s2">&quot;git.savannah.gnu.org&quot;</span><span class="p">:</span> <span class="s2">&quot;git.savannah.gnu.org&quot;</span><span class="p">,</span>
+			<span class="s2">&quot;git.zx2c4.com&quot;</span><span class="p">:</span> <span class="s2">&quot;git.zx2c4.com&quot;</span> <span class="p">,</span>
+			<span class="s2">&quot;gitlab.gnome.org&quot;</span><span class="p">:</span> <span class="s2">&quot;gitlab.gnome.org&quot;</span><span class="p">,</span>
+			<span class="s2">&quot;kde.org&quot;</span><span class="p">:</span> <span class="s2">&quot;anongit.kde.org&quot;</span><span class="p">,</span>
+			<span class="s2">&quot;repo.or.cz&quot;</span><span class="p">:</span> <span class="s2">&quot;repo.or.cz&quot;</span><span class="p">,</span>
+			<span class="s2">&quot;salsa.debian.org&quot;</span><span class="p">:</span> <span class="s2">&quot;salsa.debian.org&quot;</span><span class="p">,</span>
+			<span class="s2">&quot;sourceforge.net&quot;</span><span class="p">:</span> <span class="s2">&quot;git.code.sf.net/p&quot;</span><span class="p">}</span>
+
+		<span class="k">for</span> <span class="n">URL</span> <span class="ow">in</span> <span class="n">toUrlMap</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+			<span class="n">URL_</span> <span class="o">=</span> <span class="n">URL</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span>
+			<span class="k">if</span> <span class="n">p_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">URL_</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">p_name</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">URL</span> <span class="o">==</span> <span class="s2">&quot;sourceforge.net&quot;</span><span class="p">):</span>
+				<span class="n">replacement</span> <span class="o">=</span> <span class="n">toUrlMap</span><span class="p">[</span><span class="n">URL</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span>
+				<span class="n">p_name</span> <span class="o">=</span> <span class="n">p_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">URL_</span><span class="p">,</span> <span class="n">replacement</span><span class="p">)</span>
+				<span class="n">found</span> <span class="o">=</span> <span class="kc">True</span>
+				<span class="k">break</span>
+
+		<span class="k">if</span> <span class="ow">not</span> <span class="n">found</span><span class="p">:</span> 
+			<span class="n">p_name</span> <span class="o">=</span> <span class="s2">&quot;github.com/&quot;</span> <span class="o">+</span> <span class="n">p_name</span>
+ 
+		<span class="n">p_name</span> <span class="o">=</span> <span class="n">p_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39;/&#39;</span><span class="p">)</span>
+		<span class="k">return</span> <span class="s2">&quot;https://&quot;</span> <span class="o">+</span> <span class="n">p_name</span>	</div>
 
 
 <div class="viewcode-block" id="File"><a class="viewcode-back" href="../index.html#oscar.File">[docs]</a><span class="k">class</span> <span class="nc">File</span><span class="p">(</span><span class="n">_Base</span><span class="p">):</span>
