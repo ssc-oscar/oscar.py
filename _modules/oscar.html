@@ -1247,7 +1247,13 @@
 			<span class="n">p_name</span> <span class="o">=</span> <span class="s2">&quot;github.com/&quot;</span> <span class="o">+</span> <span class="n">p_name</span>
  
 		<span class="n">p_name</span> <span class="o">=</span> <span class="n">p_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39;/&#39;</span><span class="p">)</span>
-		<span class="k">return</span> <span class="s2">&quot;https://&quot;</span> <span class="o">+</span> <span class="n">p_name</span>	</div>
+		<span class="k">return</span> <span class="s2">&quot;https://&quot;</span> <span class="o">+</span> <span class="n">p_name</span>	
+    
+    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">author_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">decomp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_tch</span><span class="p">(</span><span class="s1">&#39;project_authors&#39;</span><span class="p">))</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">author_name</span> 
+        <span class="k">for</span> <span class="n">author_name</span> <span class="ow">in</span> <span class="p">(</span><span class="n">data</span> <span class="ow">and</span> <span class="n">data</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;;&quot;</span><span class="p">))</span> <span class="ow">or</span> <span class="p">[]</span> <span class="k">if</span> <span class="n">author_name</span> <span class="ow">and</span> <span class="n">author_name</span> <span class="o">!=</span> <span class="s1">&#39;EMPTY&#39;</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="File"><a class="viewcode-back" href="../index.html#oscar.File">[docs]</a><span class="k">class</span> <span class="nc">File</span><span class="p">(</span><span class="n">_Base</span><span class="p">):</span>
