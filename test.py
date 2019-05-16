@@ -8,7 +8,7 @@ import os
 import unittest
 
 from oscar import *
-
+from dpg import *
 
 class TestStatus(unittest.TestCase):
     """Check what data/relations are available"""
@@ -70,6 +70,18 @@ class TestRelations(unittest.TestCase):
     file2commit     - done
     project2commit  - done
     """
+    def test_author_projects(self):
+		""" Test dpg.py for list author names for a project, and whether other projects for 
+			those same authors can be listed. """
+		proj = 'CS340-19_students'
+		print("List of " + proj + " authors:")
+		print("--------------------------------------")
+		for author in Project(proj).author_names:
+			print(author)
+			print("|-> also worked on these projects: "),
+			for p_name in Author(author.encode('utf-8')).project_names:
+				print(p_name), 
+			print("\n")
 
     def test_author_commit(self):
         """ Test if all commits made by an author are listed in Auth2Cmt """
@@ -127,7 +139,7 @@ class TestRelations(unittest.TestCase):
             self.assertIn(
                 commit_sha, Blob(sha).commit_shas,
                 "Blob2Cmt doesn't list commit %s for blob %s,"
-                "but it but it was added in this commit" % (commit_sha, sha))
+                "but it was added in this commit" % (commit_sha, sha))
 
     def test_blob_commits_all(self):
         """ Test if all commit modifiying a blob are listed in blob2Cmt """
