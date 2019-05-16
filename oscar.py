@@ -1213,6 +1213,12 @@ class Project(_Base):
  
 		p_name = p_name.replace('_', '/')
 		return "https://" + p_name	
+    
+    @cached_property
+    def author_names(self):
+        data = decomp(self.read_tch('project_authors'))
+        return tuple(author_name 
+        for author_name in (data and data.split(";")) or [] if author_name and author_name != 'EMPTY')
 
 
 class File(_Base):
