@@ -88,7 +88,7 @@
 	<span class="c1">####	dictionary entries added after 5/12/19  #####</span>
 	<span class="s1">&#39;file_blobs&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/data/basemaps/f2bFullO.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
 	<span class="s1">&#39;commit_times&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/data/basemaps/c2taFullO.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
-	<span class="s1">&#39;project_authors&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/data/basemaps/p2aFullO.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+	<span class="s1">&#39;project_authors&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/da0_data/basemaps/p2aFullO.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
 	<span class="s1">&#39;blob_files&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/data/basemaps/b2fFullN.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
 
     <span class="c1"># another way to get commit parents, currently unused</span>
@@ -208,9 +208,11 @@
 <span class="k">def</span> <span class="nf">slice20</span><span class="p">(</span><span class="n">raw_data</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Slice raw_data into 20-byte chunks and hex encode each of them</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">raw_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">()</span>
+
     <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">raw_data</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span> <span class="o">+</span> <span class="mi">20</span><span class="p">]</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;hex&#39;</span><span class="p">)</span>
                  <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw_data</span><span class="p">),</span> <span class="mi">20</span><span class="p">))</span>
-
 
 <span class="k">class</span> <span class="nc">CommitTimezone</span><span class="p">(</span><span class="n">tzinfo</span><span class="p">):</span>
     <span class="c1"># a lightweight version of pytz._FixedOffset</span>
@@ -281,7 +283,7 @@
         <span class="n">path</span> <span class="o">+=</span> <span class="s1">&#39;.tch&#39;</span>
     <span class="k">if</span> <span class="n">path</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_TCH_POOL</span><span class="p">:</span>
         <span class="n">_TCH_POOL</span><span class="p">[</span><span class="n">path</span><span class="p">]</span> <span class="o">=</span> <span class="n">tch</span><span class="o">.</span><span class="n">Hash</span><span class="p">()</span>
-        <span class="n">_TCH_POOL</span><span class="p">[</span><span class="n">path</span><span class="p">]</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">tch</span><span class="o">.</span><span class="n">HDBOREADER</span><span class="p">)</span>
+        <span class="n">_TCH_POOL</span><span class="p">[</span><span class="n">path</span><span class="p">]</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">tch</span><span class="o">.</span><span class="n">HDBOREADER</span> <span class="o">|</span> <span class="n">tch</span><span class="o">.</span><span class="n">HDBONOLCK</span><span class="p">)</span>
         <span class="c1"># _TCH_POOL[path].setmutex()</span>
     <span class="k">return</span> <span class="n">_TCH_POOL</span><span class="p">[</span><span class="n">path</span><span class="p">]</span>
 
@@ -294,13 +296,13 @@
 
     <span class="k">try</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_get_tch</span><span class="p">(</span><span class="n">path</span><span class="p">)[</span><span class="n">key</span><span class="p">]</span>
-    <span class="k">except</span> <span class="n">tch</span><span class="o">.</span><span class="n">error</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s2">&quot;Tokyocabinet file &quot;</span> <span class="o">+</span> <span class="n">path</span> <span class="o">+</span> <span class="s2">&quot; not found&quot;</span><span class="p">)</span>
-    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">silent</span><span class="p">:</span>
-            <span class="k">return</span> <span class="s1">&#39;&#39;</span>
-        <span class="k">raise</span> <span class="n">ObjectNotFound</span><span class="p">(</span><span class="n">path</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span> <span class="o">+</span> <span class="n">key</span><span class="p">)</span>
-
+    <span class="k">except</span><span class="p">:</span>
+	    <span class="k">return</span> <span class="kc">None</span>
+        <span class="c1">#raise IOError(&quot;Tokyocabinet file &quot; + path + &quot; not found&quot;)</span>
+    <span class="c1">#except KeyError:</span>
+        <span class="c1">#if silent:</span>
+        <span class="c1">#    return &#39;&#39;</span>
+        <span class="c1">#raise ObjectNotFound(path + &quot; &quot; + key)</span>
 
 <span class="k">def</span> <span class="nf">tch_keys</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">key_prefix</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">_get_tch</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">fwmkeys</span><span class="p">(</span><span class="n">key_prefix</span><span class="p">)</span>
