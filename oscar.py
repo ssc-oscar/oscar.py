@@ -53,7 +53,7 @@ PATHS = {
 	####	dictionary entries added after 5/12/19  #####
 	'file_blobs': ('/data/basemaps/f2bFullO.{key}.tch', 5),
 	'commit_times': ('/data/basemaps/c2taFullO.{key}.tch', 5),
-	'project_authors': ('/data/basemaps/p2aFullO.{key}.tch', 5),
+	'project_authors': ('/da0_data/basemaps/p2aFullO.{key}.tch', 5),
 	'blob_files': ('/data/basemaps/b2fFullN.{key}.tch', 5),
 
     # another way to get commit parents, currently unused
@@ -173,9 +173,11 @@ def cached_property(func):
 def slice20(raw_data):
     """ Slice raw_data into 20-byte chunks and hex encode each of them
     """
+    if raw_data is None:
+        return ()
+
     return tuple(raw_data[i:i + 20].encode('hex')
                  for i in range(0, len(raw_data), 20))
-
 
 class CommitTimezone(tzinfo):
     # a lightweight version of pytz._FixedOffset
@@ -246,7 +248,7 @@ def _get_tch(path):
         path += '.tch'
     if path not in _TCH_POOL:
         _TCH_POOL[path] = tch.Hash()
-        _TCH_POOL[path].open(path, tch.HDBOREADER)
+        _TCH_POOL[path].open(path, tch.HDBOREADER | tch.HDBONOLCK)
         # _TCH_POOL[path].setmutex()
     return _TCH_POOL[path]
 
@@ -259,13 +261,13 @@ def read_tch(path, key, silent=False):
 
     try:
         return _get_tch(path)[key]
-    except tch.error:
-        raise IOError("Tokyocabinet file " + path + " not found")
-    except KeyError:
-        if silent:
-            return ''
-        raise ObjectNotFound(path + " " + key)
-
+    except:
+	    return None
+        #raise IOError("Tokyocabinet file " + path + " not found")
+    #except KeyError:
+        #if silent:
+        #    return ''
+        #raise ObjectNotFound(path + " " + key)
 
 def tch_keys(path, key_prefix=''):
     return _get_tch(path).fwmkeys(key_prefix)
