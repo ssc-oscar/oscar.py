@@ -265,9 +265,9 @@ def read_tch(path, key, silent=False):
 	    return None
         #raise IOError("Tokyocabinet file " + path + " not found")
     #except KeyError:
-        #if silent:
-        #    return ''
-        #raise ObjectNotFound(path + " " + key)
+     #   if silent:
+     #       return ''
+     #   raise ObjectNotFound(path + " " + key)
 
 def tch_keys(path, key_prefix=''):
     return _get_tch(path).fwmkeys(key_prefix)
@@ -524,6 +524,7 @@ class Blob(GitObject):
         **NOTE: commits removing this blob are not included**
         """
         return (Commit(bin_sha) for bin_sha in self.commit_shas)
+
 
 
 class Tree(GitObject):
@@ -984,6 +985,13 @@ class Commit(GitObject):
          <Blob: bf3c2d2df2ef710f995b590ac3e2c851b592c871>)
         """
         return (Blob(bin_sha) for bin_sha in self.blob_shas)
+
+
+    @cached_property
+    def files(self):
+        data = decomp(self.read_tch('commit_files'))
+        return tuple(file_name 
+        for file_name in (data and data.split(";")) or [] if file_name and file_name != 'EMPTY')
 
 
 class Tag(GitObject):
