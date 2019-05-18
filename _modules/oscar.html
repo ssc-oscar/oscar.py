@@ -300,9 +300,9 @@
 	    <span class="k">return</span> <span class="kc">None</span>
         <span class="c1">#raise IOError(&quot;Tokyocabinet file &quot; + path + &quot; not found&quot;)</span>
     <span class="c1">#except KeyError:</span>
-        <span class="c1">#if silent:</span>
-        <span class="c1">#    return &#39;&#39;</span>
-        <span class="c1">#raise ObjectNotFound(path + &quot; &quot; + key)</span>
+     <span class="c1">#   if silent:</span>
+     <span class="c1">#       return &#39;&#39;</span>
+     <span class="c1">#   raise ObjectNotFound(path + &quot; &quot; + key)</span>
 
 <span class="k">def</span> <span class="nf">tch_keys</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">key_prefix</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">_get_tch</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">fwmkeys</span><span class="p">(</span><span class="n">key_prefix</span><span class="p">)</span>
@@ -559,6 +559,7 @@
 <span class="sd">        **NOTE: commits removing this blob are not included**</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">(</span><span class="n">Commit</span><span class="p">(</span><span class="n">bin_sha</span><span class="p">)</span> <span class="k">for</span> <span class="n">bin_sha</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">commit_shas</span><span class="p">)</span></div>
+
 
 
 <div class="viewcode-block" id="Tree"><a class="viewcode-back" href="../index.html#oscar.Tree">[docs]</a><span class="k">class</span> <span class="nc">Tree</span><span class="p">(</span><span class="n">GitObject</span><span class="p">):</span>
@@ -1018,7 +1019,14 @@
 <span class="sd">         &lt;Blob: c92011c5ccc32a9248bd929a6e56f846ac5b8072&gt;,</span>
 <span class="sd">         &lt;Blob: bf3c2d2df2ef710f995b590ac3e2c851b592c871&gt;)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="p">(</span><span class="n">Blob</span><span class="p">(</span><span class="n">bin_sha</span><span class="p">)</span> <span class="k">for</span> <span class="n">bin_sha</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">blob_shas</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="p">(</span><span class="n">Blob</span><span class="p">(</span><span class="n">bin_sha</span><span class="p">)</span> <span class="k">for</span> <span class="n">bin_sha</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">blob_shas</span><span class="p">)</span>
+
+
+    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">files</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">decomp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_tch</span><span class="p">(</span><span class="s1">&#39;commit_files&#39;</span><span class="p">))</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">file_name</span> 
+        <span class="k">for</span> <span class="n">file_name</span> <span class="ow">in</span> <span class="p">(</span><span class="n">data</span> <span class="ow">and</span> <span class="n">data</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;;&quot;</span><span class="p">))</span> <span class="ow">or</span> <span class="p">[]</span> <span class="k">if</span> <span class="n">file_name</span> <span class="ow">and</span> <span class="n">file_name</span> <span class="o">!=</span> <span class="s1">&#39;EMPTY&#39;</span><span class="p">)</span></div>
 
 
 <span class="k">class</span> <span class="nc">Tag</span><span class="p">(</span><span class="n">GitObject</span><span class="p">):</span>
