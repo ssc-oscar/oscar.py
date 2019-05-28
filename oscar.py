@@ -1020,8 +1020,17 @@ class Project(_Base):
         - Bitbucket: `bb_{user}_{repo}`
         - Bioconductor: `bioconductor.org_{user}_{repo}`
         - kde: `kde.org_{user}_{repo}`
-        # @dkennard, please add others: see run.sh in gather repo
-
+        - drupal: `drupal.org_{user}_{repo}` 
+	- Googlesouce: `android.googlesource.com_{repo}_{user}`
+	- Linux kernel: `git.kernel.org_{user}_{repo}`
+	- PostgreSQL: `git.postgresql.org_{user}_{repo}`
+	- GNU Savannah: `git.savannah.gnu.org_{user}_{repo}`
+	- ZX2C4: `git.zx2c4.com_{user}_{repo}`
+	- GNOME: `gitlab.gnome.org_{user}_{repo}`
+	- repo.or.cz: `repo.or.cz_{user}_{repo}`
+	- Salsa: `salsa.debian.org_{user}_{repo}`
+	- SourceForge: `sourceforge.net_{user}_{repo}`
+	
     Projects are iterable:
 
         >>> for commit in Project('user2589_minicms'):  # doctest: +SKIP
