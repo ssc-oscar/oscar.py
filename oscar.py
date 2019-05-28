@@ -1,4 +1,3 @@
-
 import lzf
 # da4 doesn't have libgit2-dev to install pygit2 yet
 # import pygit2
@@ -43,10 +42,11 @@ PATHS = {
     'commit_projects': ('/da0_data/basemaps/c2pFullO.{key}.tch', 5),
     'commit_children': ('/da0_data/basemaps/c2ccFullO.{key}.tch', 5),
     'commit_blobs': ('/da0_data/basemaps/c2bFullO.{key}.tch', 5),
-    'commit_files': ('/da0_data/basemaps/c2fFullN.{key}.tch', 5),
+    'commit_files': ('/da0_data/basemaps/c2fFullO.{key}.tch', 5),
     'project_commits': ('/da0_data/basemaps/p2cFullO.{key}.tch', 5),
     'author_commits': ('/da0_data/basemaps/a2cFullO.{key}.tch', 5),
     'author_projects': ('/da0_data/basemaps/a2pFullO.{key}.tch', 5),
+	'author_trpath':('/data/basemaps/a2trpO.tch', 5),
     'blob_commits': ('/data/basemaps/b2cFullO.{key}.tch', 5),
     'file_commits': ('/data/basemaps/f2cFullO.{key}.tch', 5),
 
@@ -1357,3 +1357,8 @@ A generator of all Commit objects authored by the Author
         data = decomp(self.read_tch('author_projects'))
         return tuple(project_name
           for project_name in (data and data.split(";")) or [] if project_name and project_name != 'EMPTY')
+    
+    @cached_property
+    def torvald(self):
+	    data = decomp(self.read_tch('author_trpath'))
+	    return tuple(path for path in (data and data.split(";")))
