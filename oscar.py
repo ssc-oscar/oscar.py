@@ -39,23 +39,23 @@ PATHS = {
     # 'tag_data': ('/data/All.blobs/tag_{key}.bin', 7)
 
     # relations - good to have but not critical
-    'commit_projects': ('/da0_data/basemaps/c2pFullO.{key}.tch', 5),
-    'commit_children': ('/da0_data/basemaps/c2ccFullO.{key}.tch', 5),
+    'commit_projects': ('/da0_data/basemaps/c2pFullP.{key}.tch', 5),
+    'commit_children': ('/da0_data/basemaps/c2ccFullP.{key}.tch', 5),
     'commit_blobs': ('/da0_data/basemaps/c2bFullO.{key}.tch', 5),
-    'commit_files': ('/da0_data/basemaps/c2fFullO.{key}.tch', 5),
-    'project_commits': ('/da0_data/basemaps/p2cFullO.{key}.tch', 5),
-    'author_commits': ('/da0_data/basemaps/a2cFullO.{key}.tch', 5),
-    'author_projects': ('/da0_data/basemaps/a2pFullO.{key}.tch', 5),
-	'author_trpath':('/data/basemaps/a2trpO.tch', 5),
-    'blob_commits': ('/data/basemaps/b2cFullO.{key}.tch', 5),
-    'file_commits': ('/data/basemaps/f2cFullO.{key}.tch', 5),
+    'commit_files': ('/da0_data/basemaps/c2fFullP.{key}.tch', 5),
+    'project_commits': ('/da0_data/basemaps/p2cFullP.{key}.tch', 5),
+    'author_commits': ('/da0_data/basemaps/a2cFullP.{key}.tch', 5),
+    'author_projects': ('/da0_data/basemaps/a2pFullP.{key}.tch', 5),
+    'author_trpath':('/da0_data/basemaps/a2trpO.tch', 5),
+    'blob_commits': ('/da0_data/basemaps/b2cFullO.{key}.tch', 5),
+    'file_commits': ('/da0_data/basemaps/f2cFullO.{key}.tch', 5),
 
 	####	dictionary entries added after 5/12/19  #####
-	'file_blobs': ('/data/basemaps/f2bFullO.{key}.tch', 5),
-	'commit_time_author': ('/data/basemaps/c2taFullO.{key}.tch', 5),
-	'project_authors': ('/da0_data/basemaps/p2aFullO.{key}.tch', 5),
-	'blob_files': ('/data/basemaps/b2fFullN.{key}.tch', 5),
-	'commit_head': ('/data/basemaps/c2hFullO.{key}.tch', 5),
+	'file_blobs': ('/da0_data/basemaps/f2bFullO.{key}.tch', 5),
+	'commit_time_author': ('/da0_data/basemaps/c2taFullP.{key}.tch', 5),
+	'project_authors': ('/da0_data/basemaps/p2aFullP.{key}.tch', 5),
+	'blob_files': ('/da0_data/basemaps/b2fFullN.{key}.tch', 5),
+	'commit_head': ('/da0_data/basemaps/c2hFullO.{key}.tch', 5),
 
     # another way to get commit parents, currently unused
     # 'commit_parents': ('/da0_data/basemaps/c2pcK.{key}.tch', 7)
@@ -495,7 +495,7 @@ class Blob(GitObject):
     def position(self):
         """ Get offset and length of the blob data in the storage """
         try:
-            offset, length = unber(self.read_tch(PATHS['blob_offset']))
+            offset, length = unber(self.read_tch('blob_offset'))
         except ValueError:  # empty read -> value not found
             raise ObjectNotFound('Blob data not found (bad sha?)')
         return offset, length
