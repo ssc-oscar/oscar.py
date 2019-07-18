@@ -1275,7 +1275,7 @@
 		<span class="k">if</span> <span class="ow">not</span> <span class="n">found</span><span class="p">:</span> 
 			<span class="n">p_name</span> <span class="o">=</span> <span class="s2">&quot;github.com/&quot;</span> <span class="o">+</span> <span class="n">p_name</span>
  
-		<span class="n">p_name</span> <span class="o">=</span> <span class="n">p_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39;/&#39;</span><span class="p">)</span>
+		<span class="n">p_name</span> <span class="o">=</span> <span class="n">p_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 		<span class="k">return</span> <span class="s2">&quot;https://&quot;</span> <span class="o">+</span> <span class="n">p_name</span>	
     
     <span class="nd">@cached_property</span>
