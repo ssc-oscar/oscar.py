@@ -1240,7 +1240,7 @@ class Project(_Base):
 		if not found: 
 			p_name = "github.com/" + p_name
  
-		p_name = p_name.replace('_', '/')
+		p_name = p_name.replace('_', '/', 1)
 		return "https://" + p_name	
     
     @cached_property
