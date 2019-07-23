@@ -42,7 +42,7 @@ PATHS = {
     'commit_projects': ('/da0_data/basemaps/c2pFullP.{key}.tch', 5),
     'commit_children': ('/da0_data/basemaps/c2ccFullP.{key}.tch', 5),
     'commit_blobs': ('/da0_data/basemaps/c2bFullO.{key}.tch', 5),
-    'commit_files': ('/da0_data/basemaps/c2fFullP.{key}.tch', 5),
+    'commit_files': ('/da0_data/basemaps/c2fFullO.{key}.tch', 5),
     'project_commits': ('/da0_data/basemaps/p2cFullP.{key}.tch', 5),
     'author_commits': ('/da0_data/basemaps/a2cFullP.{key}.tch', 5),
     'author_projects': ('/da0_data/basemaps/a2pFullP.{key}.tch', 5),
@@ -50,12 +50,12 @@ PATHS = {
     'blob_commits': ('/da0_data/basemaps/b2cFullO.{key}.tch', 5),
     'file_commits': ('/da0_data/basemaps/f2cFullO.{key}.tch', 5),
 
-	####	dictionary entries added after 5/12/19  #####
-	'file_blobs': ('/da0_data/basemaps/f2bFullO.{key}.tch', 5),
-	'commit_time_author': ('/da0_data/basemaps/c2taFullP.{key}.tch', 5),
-	'project_authors': ('/da0_data/basemaps/p2aFullP.{key}.tch', 5),
-	'blob_files': ('/da0_data/basemaps/b2fFullN.{key}.tch', 5),
-	'commit_head': ('/da0_data/basemaps/c2hFullO.{key}.tch', 5),
+    ####  dictionary entries added after 5/12/19  #####
+    'file_blobs': ('/da0_data/basemaps/f2bFullO.{key}.tch', 5),
+    'commit_time_author': ('/da0_data/basemaps/c2taFullP.{key}.tch', 5),
+    'project_authors': ('/da0_data/basemaps/p2aFullP.{key}.tch', 5),
+    'blob_files': ('/da0_data/basemaps/b2fFullN.{key}.tch', 5),
+    'commit_head': ('/da0_data/basemaps/c2hFullO.{key}.tch', 5),
 
     # another way to get commit parents, currently unused
     # 'commit_parents': ('/da0_data/basemaps/c2pcK.{key}.tch', 7)
@@ -263,7 +263,7 @@ def read_tch(path, key, silent=False):
     try:
         return _get_tch(path)[key]
     except:
-	    return None
+      return None
         #raise IOError("Tokyocabinet file " + path + " not found")
     #except KeyError:
      #   if silent:
@@ -1002,8 +1002,8 @@ class Commit_info(GitObject):
 
     @cached_property
     def head(self):
-	    data = slice20(self.read_tch('commit_head'))
-	    return data 
+      data = slice20(self.read_tch('commit_head'))
+      return data 
 
 class Tag(GitObject):
     """ Tag doesn't have any functionality associated.
@@ -1021,16 +1021,16 @@ class Project(_Base):
         - Bioconductor: `bioconductor.org_{user}_{repo}`
         - kde: `kde.org_{user}_{repo}`
         - drupal: `drupal.org_{user}_{repo}` 
-	- Googlesouce: `android.googlesource.com_{repo}_{user}`
-	- Linux kernel: `git.kernel.org_{user}_{repo}`
-	- PostgreSQL: `git.postgresql.org_{user}_{repo}`
-	- GNU Savannah: `git.savannah.gnu.org_{user}_{repo}`
-	- ZX2C4: `git.zx2c4.com_{user}_{repo}`
-	- GNOME: `gitlab.gnome.org_{user}_{repo}`
-	- repo.or.cz: `repo.or.cz_{user}_{repo}`
-	- Salsa: `salsa.debian.org_{user}_{repo}`
-	- SourceForge: `sourceforge.net_{user}_{repo}`
-	
+        - Googlesouce: `android.googlesource.com_{repo}_{user}`
+        - Linux kernel: `git.kernel.org_{user}_{repo}`
+        - PostgreSQL: `git.postgresql.org_{user}_{repo}`
+        - GNU Savannah: `git.savannah.gnu.org_{user}_{repo}`
+        - ZX2C4: `git.zx2c4.com_{user}_{repo}`
+        - GNOME: `gitlab.gnome.org_{user}_{repo}`
+        - repo.or.cz: `repo.or.cz_{user}_{repo}`
+        - Salsa: `salsa.debian.org_{user}_{repo}`
+        - SourceForge: `sourceforge.net_{user}_{repo}`
+  
     Projects are iterable:
 
         >>> for commit in Project('user2589_minicms'):  # doctest: +SKIP
@@ -1045,7 +1045,7 @@ class Project(_Base):
         True
         >>> Commit(sha) in Project('user2589_minicms')
         True
-		"""
+    """
 
     type = 'project'
     _keys_registry_dtype = 'project_commits'
@@ -1206,42 +1206,41 @@ class Project(_Base):
             commit = commits.get(first_parent, Commit(first_parent))
 
     def toURL(self):
-		'''
-		Get the URL for a given project URI
+      '''
+      Get the URL for a given project URI
+      >>> Project('CS340-19_lectures').toURL()
+      'http://github.com/CS340-19/lectures'
+      '''
+      p_name = self.uri
+      found = False
+      toUrlMap = {
+        "bb": "bitbucket.org", "gl": "gitlab.org",
+        "android.googlesource.com": "android.googlesource.com",
+        "bioconductor.org": "bioconductor.org",
+        "drupal.com": "git.drupal.org", "git.eclipse.org": "git.eclipse.org",
+        "git.kernel.org": "git.kernel.org",
+        "git.postgresql.org": "git.postgresql.org" ,
+        "git.savannah.gnu.org": "git.savannah.gnu.org",
+        "git.zx2c4.com": "git.zx2c4.com" ,
+        "gitlab.gnome.org": "gitlab.gnome.org",
+        "kde.org": "anongit.kde.org",
+        "repo.or.cz": "repo.or.cz",
+        "salsa.debian.org": "salsa.debian.org",
+        "sourceforge.net": "git.code.sf.net/p"}
 
-		>>> Project('CS340-19_lectures').toURL()
-		'http://github.com/CS340-19/lectures'
-		'''
-		p_name = self.uri
-		found = False
-		toUrlMap = {
-			"bb": "bitbucket.org", "gl": "gitlab.org",
-			"android.googlesource.com": "android.googlesource.com",
-			"bioconductor.org": "bioconductor.org",
-			"drupal.com": "git.drupal.org", "git.eclipse.org": "git.eclipse.org",
-			"git.kernel.org": "git.kernel.org",
-			"git.postgresql.org": "git.postgresql.org" ,
-			"git.savannah.gnu.org": "git.savannah.gnu.org",
-			"git.zx2c4.com": "git.zx2c4.com" ,
-			"gitlab.gnome.org": "gitlab.gnome.org",
-			"kde.org": "anongit.kde.org",
-			"repo.or.cz": "repo.or.cz",
-			"salsa.debian.org": "salsa.debian.org",
-			"sourceforge.net": "git.code.sf.net/p"}
+      for URL in toUrlMap.keys():
+        URL_ = URL + "_"
+        if p_name.startswith(URL_) and (p_name.count('_') >= 2 or URL == "sourceforge.net"):
+          replacement = toUrlMap[URL] + "/"
+          p_name = p_name.replace(URL_, replacement)
+          found = True
+          break
 
-		for URL in toUrlMap.keys():
-			URL_ = URL + "_"
-			if p_name.startswith(URL_) and (p_name.count('_') >= 2 or URL == "sourceforge.net"):
-				replacement = toUrlMap[URL] + "/"
-				p_name = p_name.replace(URL_, replacement)
-				found = True
-				break
-
-		if not found: 
-			p_name = "github.com/" + p_name
+      if not found: 
+        p_name = "github.com/" + p_name
  
-		p_name = p_name.replace('_', '/', 1)
-		return "https://" + p_name	
+      p_name = p_name.replace('_', '/', 1)
+      return "https://" + p_name  
     
     @cached_property
     def author_names(self):
@@ -1369,5 +1368,5 @@ A generator of all Commit objects authored by the Author
     
     @cached_property
     def torvald(self):
-	    data = decomp(self.read_tch('author_trpath'))
-	    return tuple(path for path in (data and data.split(";")))
+      data = decomp(self.read_tch('author_trpath'))
+      return tuple(path for path in (data and data.split(";")))
