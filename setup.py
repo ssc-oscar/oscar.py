@@ -26,7 +26,7 @@ setup(
     py_modules=['oscar'],
     author_email='marat@cmu.edu',
     url='https://github.com/ssc-oscar/oscar.py',
-    install_requires=['python-lzf', 'tokyocabinet'. 'pygit2', 'fnvhash'],
+    install_requires=['python-lzf', 'tokyocabinet', 'pygit2', 'fnvhash'],
     test_suite='test.TestStatus',
     **kwargs
 )
