@@ -48,6 +48,7 @@ PATHS = {
     'author_projects': ('/da0_data/basemaps/a2pFullP.{key}.tch', 5),
     'author_trpath':('/da0_data/basemaps/a2trpO.tch', 5),
     'blob_commits': ('/da0_data/basemaps/b2cFullO.{key}.tch', 5),
+    'blob_authors': ('/da0_data/basemaps/b2aFullP.{key}.tch', 5),
     'file_commits': ('/da0_data/basemaps/f2cFullO.{key}.tch', 5),
 
     ####  dictionary entries added after 5/12/19  #####
