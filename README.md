@@ -1,6 +1,5 @@
 # Python interface for OSCAR data
 
-
 This is a convenience library to access OSCAR dataset. 
 Since everything is stored in local files it won't work unless you have access 
 to one of OSCAR servers.
