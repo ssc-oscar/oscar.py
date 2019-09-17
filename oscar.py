@@ -12,7 +12,7 @@ import time
 import warnings
 import fnvhash
 
-__version__ = '1.1.3'
+__version__ = '1.2.1'
 __author__ = "Marat (@cmu.edu)"
 __license__ = "GPL v3"
 
@@ -41,21 +41,21 @@ PATHS = {
     # relations - good to have but not critical
     'commit_projects': ('/da0_data/basemaps/c2pFullP.{key}.tch', 5),
     'commit_children': ('/da0_data/basemaps/c2ccFullP.{key}.tch', 5),
-    'commit_blobs': ('/da0_data/basemaps/c2bFullO.{key}.tch', 5),
-    'commit_files': ('/da0_data/basemaps/c2fFullO.{key}.tch', 5),
+    'commit_blobs': ('/da0_data/basemaps/c2bFullP.{key}.tch', 5),
+    'commit_files': ('/da0_data/basemaps/c2fFullP.{key}.tch', 5),
     'project_commits': ('/da0_data/basemaps/p2cFullP.{key}.tch', 5),
     'author_commits': ('/da0_data/basemaps/a2cFullP.{key}.tch', 5),
     'author_projects': ('/da0_data/basemaps/a2pFullP.{key}.tch', 5),
     'author_trpath':('/da0_data/basemaps/a2trpO.tch', 5),
-    'blob_commits': ('/da0_data/basemaps/b2cFullO.{key}.tch', 5),
+    'blob_commits': ('/da0_data/basemaps/b2cFullP.{key}.tch', 5),
     'blob_authors': ('/da0_data/basemaps/b2aFullP.{key}.tch', 5),
-    'file_commits': ('/da0_data/basemaps/f2cFullO.{key}.tch', 5),
+    'file_commits': ('/da0_data/basemaps/f2cFullP.{key}.tch', 5),
 
     ####  dictionary entries added after 5/12/19  #####
-    'file_blobs': ('/da0_data/basemaps/f2bFullO.{key}.tch', 5),
+    'file_blobs': ('/da0_data/basemaps/f2bFullP.{key}.tch', 5),
     'commit_time_author': ('/da0_data/basemaps/c2taFullP.{key}.tch', 5),
     'project_authors': ('/da0_data/basemaps/p2aFullP.{key}.tch', 5),
-    'blob_files': ('/da0_data/basemaps/b2fFullN.{key}.tch', 5),
+    'blob_files': ('/da0_data/basemaps/b2fFullP.{key}.tch', 5),
     'commit_head': ('/da0_data/basemaps/c2hFullO.{key}.tch', 5),
 
     # another way to get commit parents, currently unused
@@ -282,7 +282,6 @@ def resolve_path(dtype, object_key, use_fnv=False):
 
     p = fnvhash.fnv1a_32(object_key) if use_fnv else ord(object_key[0])
     prefix = p & (2**prefix_length - 1)
-
     return path.format(key=prefix)
 
 
@@ -1282,8 +1281,8 @@ class File(_Base):
         True
         """
         file_path = self.key
-        if not file_path.endswith("\n"):
-            file_path += "\n"
+        #if not file_path.endswith("\n"):
+        #    file_path += "\n"
         tch_path = resolve_path('file_commits', file_path, self.use_fnv_keys)
         return slice20(read_tch(tch_path, file_path, silent=True))
 
