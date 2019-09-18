@@ -23,6 +23,12 @@ for the reference.
 
 ### Deployment
 
-Don't forget to tag the release with new tag if the version is updated
+Don't forget to tag the release with new tag (e.g., v1.2.1 for version 1.2.1) if the version is updated
+
+Also 
+```
+git push --tags
+```
+By default tags are not pushed and travis build will fail (unable to find release tag)
 
 Submit a fix: blabla or feat: blabla PR for travis to deploy it to pypi
