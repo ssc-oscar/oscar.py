@@ -22,7 +22,8 @@ PATHS = {
     # prefix length means that the data are split into 2**n files,
     # e.g. key is in 0..31 for prefix length of 5 bit.
 
-    # The most critical: raw data for the initial storage, use in sweeps, 100TB da4+ backup
+    # The most critical: raw data for the initial storage, use in sweeps,
+    # 100TB da4+ backup
     'commit_sequential_idx': ('/data/All.blobs/commit_{key}.idx', 7),
     'commit_sequential_bin': ('/data/All.blobs/commit_{key}.bin', 7),
     'tree_sequential_idx': ('/data/All.blobs/blob_{key}.idx', 7),
@@ -52,7 +53,7 @@ PATHS = {
     'blob_authors': ('/da0_data/basemaps/b2aFullP.{key}.tch', 5),
     'file_commits': ('/da0_data/basemaps/f2cFullP.{key}.tch', 5),
 
-    ####  dictionary entries added after 5/12/19  #####
+    # dictionary entries added after 5/12/19
     'file_blobs': ('/da0_data/basemaps/f2bFullP.{key}.tch', 5),
     'commit_time_author': ('/da0_data/basemaps/c2taFullP.{key}.tch', 5),
     'project_authors': ('/da0_data/basemaps/p2aFullP.{key}.tch', 5),
@@ -67,6 +68,24 @@ PATHS = {
     'tree_index_line': ('/fast/All.sha1/sha1.tree_{key}.tch', 7),
     'commit_index_line': ('/fast/All.sha1/sha1.commit_{key}.tch', 7),
     'tag_index_line': ('/fast/All.sha1/sha1.tag_{key}.tch', 7)
+}
+
+URLMAP = {
+    "bb": "bitbucket.org",
+    "gl": "gitlab.org",
+    "android.googlesource.com": "android.googlesource.com",
+    "bioconductor.org": "bioconductor.org",
+    "drupal.com": "git.drupal.org",
+    "git.eclipse.org": "git.eclipse.org",
+    "git.kernel.org": "git.kernel.org",
+    "git.postgresql.org": "git.postgresql.org",
+    "git.savannah.gnu.org": "git.savannah.gnu.org",
+    "git.zx2c4.com": "git.zx2c4.com",
+    "gitlab.gnome.org": "gitlab.gnome.org",
+    "kde.org": "anongit.kde.org",
+    "repo.or.cz": "repo.or.cz",
+    "salsa.debian.org": "salsa.debian.org",
+    "sourceforge.net": "git.code.sf.net/p"
 }
 
 
@@ -191,6 +210,7 @@ def slice20(raw_data):
 
     return tuple(raw_data[i:i + 20].encode('hex')
                  for i in range(0, len(raw_data), 20))
+
 
 class CommitTimezone(tzinfo):
     # a lightweight version of pytz._FixedOffset
@@ -538,7 +558,6 @@ class Blob(GitObject):
         **NOTE: commits removing this blob are not included**
         """
         return (Commit(bin_sha) for bin_sha in self.commit_shas)
-
 
 
 class Tree(GitObject):
@@ -1005,8 +1024,11 @@ class Commit(GitObject):
     @cached_property
     def files(self):
         data = decomp(self.read_tch('commit_files'))
-        return tuple(file_name 
-        for file_name in (data and data.split(";")) or [] if file_name and file_name != 'EMPTY')
+        return tuple(
+            file_name
+            for file_name in (data and data.split(";")) or []
+            if file_name and file_name != 'EMPTY')
+
 
 class Commit_info(GitObject):
     @cached_property
@@ -1019,6 +1041,7 @@ class Commit_info(GitObject):
     def head(self):
       data = slice20(self.read_tch('commit_head'))
       return data 
+
 
 class Tag(GitObject):
     """ Tag doesn't have any functionality associated.
@@ -1221,47 +1244,29 @@ class Project(_Base):
             commit = commits.get(first_parent, Commit(first_parent))
 
     def toURL(self):
-      '''
-      Get the URL for a given project URI
-      >>> Project('CS340-19_lectures').toURL()
-      'http://github.com/CS340-19/lectures'
-      '''
-      p_name = self.uri
-      found = False
-      toUrlMap = {
-        "bb": "bitbucket.org", "gl": "gitlab.org",
-        "android.googlesource.com": "android.googlesource.com",
-        "bioconductor.org": "bioconductor.org",
-        "drupal.com": "git.drupal.org", "git.eclipse.org": "git.eclipse.org",
-        "git.kernel.org": "git.kernel.org",
-        "git.postgresql.org": "git.postgresql.org" ,
-        "git.savannah.gnu.org": "git.savannah.gnu.org",
-        "git.zx2c4.com": "git.zx2c4.com" ,
-        "gitlab.gnome.org": "gitlab.gnome.org",
-        "kde.org": "anongit.kde.org",
-        "repo.or.cz": "repo.or.cz",
-        "salsa.debian.org": "salsa.debian.org",
-        "sourceforge.net": "git.code.sf.net/p"}
+        """
+        Get the URL for a given project URI
+        >>> Project('CS340-19_lectures').toURL()
+        'https://github.com/CS340-19/lectures'
+        >>> Project('bb_user_project').toURL()
+        'https://bitbucket.org/user/project'
+        """
+        chunks = self.uri.split("_", 2)
+        if (len(chunks) == 3 or chunks[0] == "sourceforge.net") \
+                and chunks[0] in URLMAP:
+            chunks[0] = URLMAP[chunks[0]]
+        else:
+            chunks.insert(0, "github.com")
 
-      for URL in toUrlMap.keys():
-        URL_ = URL + "_"
-        if p_name.startswith(URL_) and (p_name.count('_') >= 2 or URL == "sourceforge.net"):
-          replacement = toUrlMap[URL] + "/"
-          p_name = p_name.replace(URL_, replacement)
-          found = True
-          break
-
-      if not found: 
-        p_name = "github.com/" + p_name
- 
-      p_name = p_name.replace('_', '/', 1)
-      return "https://" + p_name  
+        return "https://" + "/".join(chunks)
     
     @cached_property
     def author_names(self):
         data = decomp(self.read_tch('project_authors'))
-        return tuple(author_name 
-        for author_name in (data and data.split(";")) or [] if author_name and author_name != 'EMPTY')
+        return tuple(
+            author_name
+            for author_name in (data and data.split(";")) or []
+            if author_name and author_name != 'EMPTY')
 
 
 class File(_Base):
