@@ -1,4 +1,3 @@
-
 import lzf
 # da4 doesn't have libgit2-dev to install pygit2 yet
 # import pygit2
@@ -13,7 +12,8 @@ import time
 import warnings
 import fnvhash
 
-__version__ = '1.1.0'
+
+__version__ = '1.2.2'
 __author__ = "Marat (@cmu.edu)"
 __license__ = "GPL v3"
 
@@ -40,14 +40,24 @@ PATHS = {
     # 'tag_data': ('/data/All.blobs/tag_{key}.bin', 7)
 
     # relations - good to have but not critical
-    'commit_projects': ('/da0_data/basemaps/c2pFullN.{key}.tch', 5),
-    'commit_children': ('/da0_data/basemaps/c2ccFullN.{key}.tch', 5),
-    'commit_blobs': ('/da0_data/basemaps/c2bFullM.{key}.tch', 5),
-    'commit_files': ('/da0_data/basemaps/c2fFullM.{key}.tch', 5),
-    'project_commits': ('/da0_data/basemaps/p2cFullN.{key}.tch', 5),
-    'author_commits': ('/da0_data/basemaps/a2cFullN.{key}.tch', 5),
-    'blob_commits': ('/data/basemaps/b2cFullM.{key}.tch', 5),
-    'file_commits': ('/data/basemaps/f2cFullM.{key}.tch', 5),
+    'commit_projects': ('/da0_data/basemaps/c2pFullP.{key}.tch', 5),
+    'commit_children': ('/da0_data/basemaps/c2ccFullP.{key}.tch', 5),
+    'commit_blobs': ('/da0_data/basemaps/c2bFullP.{key}.tch', 5),
+    'commit_files': ('/da0_data/basemaps/c2fFullP.{key}.tch', 5),
+    'project_commits': ('/da0_data/basemaps/p2cFullP.{key}.tch', 5),
+    'author_commits': ('/da0_data/basemaps/a2cFullP.{key}.tch', 5),
+    'author_projects': ('/da0_data/basemaps/a2pFullP.{key}.tch', 5),
+    'author_trpath':('/da0_data/basemaps/a2trpO.tch', 5),
+    'blob_commits': ('/da0_data/basemaps/b2cFullP.{key}.tch', 5),
+    'blob_authors': ('/da0_data/basemaps/b2aFullP.{key}.tch', 5),
+    'file_commits': ('/da0_data/basemaps/f2cFullP.{key}.tch', 5),
+
+    ####  dictionary entries added after 5/12/19  #####
+    'file_blobs': ('/da0_data/basemaps/f2bFullP.{key}.tch', 5),
+    'commit_time_author': ('/da0_data/basemaps/c2taFullP.{key}.tch', 5),
+    'project_authors': ('/da0_data/basemaps/p2aFullP.{key}.tch', 5),
+    'blob_files': ('/da0_data/basemaps/b2fFullP.{key}.tch', 5),
+    'commit_head': ('/da0_data/basemaps/c2hFullO.{key}.tch', 5),
 
     # another way to get commit parents, currently unused
     # 'commit_parents': ('/da0_data/basemaps/c2pcK.{key}.tch', 7)
@@ -176,9 +186,11 @@ def cached_property(func):
 def slice20(raw_data):
     """ Slice raw_data into 20-byte chunks and hex encode each of them
     """
+    if raw_data is None:
+        return ()
+
     return tuple(raw_data[i:i + 20].encode('hex')
                  for i in range(0, len(raw_data), 20))
-
 
 class CommitTimezone(tzinfo):
     # a lightweight version of pytz._FixedOffset
@@ -249,7 +261,7 @@ def _get_tch(path):
         path += '.tch'
     if path not in _TCH_POOL:
         _TCH_POOL[path] = tch.Hash()
-        _TCH_POOL[path].open(path, tch.HDBOREADER)
+        _TCH_POOL[path].open(path, tch.HDBOREADER | tch.HDBONOLCK)
         # _TCH_POOL[path].setmutex()
     return _TCH_POOL[path]
 
@@ -262,13 +274,13 @@ def read_tch(path, key, silent=False):
 
     try:
         return _get_tch(path)[key]
-    except tch.error:
-        raise IOError("Tokyocabinet file " + path + " not found")
-    except KeyError:
-        if silent:
-            return ''
-        raise ObjectNotFound(path + " " + key)
-
+    except:
+      return None
+        #raise IOError("Tokyocabinet file " + path + " not found")
+    #except KeyError:
+     #   if silent:
+     #       return ''
+     #   raise ObjectNotFound(path + " " + key)
 
 def tch_keys(path, key_prefix=''):
     return _get_tch(path).fwmkeys(key_prefix)
@@ -281,7 +293,6 @@ def resolve_path(dtype, object_key, use_fnv=False):
 
     p = fnvhash.fnv1a_32(object_key) if use_fnv else ord(object_key[0])
     prefix = p & (2**prefix_length - 1)
-
     return path.format(key=prefix)
 
 
@@ -497,7 +508,7 @@ class Blob(GitObject):
     def position(self):
         """ Get offset and length of the blob data in the storage """
         try:
-            offset, length = unber(self.read_tch(PATHS['blob_offset']))
+            offset, length = unber(self.read_tch('blob_offset'))
         except ValueError:  # empty read -> value not found
             raise ObjectNotFound('Blob data not found (bad sha?)')
         return offset, length
@@ -527,6 +538,7 @@ class Blob(GitObject):
         **NOTE: commits removing this blob are not included**
         """
         return (Commit(bin_sha) for bin_sha in self.commit_shas)
+
 
 
 class Tree(GitObject):
@@ -990,6 +1002,23 @@ class Commit(GitObject):
         """
         return (Blob(bin_sha) for bin_sha in self.blob_shas)
 
+    @cached_property
+    def files(self):
+        data = decomp(self.read_tch('commit_files'))
+        return tuple(file_name 
+        for file_name in (data and data.split(";")) or [] if file_name and file_name != 'EMPTY')
+
+class Commit_info(GitObject):
+    @cached_property
+    def time_author(self):
+        data = self.read_tch('commit_time_author')
+        return tuple(time_author 
+        for time_author in (data and data.split(";")))
+
+    @cached_property
+    def head(self):
+      data = slice20(self.read_tch('commit_head'))
+      return data 
 
 class Tag(GitObject):
     """ Tag doesn't have any functionality associated.
@@ -1004,8 +1033,19 @@ class Project(_Base):
         - Github: `{user}_{repo}`, e.g. `user2589_minicms`
         - Gitlab: `gl_{user}_{repo}`
         - Bitbucket: `bb_{user}_{repo}`
-        - Bioconductor: `bc_{user}_{repo}`
-
+        - Bioconductor: `bioconductor.org_{user}_{repo}`
+        - kde: `kde.org_{user}_{repo}`
+        - drupal: `drupal.org_{user}_{repo}` 
+        - Googlesouce: `android.googlesource.com_{repo}_{user}`
+        - Linux kernel: `git.kernel.org_{user}_{repo}`
+        - PostgreSQL: `git.postgresql.org_{user}_{repo}`
+        - GNU Savannah: `git.savannah.gnu.org_{user}_{repo}`
+        - ZX2C4: `git.zx2c4.com_{user}_{repo}`
+        - GNOME: `gitlab.gnome.org_{user}_{repo}`
+        - repo.or.cz: `repo.or.cz_{user}_{repo}`
+        - Salsa: `salsa.debian.org_{user}_{repo}`
+        - SourceForge: `sourceforge.net_{user}_{repo}`
+  
     Projects are iterable:
 
         >>> for commit in Project('user2589_minicms'):  # doctest: +SKIP
@@ -1021,6 +1061,7 @@ class Project(_Base):
         >>> Commit(sha) in Project('user2589_minicms')
         True
     """
+
     type = 'project'
     _keys_registry_dtype = 'project_commits'
 
@@ -1179,6 +1220,49 @@ class Project(_Base):
 
             commit = commits.get(first_parent, Commit(first_parent))
 
+    def toURL(self):
+      '''
+      Get the URL for a given project URI
+      >>> Project('CS340-19_lectures').toURL()
+      'http://github.com/CS340-19/lectures'
+      '''
+      p_name = self.uri
+      found = False
+      toUrlMap = {
+        "bb": "bitbucket.org", "gl": "gitlab.org",
+        "android.googlesource.com": "android.googlesource.com",
+        "bioconductor.org": "bioconductor.org",
+        "drupal.com": "git.drupal.org", "git.eclipse.org": "git.eclipse.org",
+        "git.kernel.org": "git.kernel.org",
+        "git.postgresql.org": "git.postgresql.org" ,
+        "git.savannah.gnu.org": "git.savannah.gnu.org",
+        "git.zx2c4.com": "git.zx2c4.com" ,
+        "gitlab.gnome.org": "gitlab.gnome.org",
+        "kde.org": "anongit.kde.org",
+        "repo.or.cz": "repo.or.cz",
+        "salsa.debian.org": "salsa.debian.org",
+        "sourceforge.net": "git.code.sf.net/p"}
+
+      for URL in toUrlMap.keys():
+        URL_ = URL + "_"
+        if p_name.startswith(URL_) and (p_name.count('_') >= 2 or URL == "sourceforge.net"):
+          replacement = toUrlMap[URL] + "/"
+          p_name = p_name.replace(URL_, replacement)
+          found = True
+          break
+
+      if not found: 
+        p_name = "github.com/" + p_name
+ 
+      p_name = p_name.replace('_', '/', 1)
+      return "https://" + p_name  
+    
+    @cached_property
+    def author_names(self):
+        data = decomp(self.read_tch('project_authors'))
+        return tuple(author_name 
+        for author_name in (data and data.split(";")) or [] if author_name and author_name != 'EMPTY')
+
 
 class File(_Base):
     """
@@ -1212,8 +1296,8 @@ class File(_Base):
         True
         """
         file_path = self.key
-        if not file_path.endswith("\n"):
-            file_path += "\n"
+        #if not file_path.endswith("\n"):
+        #    file_path += "\n"
         tch_path = resolve_path('file_commits', file_path, self.use_fnv_keys)
         return slice20(read_tch(tch_path, file_path, silent=True))
 
@@ -1287,3 +1371,17 @@ class Author(_Base):
         True
         """
         return (Commit(sha) for sha in self.commit_shas)
+    
+    @cached_property
+    def project_names(self):
+        """ URIs of projects where author has committed to 
+A generator of all Commit objects authored by the Author
+        """
+        data = decomp(self.read_tch('author_projects'))
+        return tuple(project_name
+          for project_name in (data and data.split(";")) or [] if project_name and project_name != 'EMPTY')
+    
+    @cached_property
+    def torvald(self):
+      data = decomp(self.read_tch('author_trpath'))
+      return tuple(path for path in (data and data.split(";")))
