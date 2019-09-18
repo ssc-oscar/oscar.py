@@ -12,6 +12,7 @@ import time
 import warnings
 import fnvhash
 
+
 __version__ = '1.2.1'
 __author__ = "Marat (@cmu.edu)"
 __license__ = "GPL v3"
