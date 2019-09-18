@@ -73,8 +73,11 @@ def unber(s):
     BER is a way to pack several variable-length ints into one
     binary string. Here we do the reverse
 
-    :param s: a binary string with packed values
-    :return: a list of unpacked values
+    Args:
+        s (str): a binary string with packed values
+
+    Returns:
+         str: a list of unpacked values
 
     >>> unber('\x00\x83M')
     [0, 461]
@@ -100,8 +103,12 @@ def lzf_length(raw_data):
     output. Check Compress::LZF sources for the definition of this bit magic
         (namely, LZF.xs, decompress_sv)
 
-    :param raw_data: data compressed with Perl Compress::LZF
-    :return: tuple of (header_size, uncompressed_content_length) in bytes
+    Args:
+        raw_data (bytes): data compressed with Perl Compress::LZF
+
+    Returns:
+         Tuple[int, int]: (header_size, uncompressed_content_length) in bytes
+
     >>> lzf_length('\xc4\x9b')
     (2, 283)
     >>> lzf_length('\xc3\xa4')
@@ -141,8 +148,11 @@ def decomp(raw_data):
     and then does usual lzf decompression.
     Please check Compress::LZF sources for the definition of this bit magic
 
-    :param raw_data: data compressed with Perl Compress::LZF
-    :return: string of unpacked data
+    Args:
+        raw_data (bytes): data compressed with Perl Compress::LZF
+
+    Returns:
+        str: unpacked data
     """
     if not raw_data:
         return ""
@@ -202,11 +212,11 @@ def parse_commit_date(timestamp):
         datetime.fromtimestamp without a timezone will convert it to host tz
     github api is in UTC (this is what trailing 'Z' means)
 
-    :param timestamp: Commit.authored_at or Commit.commited_at,
-        e.g. '1337145807 +1100'
-    :type timestamp: str
-    :return: UTC datetime
-    :rtype: datetime.datetime or None
+    Args:
+        timestamp (str): Commit.authored_at or Commit.commited_at,
+            e.g. '1337145807 +1100'
+    Returns:
+        Optional[datetime.datetime]: UTC datetime
 
     >>> parse_commit_date('1337145807 +1100')
     datetime.datetime(2012, 5, 16, 16, 23, 27, tzinfo=<Timezone: 11:00>)
@@ -284,7 +294,8 @@ class _Base(object):
 
     def __init__(self, key):
         """
-        :param key: unique identifier for an object of this type
+        Args:
+             key (str): unique identifier for an object of this type
         """
         self.key = key
 
@@ -327,7 +338,7 @@ class _Base(object):
         all file names.
 
         Returns:
-            a generator of `Project` objects
+            Generator: a generator of `Project` objects
         """
         if not cls._keys_registry_dtype:
             raise NotImplemented
@@ -368,7 +379,8 @@ class GitObject(_Base):
 
     def __init__(self, sha):
         """
-        :param sha: either a 40 char hex or a 20 bytes binary SHA1 hash
+        Args:
+             sha (str): either a 40 char hex or a 20 bytes binary SHA1 hash
         >>> sha = '05cf84081b63cda822ee407e688269b494a642de'
         >>> GitObject(sha.decode('hex')).sha == sha
         True
@@ -607,7 +619,8 @@ class Tree(GitObject):
         This will generate 3-tuples of the same format as direct tree
         iteration, but will recursively include subtrees content.
 
-        :return: generator of (mode, filename, blob/tree sha)
+        Returns:
+            Generator: a generator of (mode, filename, blob/tree sha) tuples
 
         >>> c = Commit("1e971a073f40d74a1e72e07c682e1cba0bae159b")
         >>> len(list(c.tree.traverse()))
@@ -629,8 +642,9 @@ class Tree(GitObject):
         """ Formatted tree content, including recursive files and subtrees
         It is intended for debug purposes only.
 
-        :return: multiline string, where each line contains mode, name and sha,
-            with subtrees expanded
+        Returns:
+            str: multiline string, where each line contains mode, name and sha,
+                with subtrees expanded
         """
         files = sorted(self.traverse(), key=lambda x: x[1])
         return "\n".join(" ".join(line) for line in files)
