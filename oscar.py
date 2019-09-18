@@ -3,7 +3,6 @@ import lzf
 # import pygit2
 from tokyocabinet import hash as tch
 
-
 from datetime import datetime, timedelta, tzinfo
 import difflib
 from functools import wraps
