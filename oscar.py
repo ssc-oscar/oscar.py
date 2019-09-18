@@ -3,7 +3,6 @@ import lzf
 # import pygit2
 from tokyocabinet import hash as tch
 
-
 from datetime import datetime, timedelta, tzinfo
 import difflib
 from functools import wraps
@@ -12,6 +11,7 @@ import os
 import time
 import warnings
 import fnvhash
+
 
 __version__ = '1.2.1'
 __author__ = "Marat (@cmu.edu)"
