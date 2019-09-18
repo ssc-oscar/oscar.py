@@ -19,3 +19,10 @@ files are stored.
 
 Please see <https://ssc-oscar.github.io/oscar.py>
 for the reference.
+
+
+### Deployment
+
+Don't forget to tag the release with new tag if the version is updated
+
+Submit a fix: blabla or feat: blabla PR for travis to deploy it to pypi
