@@ -13,7 +13,7 @@ import warnings
 import fnvhash
 
 
-__version__ = '1.2.2'
+__version__ = '1.2.3'
 __author__ = "Marat (@cmu.edu)"
 __license__ = "GPL v3"
 
@@ -291,16 +291,16 @@ def read_tch(path, key, silent=False):
     Main purpose of this method is to cached open .tch handlers
     in _TCH_POOL to speedup reads
     """
-
     try:
         return _get_tch(path)[key]
-    except:
-      return None
-        #raise IOError("Tokyocabinet file " + path + " not found")
-    #except KeyError:
-     #   if silent:
-     #       return ''
-     #   raise ObjectNotFound(path + " " + key)
+    except IOError:
+        if silent:
+            return None
+    except KeyError:
+        if silent:
+            return None
+        raise ObjectNotFound(path + " " + key)
+
 
 def tch_keys(path, key_prefix=''):
     return _get_tch(path).fwmkeys(key_prefix)
