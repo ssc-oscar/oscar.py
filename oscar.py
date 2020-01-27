@@ -3,6 +3,8 @@ import lzf
 # import pygit2
 from tokyocabinet import hash as tch
 
+import clickhouse_driver as clickhouse
+
 from datetime import datetime, timedelta, tzinfo
 import difflib
 from functools import wraps
@@ -1371,3 +1373,35 @@ A generator of all Commit objects authored by the Author
     def torvald(self):
       data = decomp(self.read_tch('author_trpath'))
       return tuple(path for path in (data and data.split(";")))
+
+
+class Time_info(_Base):
+    '''
+    '''
+    type = 'time_info'
+
+    def __init__(self, start, end=None, tb_name='commits_a', db_host='localhost'):
+        self.is_time = self.__check_time(start, end)
+        self.start = start
+        self.end = end
+        self.tb_name = tb_name
+        self.db_host = db_host
+        self.client_settings = {'strings_as_bytes':True}
+        self.client = clickhouse.Client(host=self.db_host, settings=self.client_settings)
+        super(Time_info, self).__init__('{}@{}:{}{}', self.tb_name, self.db_host, self.start, '-' + self.end if self.end else '')
+    
+    @property
+    def commit_counts(self):
+        pass
+
+    def __check_time(self, start, end):
+        # make sure start and end are of the same type and must be either strings or ints
+        if start is None:
+            raise ValueError('start time cannot be None')
+        elif not isinstance(start, int) and not isinstance(start, basestring):
+            raise ValueError('start time must be either int or string')
+        elif end is not None and not isinstance(end, int) and not isinstance(end, basestring)
+            raise ValueError('end time must be either int or string')
+        elif end is not None and type(start) is not type(end):
+            raise ValueError('start and end must be of the same type')
+        return (True if isinstance(start, int) else False)
