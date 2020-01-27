@@ -1388,7 +1388,8 @@ class Time_info(_Base):
         self.db_host = db_host
         self.client_settings = {'strings_as_bytes':True}
         self.client = clickhouse.Client(host=self.db_host, settings=self.client_settings)
-        super(Time_info, self).__init__('{}@{}:{}{}', self.tb_name, self.db_host, self.start, '-' + self.end if self.end else '')
+        super(Time_info, self).__init__('{}@{}:{}{}'.format(self.tb_name, self.db_host, \
+                                                            self.start, '-' + self.end if self.end else ''))
     
     @property
     def commit_counts(self):
@@ -1400,7 +1401,7 @@ class Time_info(_Base):
             raise ValueError('start time cannot be None')
         elif not isinstance(start, int) and not isinstance(start, basestring):
             raise ValueError('start time must be either int or string')
-        elif end is not None and not isinstance(end, int) and not isinstance(end, basestring)
+        elif end is not None and not isinstance(end, int) and not isinstance(end, basestring):
             raise ValueError('end time must be either int or string')
         elif end is not None and type(start) is not type(end):
             raise ValueError('start and end must be of the same type')
