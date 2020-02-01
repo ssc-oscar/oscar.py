@@ -13,7 +13,7 @@ import warnings
 import fnvhash
 
 
-__version__ = '1.2.2'
+__version__ = '1.2.3'
 __author__ = "Marat (@cmu.edu)"
 __license__ = "GPL v3"
 
@@ -40,24 +40,24 @@ PATHS = {
     # 'tag_data': ('/data/All.blobs/tag_{key}.bin', 7)
 
     # relations - good to have but not critical
-    'commit_projects': ('/da0_data/basemaps/c2pFullP.{key}.tch', 5),
-    'commit_children': ('/da0_data/basemaps/c2ccFullP.{key}.tch', 5),
-    'commit_blobs': ('/da0_data/basemaps/c2bFullP.{key}.tch', 5),
-    'commit_files': ('/da0_data/basemaps/c2fFullP.{key}.tch', 5),
-    'project_commits': ('/da0_data/basemaps/p2cFullP.{key}.tch', 5),
-    'author_commits': ('/da0_data/basemaps/a2cFullP.{key}.tch', 5),
-    'author_projects': ('/da0_data/basemaps/a2pFullP.{key}.tch', 5),
+    'commit_projects': ('/da0_data/basemaps/c2pFulliQ.{key}.tch', 5),
+    'commit_children': ('/da0_data/basemaps/c2ccFullQ.{key}.tch', 5),
+    'commit_blobs': ('/da0_data/basemaps/c2bFullQ.{key}.tch', 5),
+    'commit_files': ('/da0_data/basemaps/c2fFullQ.{key}.tch', 5),
+    'project_commits': ('/da0_data/basemaps/p2cFullQ.{key}.tch', 5),
+    'author_commits': ('/da0_data/basemaps/a2cFullQ.{key}.tch', 5),
+    'author_projects': ('/da0_data/basemaps/a2pFullQ.{key}.tch', 5),
     'author_trpath':('/da0_data/basemaps/a2trpO.tch', 5),
-    'blob_commits': ('/da0_data/basemaps/b2cFullP.{key}.tch', 5),
-    'blob_authors': ('/da0_data/basemaps/b2aFullP.{key}.tch', 5),
-    'file_commits': ('/da0_data/basemaps/f2cFullP.{key}.tch', 5),
+    'blob_commits': ('/da0_data/basemaps/b2cFullQ.{key}.tch', 5),
+    'blob_authors': ('/da0_data/basemaps/b2aFullQ.{key}.tch', 5),
+    'file_commits': ('/da0_data/basemaps/f2cFullQ.{key}.tch', 5),
 
     ####  dictionary entries added after 5/12/19  #####
-    'file_blobs': ('/da0_data/basemaps/f2bFullP.{key}.tch', 5),
-    'commit_time_author': ('/da0_data/basemaps/c2taFullP.{key}.tch', 5),
-    'project_authors': ('/da0_data/basemaps/p2aFullP.{key}.tch', 5),
-    'blob_files': ('/da0_data/basemaps/b2fFullP.{key}.tch', 5),
-    'commit_head': ('/da0_data/basemaps/c2hFullO.{key}.tch', 5),
+    'file_blobs': ('/da0_data/basemaps/f2bFullQ.{key}.tch', 5),
+    'commit_time_author': ('/da0_data/basemaps/c2taFullQ.{key}.tch', 5),
+    'project_authors': ('/da0_data/basemaps/p2aFullQ.{key}.tch', 5),
+    'blob_files': ('/da0_data/basemaps/b2fFullQ.{key}.tch', 5),
+    'commit_head': ('/da0_data/basemaps/c2hFullQ.{key}.tch', 5),
 
     # another way to get commit parents, currently unused
     # 'commit_parents': ('/da0_data/basemaps/c2pcK.{key}.tch', 7)
