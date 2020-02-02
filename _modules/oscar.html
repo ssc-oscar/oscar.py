@@ -38,6 +38,8 @@
 <span class="c1"># import pygit2</span>
 <span class="kn">from</span> <span class="nn">tokyocabinet</span> <span class="kn">import</span> <span class="nb">hash</span> <span class="k">as</span> <span class="n">tch</span>
 
+<span class="kn">import</span> <span class="nn">clickhouse_driver</span> <span class="k">as</span> <span class="nn">clickhouse</span>
+
 <span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span><span class="p">,</span> <span class="n">tzinfo</span>
 <span class="kn">import</span> <span class="nn">difflib</span>
 <span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">wraps</span>
@@ -1406,6 +1408,97 @@
     <span class="k">def</span> <span class="nf">torvald</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
       <span class="n">data</span> <span class="o">=</span> <span class="n">decomp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_tch</span><span class="p">(</span><span class="s1">&#39;author_trpath&#39;</span><span class="p">))</span>
       <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">path</span> <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="p">(</span><span class="n">data</span> <span class="ow">and</span> <span class="n">data</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;;&quot;</span><span class="p">)))</span></div>
+
+
+<span class="k">class</span> <span class="nc">Time_info</span><span class="p">(</span><span class="n">_Base</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Time_info class is initialized without arguments (table name and host name are optional)</span>
+<span class="sd">        No connection is established before the query is made.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="nb">type</span> <span class="o">=</span> <span class="s1">&#39;time_info&#39;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tb_name</span><span class="o">=</span><span class="s1">&#39;commits_a&#39;</span><span class="p">,</span> <span class="n">db_host</span><span class="o">=</span><span class="s1">&#39;localhost&#39;</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tb_name</span> <span class="o">=</span> <span class="n">tb_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db_host</span> <span class="o">=</span> <span class="n">db_host</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client_settings</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;strings_as_bytes&#39;</span><span class="p">:</span><span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;max_block_size&#39;</span><span class="p">:</span><span class="mi">100000</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">clickhouse</span><span class="o">.</span><span class="n">Client</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">db_host</span><span class="p">,</span> <span class="n">settings</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">client_settings</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Time_info</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">@</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tb_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_host</span><span class="p">))</span>
+    
+    <span class="k">def</span> <span class="nf">commit_counts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; return the count of commits between given date and time</span>
+<span class="sd">        &gt;&gt;&gt; t = Time_info()</span>
+<span class="sd">        &gt;&gt;&gt; t.commit_counts(1568656268)</span>
+<span class="sd">        8</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">where_cond</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__where_condition</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
+        <span class="n">query_str</span> <span class="o">=</span> <span class="s1">&#39;select count(*) from </span><span class="si">{}</span><span class="s1"> where </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tb_name</span><span class="p">,</span> <span class="n">where_cond</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query_str</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    
+    <span class="k">def</span> <span class="nf">commits_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; return a generator of Commit instances within a given date and time</span>
+<span class="sd">        &gt;&gt;&gt; t = Time_info()</span>
+<span class="sd">        &gt;&gt;&gt; commits = t.commits_iter(1568656268)</span>
+<span class="sd">        &gt;&gt;&gt; c = commits.next()</span>
+<span class="sd">        &gt;&gt;&gt; type(c)</span>
+<span class="sd">        &lt;class &#39;oscar.Commit&#39;&gt;</span>
+<span class="sd">        &gt;&gt;&gt; c.parent_shas</span>
+<span class="sd">        (&#39;9c4cc4f6f8040ed98388c7dedeb683469f7210f5&#39;,)</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">where_cond</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__where_condition</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
+        <span class="n">query_str</span> <span class="o">=</span> <span class="s1">&#39;select lower(hex(sha1)) from </span><span class="si">{}</span><span class="s1"> where </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tb_name</span><span class="p">,</span> <span class="n">where_cond</span><span class="p">)</span>
+        <span class="n">row_iter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">execute_iter</span><span class="p">(</span><span class="n">query_str</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">row_iter</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">Commit</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">commits_shas</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; return a list of shas within the given time and date</span>
+<span class="sd">        &gt;&gt;&gt; t = Time_info()</span>
+<span class="sd">        &gt;&gt;&gt; shas = t.commits_shas(1568656268)</span>
+<span class="sd">        &gt;&gt;&gt; type(shas)</span>
+<span class="sd">        &lt;type &#39;list&#39;&gt;</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">where_cond</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__where_condition</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
+        <span class="n">query_str</span> <span class="o">=</span> <span class="s1">&#39;select lower(hex(sha1)) from </span><span class="si">{}</span><span class="s1"> where </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tb_name</span><span class="p">,</span> <span class="n">where_cond</span><span class="p">)</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query_str</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">commits_shas_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; return a generator of all sha1 within the given time and date</span>
+<span class="sd">        &gt;&gt;&gt; t = Time_info()</span>
+<span class="sd">        &gt;&gt;&gt; for sha1 in t.commits_shas_iter(1568656268):</span>
+<span class="sd">        ...     print(sha1)</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        
+        <span class="n">where_cond</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__where_condition</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
+        <span class="n">query_str</span> <span class="o">=</span> <span class="s1">&#39;select lower(hex(sha1)) from </span><span class="si">{}</span><span class="s1"> where </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tb_name</span><span class="p">,</span> <span class="n">where_cond</span><span class="p">)</span>
+        <span class="n">row_iter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">execute_iter</span><span class="p">(</span><span class="n">query_str</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">row_iter</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        
+
+    <span class="k">def</span> <span class="nf">__where_condition</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">):</span>
+        <span class="c1"># checks if start and end date or time is valid and build the where clause</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="s1">&#39;time&#39;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">__check_time</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">):</span>
+            <span class="n">dt</span> <span class="o">=</span> <span class="s1">&#39;date&#39;</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="s1">&#39;toDate(</span><span class="se">\&#39;</span><span class="si">{}</span><span class="se">\&#39;</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">start</span><span class="p">)</span>
+            <span class="n">end</span> <span class="o">=</span> <span class="s1">&#39;toDate(</span><span class="se">\&#39;</span><span class="si">{}</span><span class="se">\&#39;</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">end</span><span class="p">)</span> <span class="k">if</span> <span class="n">end</span> <span class="k">else</span> <span class="kc">None</span>
+            
+        <span class="k">if</span> <span class="n">end</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">=</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span> <span class="n">start</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">&gt;=</span><span class="si">{}</span><span class="s1">  AND </span><span class="si">{}</span><span class="s1">&lt;=</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__check_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">):</span>
+        <span class="c1"># make sure start and end are of the same type and must be either strings or ints</span>
+        <span class="k">if</span> <span class="n">start</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;start time cannot be None&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">basestring</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;start time must be either int or string&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">end</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">end</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">end</span><span class="p">,</span> <span class="n">basestring</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;end time must be either int or string&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">end</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">type</span><span class="p">(</span><span class="n">start</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="nb">type</span><span class="p">(</span><span class="n">end</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;start and end must be of the same type&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="kc">True</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">else</span> <span class="kc">False</span><span class="p">)</span>
 </pre></div>
 
           </div>
