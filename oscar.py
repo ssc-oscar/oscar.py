@@ -15,7 +15,7 @@ import warnings
 import fnvhash
 
 
-__version__ = '1.2.2'
+__version__ = '1.2.3'
 __author__ = "Marat (@cmu.edu)"
 __license__ = "GPL v3"
 
@@ -42,6 +42,7 @@ PATHS = {
     # 'tag_data': ('/data/All.blobs/tag_{key}.bin', 7)
 
     # relations - good to have but not critical
+  
     'commit_projects': ('/da0_data/basemaps/c2pFullQ.{key}.tch', 5),
     'commit_children': ('/da0_data/basemaps/c2ccFullQ.{key}.tch', 5),
     'commit_blobs': ('/da0_data/basemaps/c2bFullQ.{key}.tch', 5),
