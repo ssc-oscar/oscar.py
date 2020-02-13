@@ -59,7 +59,7 @@ PATHS = {
     'commit_time_author': ('/da0_data/basemaps/c2taFullQ.{key}.tch', 5),
     'project_authors': ('/da0_data/basemaps/p2aFullQ.{key}.tch', 5),
     'blob_files': ('/da0_data/basemaps/b2fFullQ.{key}.tch', 5),
-    'commit_head': ('/da0_data/basemaps/c2hFullO.{key}.tch', 5),
+    'commit_head': ('/da0_data/basemaps/c2hFullQ.{key}.tch', 5),
 
     # another way to get commit parents, currently unused
     # 'commit_parents': ('/da0_data/basemaps/c2pcK.{key}.tch', 7)
