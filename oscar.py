@@ -1513,8 +1513,17 @@ class Time_project_info(Clickhouse_DB):
         super(Time_project_info, self).__init__(tb_name, db_host)
     
     def get_values_iter(self, cols, start, end):
-        ''' return a generator for table rows for a given time interval
-            
+        ''' return a generator for table rows for a given time interval                            
+        >>> from oscar import Time_project_info as Proj
+        >>> p = Proj()
+        >>> rows = p.get_values_iter(['time','repo'], 1568571909, 1568571910)
+        >>> for row in rows:
+        ...     print(row)
+        ...
+        (1568571909, 'mrtrevanderson_CECS_424')
+        (1568571909, 'gitlab.com_surajpatel_tic_toc_toe')
+        (1568571909, 'gitlab.com_surajpatel_tic_toc_toe')
+        ...
         '''
         cols = self.__wrap_cols(cols)
         rows_iter = self.query_select_iter(', '.join(cols), self.tb_name, start, end)
@@ -1523,7 +1532,14 @@ class Time_project_info(Clickhouse_DB):
     
     def project_timeline(self, cols, repo):
         ''' return a generator for all rows given a repo name (ordered by time)
-            
+        >>> rows = p.project_timeline(['time','repo'], 'mrtrevanderson_CECS_424')
+        >>> for row in rows:
+        ...     print(row)
+        ...
+        (1568571909, 'mrtrevanderson_CECS_424')
+        (1568571909, 'mrtrevanderson_CECS_424')
+        (1568571909, 'mrtrevanderson_CECS_424')
+        ...
         '''
         cols = self.__wrap_cols(cols)
         query_str = 'SELECT {} FROM {} WHERE repo=\'{}\' ORDER BY time'\
@@ -1533,8 +1549,14 @@ class Time_project_info(Clickhouse_DB):
             yield row
 
     def author_timeline(self, cols, author):
-        ''' return a generator for all rows given a repo name (ordered by time)
-            
+        ''' return a generator for all rows given an author (ordered by time)
+        >>> rows = p.author_timeline(['time', 'repo'], 'Andrew Gacek <andrew.gacek@gmail.com>')
+        >>> for row in rows:
+        ...     print(row)
+        ...
+        (49, 'smaccm_camera_demo')
+        (677, 'smaccm_vm_hack')
+        (1180017188, 'teyjus_teyjus') 
         '''
         cols = self.__wrap_cols(cols)
         query_str = 'SELECT {} FROM {} WHERE author=\'{}\' ORDER BY time'\
@@ -1546,7 +1568,7 @@ class Time_project_info(Clickhouse_DB):
     def __wrap_cols(self, cols):
         ''' wraps cols to select before querying
         '''
-        for i in range(len(cols))
+        for i in range(len(cols)):
             if cols[i] == 'sha1' or cols[i] == 'blob':
                 cols[i] = 'lower(hex({}))'.format(cols[i])
         return cols
