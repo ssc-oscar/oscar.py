@@ -1556,7 +1556,8 @@ class Time_project_info(Clickhouse_DB):
         ...
         (49, 'smaccm_camera_demo')
         (677, 'smaccm_vm_hack')
-        (1180017188, 'teyjus_teyjus') 
+        (1180017188, 'teyjus_teyjus')
+        ... 
         '''
         cols = self.__wrap_cols(cols)
         query_str = 'SELECT {} FROM {} WHERE author=\'{}\' ORDER BY time'\
