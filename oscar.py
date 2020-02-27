@@ -1375,71 +1375,29 @@ A generator of all Commit objects authored by the Author
       data = decomp(self.read_tch('author_trpath'))
       return tuple(path for path in (data and data.split(";")))
 
-
-class Time_info(_Base):
-    ''' Time_info class is initialized without arguments (table name and host name are optional)
-        No connection is established before the query is made.
+class Clickhouse_DB(object):
+    ''' Clickhouse_DB class represents an instance of the clickhouse client
+        It is initialized with a table name and a host name for the database
     '''
-    type = 'time_info'
-
-    def __init__(self, tb_name='commits_a', db_host='localhost'):
+    def __init__(self, tb_name, db_host):
         self.tb_name = tb_name
         self.db_host = db_host
         self.client_settings = {'strings_as_bytes':True, 'max_block_size':100000}
         self.client = clickhouse.Client(host=self.db_host, settings=self.client_settings)
-        super(Time_info, self).__init__('{}@{}'.format(self.tb_name, self.db_host))
-    
-    def commit_counts(self, start, end=None):
-        ''' return the count of commits between given date and time
-        >>> t = Time_info()
-        >>> t.commit_counts(1568656268)
-        8
-        '''
-        where_cond = self.__where_condition(start, end)
-        query_str = 'select count(*) from {} where {}'.format(self.tb_name, where_cond)
-        return self.client.execute(query_str)[0][0]
-    
-    def commits_iter(self, start, end=None):
-        ''' return a generator of Commit instances within a given date and time
-        >>> t = Time_info()
-        >>> commits = t.commits_iter(1568656268)
-        >>> c = commits.next()
-        >>> type(c)
-        <class 'oscar.Commit'>
-        >>> c.parent_shas
-        ('9c4cc4f6f8040ed98388c7dedeb683469f7210f5',)
-        '''
-        where_cond = self.__where_condition(start, end)
-        query_str = 'select lower(hex(sha1)) from {} where {}'.format(self.tb_name, where_cond)
+
+    def query_select(self, s_col, s_from, s_start, s_end):
+        # synchronous query
+        s_where = self.__where_condition(s_start, s_end)
+        query_str = 'select {} from {} where {}'.format(s_col, s_from, s_where)
+        return self.client.execute(query_str)
+        
+    def query_select_async(self, s_col, s_from, s_start, s_end):
+        # asynchronous query
+        s_where = self.__where_condition(s_start, s_end)
+        query_str = 'select {} from {} where {}'.format(s_col, s_from, s_where)
         row_iter = self.client.execute_iter(query_str)
         for row in row_iter:
-            yield Commit(row[0])
-
-    def commits_shas(self, start, end=None):
-        ''' return a list of shas within the given time and date
-        >>> t = Time_info()
-        >>> shas = t.commits_shas(1568656268)
-        >>> type(shas)
-        <type 'list'>
-        '''
-        where_cond = self.__where_condition(start, end)
-        query_str = 'select lower(hex(sha1)) from {} where {}'.format(self.tb_name, where_cond)
-        rows = self.client.execute(query_str)
-        return [row[0] for row in rows]
-
-    def commits_shas_iter(self, start, end=None):
-        ''' return a generator of all sha1 within the given time and date
-        >>> t = Time_info()
-        >>> for sha1 in t.commits_shas_iter(1568656268):
-        ...     print(sha1)
-        '''
-        
-        where_cond = self.__where_condition(start, end)
-        query_str = 'select lower(hex(sha1)) from {} where {}'.format(self.tb_name, where_cond)
-        row_iter = self.client.execute_iter(query_str)
-        for row in row_iter:
-            yield row[0]
-        
+            yield row
 
     def __where_condition(self, start, end):
         # checks if start and end date or time is valid and build the where clause
@@ -1465,3 +1423,56 @@ class Time_info(_Base):
         elif end is not None and type(start) is not type(end):
             raise ValueError('start and end must be of the same type')
         return (True if isinstance(start, int) else False)
+
+class Time_commit_info(Clickhouse_DB):
+    ''' Time_commit_info class is initialized without arguments (table name and host name are optional)
+        No connection is established before the query is made.
+    '''
+    type = 'time_commit_info'
+
+    def __init__(self, tb_name='commits_a', db_host='localhost'):
+        super(Time_commit_info, self).__init__(tb_name, db_host)
+    
+    def commit_counts(self, start, end=None):
+        ''' return the count of commits between given date and time
+        >>> t = Time_commit_info()
+        >>> t.commit_counts(1568656268)
+        8
+        '''
+        rows = self.query_select('count(*)', self.tb_name, start, end)
+        return rows[0][0]
+    
+    def commits_iter(self, start, end=None):
+        ''' return a generator of Commit instances within a given date and time
+        >>> t = Time_commit_info()
+        >>> commits = t.commits_iter(1568656268)
+        >>> c = commits.next()
+        >>> type(c)
+        <class 'oscar.Commit'>
+        >>> c.parent_shas
+        ('9c4cc4f6f8040ed98388c7dedeb683469f7210f5',)
+        '''
+        row_iter = self.query_select_async('lower(hex(sha1))', self.tb_name, start, end)
+        for row in row_iter:
+            yield Commit(row[0])
+
+    def commits_shas(self, start, end=None):
+        ''' return a list of shas within the given time and date
+        >>> t = Time_commit_info()
+        >>> shas = t.commits_shas(1568656268)
+        >>> type(shas)
+        <type 'list'>
+        '''
+        rows = self.query_select('lower(hex(sha1))', self.tb_name, start, end)
+        return [row[0] for row in rows]
+
+    def commits_shas_iter(self, start, end=None):
+        ''' return a generator of all sha1 within the given time and date
+        >>> t = Time_commit_info()
+        >>> for sha1 in t.commits_shas_iter(1568656268):
+        ...     print(sha1)
+        ''' 
+        row_iter = self.query_select_async('lower(hex(sha1))', self.tb_name, start, end)
+        for row in row_iter:
+            yield row[0]
+        
