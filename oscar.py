@@ -1385,20 +1385,28 @@ class Clickhouse_DB(object):
         self.client_settings = {'strings_as_bytes':True, 'max_block_size':100000}
         self.client = clickhouse.Client(host=self.db_host, settings=self.client_settings)
 
+    def query(self, query_str):
+        return self.client.execute(query_str)
+    
+    def query_iter(self, query_str):
+        row_iter = self.client.execute_iter(query_str)
+        for row in row_iter:
+            yield row
+
     def query_select(self, s_col, s_from, s_start, s_end):
-        # synchronous query
+        # normal query
         s_where = self.__where_condition(s_start, s_end)
         query_str = 'select {} from {} where {}'.format(s_col, s_from, s_where)
         return self.client.execute(query_str)
         
-    def query_select_async(self, s_col, s_from, s_start, s_end):
-        # asynchronous query
+    def query_select_iter(self, s_col, s_from, s_start, s_end):
+        # iterative query
         s_where = self.__where_condition(s_start, s_end)
         query_str = 'select {} from {} where {}'.format(s_col, s_from, s_where)
         row_iter = self.client.execute_iter(query_str)
         for row in row_iter:
             yield row
-
+    
     def __where_condition(self, start, end):
         # checks if start and end date or time is valid and build the where clause
         dt = 'time'
@@ -1425,12 +1433,22 @@ class Clickhouse_DB(object):
         return (True if isinstance(start, int) else False)
 
 class Time_commit_info(Clickhouse_DB):
-    ''' Time_commit_info class is initialized without arguments (table name and host name are optional)
+    ''' Time_commit_info class is initialized with table name and database host name
+        the default table for commits is commits_all, and the default host is localhost
         No connection is established before the query is made.
+        The 'commits_all' table description is the following:
+        |__name___|______type_______|
+        | sha1    | FixedString(20) |
+        | time    | Int32           |
+        | tree    | FixedString(20) |
+        | author  | String          |
+        | parent  | String          |
+        | comment | String          |
+        | content | String          |
     '''
-    type = 'time_commit_info'
+    columns = ['sha1', 'time', 'tree', 'author', 'parent', 'comment', 'content']
 
-    def __init__(self, tb_name='commits_a', db_host='localhost'):
+    def __init__(self, tb_name='commits_all', db_host='localhost'):
         super(Time_commit_info, self).__init__(tb_name, db_host)
     
     def commit_counts(self, start, end=None):
@@ -1452,7 +1470,7 @@ class Time_commit_info(Clickhouse_DB):
         >>> c.parent_shas
         ('9c4cc4f6f8040ed98388c7dedeb683469f7210f5',)
         '''
-        row_iter = self.query_select_async('lower(hex(sha1))', self.tb_name, start, end)
+        row_iter = self.query_select_iter('lower(hex(sha1))', self.tb_name, start, end)
         for row in row_iter:
             yield Commit(row[0])
 
@@ -1472,7 +1490,87 @@ class Time_commit_info(Clickhouse_DB):
         >>> for sha1 in t.commits_shas_iter(1568656268):
         ...     print(sha1)
         ''' 
-        row_iter = self.query_select_async('lower(hex(sha1))', self.tb_name, start, end)
+        row_iter = self.query_select_iter('lower(hex(sha1))', self.tb_name, start, end)
         for row in row_iter:
             yield row[0]
         
+class Time_project_info(Clickhouse_DB):
+    ''' Time_project_info class is initialized with table name and database host name
+        The default table name for projects is projects_all, and the default database name is localhost
+        This class contains methods to query for project data
+        The 'projects_all' table descrption is the following:
+        |___name___|______type_______|
+        | sha1     | FixedString(20) |
+        | time     | UInt32          |
+        | blob     | FixedString(20) |
+        | language | String          |
+        | repo     | String          |
+        | author   | String          |
+        | deps     | String          |
+    '''
+    columns = ['sha1', 'time', 'blob', 'language', 'repo', 'author', 'deps']
+
+    def __init__(self, tb_name='projects_all', db_host='localhost'):
+        super(Time_project_info, self).__init__(tb_name, db_host)
+    
+    def get_values_iter(self, cols, start, end):
+        ''' return a generator for table rows for a given time interval                            
+        >>> from oscar import Time_project_info as Proj
+        >>> p = Proj()
+        >>> rows = p.get_values_iter(['time','repo'], 1568571909, 1568571910)
+        >>> for row in rows:
+        ...     print(row)
+        ...
+        (1568571909, 'mrtrevanderson_CECS_424')
+        (1568571909, 'gitlab.com_surajpatel_tic_toc_toe')
+        (1568571909, 'gitlab.com_surajpatel_tic_toc_toe')
+        ...
+        '''
+        cols = self.__wrap_cols(cols)
+        rows_iter = self.query_select_iter(', '.join(cols), self.tb_name, start, end)
+        for row in rows_iter:
+            yield row
+    
+    def project_timeline(self, cols, repo):
+        ''' return a generator for all rows given a repo name (ordered by time)
+        >>> rows = p.project_timeline(['time','repo'], 'mrtrevanderson_CECS_424')
+        >>> for row in rows:
+        ...     print(row)
+        ...
+        (1568571909, 'mrtrevanderson_CECS_424')
+        (1568571909, 'mrtrevanderson_CECS_424')
+        (1568571909, 'mrtrevanderson_CECS_424')
+        ...
+        '''
+        cols = self.__wrap_cols(cols)
+        query_str = 'SELECT {} FROM {} WHERE repo=\'{}\' ORDER BY time'\
+                    .format(', '.join(cols), self.tb_name, repo)
+        rows_iter = self.query_iter(query_str)
+        for row in rows_iter:
+            yield row
+
+    def author_timeline(self, cols, author):
+        ''' return a generator for all rows given an author (ordered by time)
+        >>> rows = p.author_timeline(['time', 'repo'], 'Andrew Gacek <andrew.gacek@gmail.com>')
+        >>> for row in rows:
+        ...     print(row)
+        ...
+        (49, 'smaccm_camera_demo')
+        (677, 'smaccm_vm_hack')
+        (1180017188, 'teyjus_teyjus')
+        ... 
+        '''
+        cols = self.__wrap_cols(cols)
+        query_str = 'SELECT {} FROM {} WHERE author=\'{}\' ORDER BY time'\
+                    .format(', '.join(cols), self.tb_name, author)
+        rows_iter = self.query_iter(query_str)
+        for row in rows_iter:
+            yield row
+
+    def __wrap_cols(self, cols):
+        ''' wraps cols to select before querying
+        '''
+        for i in range(len(cols)):
+            if cols[i] == 'sha1' or cols[i] == 'blob':
+                cols[i] = 'lower(hex({}))'.format(cols[i])
+        return cols
