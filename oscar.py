@@ -42,7 +42,8 @@ PATHS = {
     # 'tag_data': ('/data/All.blobs/tag_{key}.bin', 7)
 
     # relations - good to have but not critical
-    'commit_projects': ('/da0_data/basemaps/c2pFulliQ.{key}.tch', 5),
+  
+    'commit_projects': ('/da0_data/basemaps/c2pFullQ.{key}.tch', 5),
     'commit_children': ('/da0_data/basemaps/c2ccFullQ.{key}.tch', 5),
     'commit_blobs': ('/da0_data/basemaps/c2bFullQ.{key}.tch', 5),
     'commit_files': ('/da0_data/basemaps/c2fFullQ.{key}.tch', 5),
