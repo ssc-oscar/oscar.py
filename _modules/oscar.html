@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>oscar &#8212; oscar 1.2.3 documentation</title>
+    <title>oscar &#8212; oscar 1.3.0 documentation</title>
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
@@ -50,7 +50,7 @@
 <span class="kn">import</span> <span class="nn">fnvhash</span>
 
 
-<span class="n">__version__</span> <span class="o">=</span> <span class="s1">&#39;1.2.3&#39;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s1">&#39;1.3.0&#39;</span>
 <span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Marat (@cmu.edu)&quot;</span>
 <span class="n">__license__</span> <span class="o">=</span> <span class="s2">&quot;GPL v3&quot;</span>
 
@@ -77,7 +77,8 @@
     <span class="c1"># &#39;tag_data&#39;: (&#39;/data/All.blobs/tag_{key}.bin&#39;, 7)</span>
 
     <span class="c1"># relations - good to have but not critical</span>
-    <span class="s1">&#39;commit_projects&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/da0_data/basemaps/c2pFulliQ.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+  
+    <span class="s1">&#39;commit_projects&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/da0_data/basemaps/c2pFullQ.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
     <span class="s1">&#39;commit_children&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/da0_data/basemaps/c2ccFullQ.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
     <span class="s1">&#39;commit_blobs&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/da0_data/basemaps/c2bFullQ.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
     <span class="s1">&#39;commit_files&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;/da0_data/basemaps/c2fFullQ.</span><span class="si">{key}</span><span class="s1">.tch&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
@@ -1409,72 +1410,38 @@
       <span class="n">data</span> <span class="o">=</span> <span class="n">decomp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_tch</span><span class="p">(</span><span class="s1">&#39;author_trpath&#39;</span><span class="p">))</span>
       <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">path</span> <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="p">(</span><span class="n">data</span> <span class="ow">and</span> <span class="n">data</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;;&quot;</span><span class="p">)))</span></div>
 
-
-<span class="k">class</span> <span class="nc">Time_info</span><span class="p">(</span><span class="n">_Base</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39; Time_info class is initialized without arguments (table name and host name are optional)</span>
-<span class="sd">        No connection is established before the query is made.</span>
+<span class="k">class</span> <span class="nc">Clickhouse_DB</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Clickhouse_DB class represents an instance of the clickhouse client</span>
+<span class="sd">        It is initialized with a table name and a host name for the database</span>
 <span class="sd">    &#39;&#39;&#39;</span>
-    <span class="nb">type</span> <span class="o">=</span> <span class="s1">&#39;time_info&#39;</span>
-
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tb_name</span><span class="o">=</span><span class="s1">&#39;commits_a&#39;</span><span class="p">,</span> <span class="n">db_host</span><span class="o">=</span><span class="s1">&#39;localhost&#39;</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tb_name</span><span class="p">,</span> <span class="n">db_host</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tb_name</span> <span class="o">=</span> <span class="n">tb_name</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">db_host</span> <span class="o">=</span> <span class="n">db_host</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">client_settings</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;strings_as_bytes&#39;</span><span class="p">:</span><span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;max_block_size&#39;</span><span class="p">:</span><span class="mi">100000</span><span class="p">}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">clickhouse</span><span class="o">.</span><span class="n">Client</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">db_host</span><span class="p">,</span> <span class="n">settings</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">client_settings</span><span class="p">)</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">Time_info</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">@</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tb_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_host</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">query</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query_str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query_str</span><span class="p">)</span>
     
-    <span class="k">def</span> <span class="nf">commit_counts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39; return the count of commits between given date and time</span>
-<span class="sd">        &gt;&gt;&gt; t = Time_info()</span>
-<span class="sd">        &gt;&gt;&gt; t.commit_counts(1568656268)</span>
-<span class="sd">        8</span>
-<span class="sd">        &#39;&#39;&#39;</span>
-        <span class="n">where_cond</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__where_condition</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
-        <span class="n">query_str</span> <span class="o">=</span> <span class="s1">&#39;select count(*) from </span><span class="si">{}</span><span class="s1"> where </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tb_name</span><span class="p">,</span> <span class="n">where_cond</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query_str</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-    
-    <span class="k">def</span> <span class="nf">commits_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39; return a generator of Commit instances within a given date and time</span>
-<span class="sd">        &gt;&gt;&gt; t = Time_info()</span>
-<span class="sd">        &gt;&gt;&gt; commits = t.commits_iter(1568656268)</span>
-<span class="sd">        &gt;&gt;&gt; c = commits.next()</span>
-<span class="sd">        &gt;&gt;&gt; type(c)</span>
-<span class="sd">        &lt;class &#39;oscar.Commit&#39;&gt;</span>
-<span class="sd">        &gt;&gt;&gt; c.parent_shas</span>
-<span class="sd">        (&#39;9c4cc4f6f8040ed98388c7dedeb683469f7210f5&#39;,)</span>
-<span class="sd">        &#39;&#39;&#39;</span>
-        <span class="n">where_cond</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__where_condition</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
-        <span class="n">query_str</span> <span class="o">=</span> <span class="s1">&#39;select lower(hex(sha1)) from </span><span class="si">{}</span><span class="s1"> where </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tb_name</span><span class="p">,</span> <span class="n">where_cond</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">query_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query_str</span><span class="p">):</span>
         <span class="n">row_iter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">execute_iter</span><span class="p">(</span><span class="n">query_str</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">row_iter</span><span class="p">:</span>
-            <span class="k">yield</span> <span class="n">Commit</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">yield</span> <span class="n">row</span>
 
-    <span class="k">def</span> <span class="nf">commits_shas</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39; return a list of shas within the given time and date</span>
-<span class="sd">        &gt;&gt;&gt; t = Time_info()</span>
-<span class="sd">        &gt;&gt;&gt; shas = t.commits_shas(1568656268)</span>
-<span class="sd">        &gt;&gt;&gt; type(shas)</span>
-<span class="sd">        &lt;type &#39;list&#39;&gt;</span>
-<span class="sd">        &#39;&#39;&#39;</span>
-        <span class="n">where_cond</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__where_condition</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
-        <span class="n">query_str</span> <span class="o">=</span> <span class="s1">&#39;select lower(hex(sha1)) from </span><span class="si">{}</span><span class="s1"> where </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tb_name</span><span class="p">,</span> <span class="n">where_cond</span><span class="p">)</span>
-        <span class="n">rows</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query_str</span><span class="p">)</span>
-        <span class="k">return</span> <span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">]</span>
-
-    <span class="k">def</span> <span class="nf">commits_shas_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39; return a generator of all sha1 within the given time and date</span>
-<span class="sd">        &gt;&gt;&gt; t = Time_info()</span>
-<span class="sd">        &gt;&gt;&gt; for sha1 in t.commits_shas_iter(1568656268):</span>
-<span class="sd">        ...     print(sha1)</span>
-<span class="sd">        &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">query_select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s_col</span><span class="p">,</span> <span class="n">s_from</span><span class="p">,</span> <span class="n">s_start</span><span class="p">,</span> <span class="n">s_end</span><span class="p">):</span>
+        <span class="c1"># normal query</span>
+        <span class="n">s_where</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__where_condition</span><span class="p">(</span><span class="n">s_start</span><span class="p">,</span> <span class="n">s_end</span><span class="p">)</span>
+        <span class="n">query_str</span> <span class="o">=</span> <span class="s1">&#39;select </span><span class="si">{}</span><span class="s1"> from </span><span class="si">{}</span><span class="s1"> where </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s_col</span><span class="p">,</span> <span class="n">s_from</span><span class="p">,</span> <span class="n">s_where</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query_str</span><span class="p">)</span>
         
-        <span class="n">where_cond</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__where_condition</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
-        <span class="n">query_str</span> <span class="o">=</span> <span class="s1">&#39;select lower(hex(sha1)) from </span><span class="si">{}</span><span class="s1"> where </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tb_name</span><span class="p">,</span> <span class="n">where_cond</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">query_select_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s_col</span><span class="p">,</span> <span class="n">s_from</span><span class="p">,</span> <span class="n">s_start</span><span class="p">,</span> <span class="n">s_end</span><span class="p">):</span>
+        <span class="c1"># iterative query</span>
+        <span class="n">s_where</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__where_condition</span><span class="p">(</span><span class="n">s_start</span><span class="p">,</span> <span class="n">s_end</span><span class="p">)</span>
+        <span class="n">query_str</span> <span class="o">=</span> <span class="s1">&#39;select </span><span class="si">{}</span><span class="s1"> from </span><span class="si">{}</span><span class="s1"> where </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s_col</span><span class="p">,</span> <span class="n">s_from</span><span class="p">,</span> <span class="n">s_where</span><span class="p">)</span>
         <span class="n">row_iter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">execute_iter</span><span class="p">(</span><span class="n">query_str</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">row_iter</span><span class="p">:</span>
-            <span class="k">yield</span> <span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        
-
+            <span class="k">yield</span> <span class="n">row</span>
+    
     <span class="k">def</span> <span class="nf">__where_condition</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">):</span>
         <span class="c1"># checks if start and end date or time is valid and build the where clause</span>
         <span class="n">dt</span> <span class="o">=</span> <span class="s1">&#39;time&#39;</span>
@@ -1499,6 +1466,149 @@
         <span class="k">elif</span> <span class="n">end</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">type</span><span class="p">(</span><span class="n">start</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="nb">type</span><span class="p">(</span><span class="n">end</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;start and end must be of the same type&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">(</span><span class="kc">True</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">else</span> <span class="kc">False</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">Time_commit_info</span><span class="p">(</span><span class="n">Clickhouse_DB</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Time_commit_info class is initialized with table name and database host name</span>
+<span class="sd">        the default table for commits is commits_all, and the default host is localhost</span>
+<span class="sd">        No connection is established before the query is made.</span>
+<span class="sd">        The &#39;commits_all&#39; table description is the following:</span>
+<span class="sd">        |__name___|______type_______|</span>
+<span class="sd">        | sha1    | FixedString(20) |</span>
+<span class="sd">        | time    | Int32           |</span>
+<span class="sd">        | tree    | FixedString(20) |</span>
+<span class="sd">        | author  | String          |</span>
+<span class="sd">        | parent  | String          |</span>
+<span class="sd">        | comment | String          |</span>
+<span class="sd">        | content | String          |</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;sha1&#39;</span><span class="p">,</span> <span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="s1">&#39;tree&#39;</span><span class="p">,</span> <span class="s1">&#39;author&#39;</span><span class="p">,</span> <span class="s1">&#39;parent&#39;</span><span class="p">,</span> <span class="s1">&#39;comment&#39;</span><span class="p">,</span> <span class="s1">&#39;content&#39;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tb_name</span><span class="o">=</span><span class="s1">&#39;commits_all&#39;</span><span class="p">,</span> <span class="n">db_host</span><span class="o">=</span><span class="s1">&#39;localhost&#39;</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Time_commit_info</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">tb_name</span><span class="p">,</span> <span class="n">db_host</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">commit_counts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; return the count of commits between given date and time</span>
+<span class="sd">        &gt;&gt;&gt; t = Time_commit_info()</span>
+<span class="sd">        &gt;&gt;&gt; t.commit_counts(1568656268)</span>
+<span class="sd">        8</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">query_select</span><span class="p">(</span><span class="s1">&#39;count(*)&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tb_name</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rows</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    
+    <span class="k">def</span> <span class="nf">commits_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; return a generator of Commit instances within a given date and time</span>
+<span class="sd">        &gt;&gt;&gt; t = Time_commit_info()</span>
+<span class="sd">        &gt;&gt;&gt; commits = t.commits_iter(1568656268)</span>
+<span class="sd">        &gt;&gt;&gt; c = commits.next()</span>
+<span class="sd">        &gt;&gt;&gt; type(c)</span>
+<span class="sd">        &lt;class &#39;oscar.Commit&#39;&gt;</span>
+<span class="sd">        &gt;&gt;&gt; c.parent_shas</span>
+<span class="sd">        (&#39;9c4cc4f6f8040ed98388c7dedeb683469f7210f5&#39;,)</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">row_iter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">query_select_iter</span><span class="p">(</span><span class="s1">&#39;lower(hex(sha1))&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tb_name</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">row_iter</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">Commit</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">commits_shas</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; return a list of shas within the given time and date</span>
+<span class="sd">        &gt;&gt;&gt; t = Time_commit_info()</span>
+<span class="sd">        &gt;&gt;&gt; shas = t.commits_shas(1568656268)</span>
+<span class="sd">        &gt;&gt;&gt; type(shas)</span>
+<span class="sd">        &lt;type &#39;list&#39;&gt;</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">query_select</span><span class="p">(</span><span class="s1">&#39;lower(hex(sha1))&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tb_name</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">commits_shas_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; return a generator of all sha1 within the given time and date</span>
+<span class="sd">        &gt;&gt;&gt; t = Time_commit_info()</span>
+<span class="sd">        &gt;&gt;&gt; for sha1 in t.commits_shas_iter(1568656268):</span>
+<span class="sd">        ...     print(sha1)</span>
+<span class="sd">        &#39;&#39;&#39;</span> 
+        <span class="n">row_iter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">query_select_iter</span><span class="p">(</span><span class="s1">&#39;lower(hex(sha1))&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tb_name</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">row_iter</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        
+<span class="k">class</span> <span class="nc">Time_project_info</span><span class="p">(</span><span class="n">Clickhouse_DB</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Time_project_info class is initialized with table name and database host name</span>
+<span class="sd">        The default table name for projects is projects_all, and the default database name is localhost</span>
+<span class="sd">        This class contains methods to query for project data</span>
+<span class="sd">        The &#39;projects_all&#39; table descrption is the following:</span>
+<span class="sd">        |___name___|______type_______|</span>
+<span class="sd">        | sha1     | FixedString(20) |</span>
+<span class="sd">        | time     | UInt32          |</span>
+<span class="sd">        | blob     | FixedString(20) |</span>
+<span class="sd">        | language | String          |</span>
+<span class="sd">        | repo     | String          |</span>
+<span class="sd">        | author   | String          |</span>
+<span class="sd">        | deps     | String          |</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;sha1&#39;</span><span class="p">,</span> <span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="s1">&#39;blob&#39;</span><span class="p">,</span> <span class="s1">&#39;language&#39;</span><span class="p">,</span> <span class="s1">&#39;repo&#39;</span><span class="p">,</span> <span class="s1">&#39;author&#39;</span><span class="p">,</span> <span class="s1">&#39;deps&#39;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tb_name</span><span class="o">=</span><span class="s1">&#39;projects_all&#39;</span><span class="p">,</span> <span class="n">db_host</span><span class="o">=</span><span class="s1">&#39;localhost&#39;</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Time_project_info</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">tb_name</span><span class="p">,</span> <span class="n">db_host</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">get_values_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; return a generator for table rows for a given time interval                            </span>
+<span class="sd">        &gt;&gt;&gt; from oscar import Time_project_info as Proj</span>
+<span class="sd">        &gt;&gt;&gt; p = Proj()</span>
+<span class="sd">        &gt;&gt;&gt; rows = p.get_values_iter([&#39;time&#39;,&#39;repo&#39;], 1568571909, 1568571910)</span>
+<span class="sd">        &gt;&gt;&gt; for row in rows:</span>
+<span class="sd">        ...     print(row)</span>
+<span class="sd">        ...</span>
+<span class="sd">        (1568571909, &#39;mrtrevanderson_CECS_424&#39;)</span>
+<span class="sd">        (1568571909, &#39;gitlab.com_surajpatel_tic_toc_toe&#39;)</span>
+<span class="sd">        (1568571909, &#39;gitlab.com_surajpatel_tic_toc_toe&#39;)</span>
+<span class="sd">        ...</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">cols</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__wrap_cols</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
+        <span class="n">rows_iter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">query_select_iter</span><span class="p">(</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cols</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">tb_name</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows_iter</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">row</span>
+    
+    <span class="k">def</span> <span class="nf">project_timeline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">repo</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; return a generator for all rows given a repo name (ordered by time)</span>
+<span class="sd">        &gt;&gt;&gt; rows = p.project_timeline([&#39;time&#39;,&#39;repo&#39;], &#39;mrtrevanderson_CECS_424&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; for row in rows:</span>
+<span class="sd">        ...     print(row)</span>
+<span class="sd">        ...</span>
+<span class="sd">        (1568571909, &#39;mrtrevanderson_CECS_424&#39;)</span>
+<span class="sd">        (1568571909, &#39;mrtrevanderson_CECS_424&#39;)</span>
+<span class="sd">        (1568571909, &#39;mrtrevanderson_CECS_424&#39;)</span>
+<span class="sd">        ...</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">cols</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__wrap_cols</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
+        <span class="n">query_str</span> <span class="o">=</span> <span class="s1">&#39;SELECT </span><span class="si">{}</span><span class="s1"> FROM </span><span class="si">{}</span><span class="s1"> WHERE repo=</span><span class="se">\&#39;</span><span class="si">{}</span><span class="se">\&#39;</span><span class="s1"> ORDER BY time&#39;</span>\
+                    <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cols</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">tb_name</span><span class="p">,</span> <span class="n">repo</span><span class="p">)</span>
+        <span class="n">rows_iter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">query_iter</span><span class="p">(</span><span class="n">query_str</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows_iter</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">row</span>
+
+    <span class="k">def</span> <span class="nf">author_timeline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">author</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; return a generator for all rows given an author (ordered by time)</span>
+<span class="sd">        &gt;&gt;&gt; rows = p.author_timeline([&#39;time&#39;, &#39;repo&#39;], &#39;Andrew Gacek &lt;andrew.gacek@gmail.com&gt;&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; for row in rows:</span>
+<span class="sd">        ...     print(row)</span>
+<span class="sd">        ...</span>
+<span class="sd">        (49, &#39;smaccm_camera_demo&#39;)</span>
+<span class="sd">        (677, &#39;smaccm_vm_hack&#39;)</span>
+<span class="sd">        (1180017188, &#39;teyjus_teyjus&#39;)</span>
+<span class="sd">        ... </span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">cols</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__wrap_cols</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
+        <span class="n">query_str</span> <span class="o">=</span> <span class="s1">&#39;SELECT </span><span class="si">{}</span><span class="s1"> FROM </span><span class="si">{}</span><span class="s1"> WHERE author=</span><span class="se">\&#39;</span><span class="si">{}</span><span class="se">\&#39;</span><span class="s1"> ORDER BY time&#39;</span>\
+                    <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cols</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">tb_name</span><span class="p">,</span> <span class="n">author</span><span class="p">)</span>
+        <span class="n">rows_iter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">query_iter</span><span class="p">(</span><span class="n">query_str</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows_iter</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">row</span>
+
+    <span class="k">def</span> <span class="nf">__wrap_cols</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cols</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; wraps cols to select before querying</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">cols</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">cols</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;sha1&#39;</span> <span class="ow">or</span> <span class="n">cols</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;blob&#39;</span><span class="p">:</span>
+                <span class="n">cols</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;lower(hex(</span><span class="si">{}</span><span class="s1">))&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cols</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">cols</span>
 </pre></div>
 
           </div>
