@@ -15,7 +15,7 @@ import warnings
 import fnvhash
 
 
-__version__ = '1.3.2'
+__version__ = '1.3.1'
 __author__ = "Marat (@cmu.edu)"
 __license__ = "GPL v3"
 
@@ -1574,4 +1574,3 @@ class Time_project_info(Clickhouse_DB):
             if cols[i] == 'sha1' or cols[i] == 'blob':
                 cols[i] = 'lower(hex({}))'.format(cols[i])
         return cols
-        
