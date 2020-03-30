@@ -1574,3 +1574,4 @@ class Time_project_info(Clickhouse_DB):
             if cols[i] == 'sha1' or cols[i] == 'blob':
                 cols[i] = 'lower(hex({}))'.format(cols[i])
         return cols
+        
