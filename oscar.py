@@ -27,15 +27,21 @@ PATHS = {
     # The most critical: raw data for the initial storage, use in sweeps, 100TB da4+ backup
     'commit_sequential_idx': ('/da4_data/All.blobs/commit_{key}.idx', 7),
     'commit_sequential_bin': ('/da4_data/All.blobs/commit_{key}.bin', 7),
-    'tree_sequential_idx': ('/da4_data/All.blobs/blob_{key}.idx', 7),
-    'tree_sequential_bin': ('/da4_data/All.blobs/blob_{key}.bin', 7),
+    'tree_sequential_idx': ('/da4_data/All.blobs/tree_{key}.idx', 7),
+    'tree_sequential_bin': ('/da4_data/All.blobs/tree_{key}.bin', 7),
+    
+    'tag_data': ('/da4_data/All.blobs/tag_{key}.bin', 7),
+    'commit_data': ('/da4_data/All.blobs/commit_{key}.bin', 7),
+    'tree_data': ('/da4_data/All.blobs/tree_{key}.bin', 7),
+    'blob_data': ('/da4_data/All.blobs/blob_{key}.bin', 7),
 
     # critical - random access to trees and commits on da4 - need to do offsets for the da3
     'commit_random': ('/fast/All.sha1c/commit_{key}.tch', 7),
     'tree_random': ('/fast/All.sha1c/tree_{key}.tch', 7),
 
     'blob_offset': ('/fast/All.sha1o/sha1.blob_{key}.tch', 7),
-    'blob_data': ('/da4_data/All.blobs/blob_{key}.bin', 7),
+    'commit_offset': ('/fast/All.sha1o/sha1.commit_{key}.tch', 7),
+    'tree_offset': ('/fast/All.sha1o/sha1.tree_{key}.tch', 7),
     # the rest of x_data is currently unused:
     # 'commit_data': ('/data/All.blobs/commit_{key}.bin',  # 7)
     # 'tree_data': ('/data/All.blobs/tree_{key}.bin', 7)
@@ -57,7 +63,6 @@ PATHS = {
     'commit_blobs': ('/da0_data/basemaps/c2bFullQ.{key}.tch', 5),
     'commit_files': ('/da0_data/basemaps/c2fFullQ.{key}.tch', 5),
     'project_commits': ('/da0_data/basemaps/p2cFullR.{key}.tch', 5),
-    'author_trpath':('/da0_data/basemaps/a2trpO.tch', 5),
     'blob_commits': ('/da0_data/basemaps/b2cFullQ.{key}.tch', 5),
     'blob_authors': ('/da0_data/basemaps/b2aFullQ.{key}.tch', 5),
     'file_commits': ('/da0_data/basemaps/f2cFullQ.{key}.tch', 5),
