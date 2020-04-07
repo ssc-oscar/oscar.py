@@ -25,17 +25,17 @@ PATHS = {
     # e.g. key is in 0..31 for prefix length of 5 bit.
 
     # The most critical: raw data for the initial storage, use in sweeps, 100TB da4+ backup
-    'commit_sequential_idx': ('/data/All.blobs/commit_{key}.idx', 7),
-    'commit_sequential_bin': ('/data/All.blobs/commit_{key}.bin', 7),
-    'tree_sequential_idx': ('/data/All.blobs/blob_{key}.idx', 7),
-    'tree_sequential_bin': ('/data/All.blobs/blob_{key}.bin', 7),
+    'commit_sequential_idx': ('/da4_data/All.blobs/commit_{key}.idx', 7),
+    'commit_sequential_bin': ('/da4_data/All.blobs/commit_{key}.bin', 7),
+    'tree_sequential_idx': ('/da4_data/All.blobs/blob_{key}.idx', 7),
+    'tree_sequential_bin': ('/da4_data/All.blobs/blob_{key}.bin', 7),
 
-    # critical - random access to trees and commits on da3 and da4, 10TB
+    # critical - random access to trees and commits on da4 - need to do offsets for the da3
     'commit_random': ('/fast/All.sha1c/commit_{key}.tch', 7),
     'tree_random': ('/fast/All.sha1c/tree_{key}.tch', 7),
 
     'blob_offset': ('/fast/All.sha1o/sha1.blob_{key}.tch', 7),
-    'blob_data': ('/data/All.blobs/blob_{key}.bin', 7),
+    'blob_data': ('/da4_data/All.blobs/blob_{key}.bin', 7),
     # the rest of x_data is currently unused:
     # 'commit_data': ('/data/All.blobs/commit_{key}.bin',  # 7)
     # 'tree_data': ('/data/All.blobs/tree_{key}.bin', 7)
@@ -43,29 +43,33 @@ PATHS = {
 
     # relations - good to have but not critical
   
-    'commit_projects': ('/da0_data/basemaps/c2pFullQ.{key}.tch', 5),
-    'commit_children': ('/da0_data/basemaps/c2ccFullQ.{key}.tch', 5),
+    # move to current version R as they get updated
+    'commit_projects': ('/da0_data/basemaps/c2pFullR.{key}.tch', 5),
+    'commit_children': ('/da0_data/basemaps/c2ccFullR.{key}.tch', 5),
+    'commit_time_author': ('/da0_data/basemaps/c2taFullR.{key}.tch', 5),
+    'commit_root': ('/da0_data/basemaps/c2rFullR.{key}.tch', 5),
+    'commit_parent': ('/da0_data/basemaps/c2pcFullR.{key}.tch', 5),
+    'author_commits': ('/da0_data/basemaps/a2cFullR.{key}.tch', 5),
+    'author_projects': ('/da0_data/basemaps/a2pFullR.{key}.tch', 5),
+    'project_authors': ('/da0_data/basemaps/p2aFullR.{key}.tch', 5),
+
+    'commit_head': ('/da0_data/basemaps/c2hFullQ.{key}.tch', 5),
     'commit_blobs': ('/da0_data/basemaps/c2bFullQ.{key}.tch', 5),
     'commit_files': ('/da0_data/basemaps/c2fFullQ.{key}.tch', 5),
-    'project_commits': ('/da0_data/basemaps/p2cFullQ.{key}.tch', 5),
-    'author_commits': ('/da0_data/basemaps/a2cFullQ.{key}.tch', 5),
-    'author_projects': ('/da0_data/basemaps/a2pFullQ.{key}.tch', 5),
+    'project_commits': ('/da0_data/basemaps/p2cFullR.{key}.tch', 5),
     'author_trpath':('/da0_data/basemaps/a2trpO.tch', 5),
     'blob_commits': ('/da0_data/basemaps/b2cFullQ.{key}.tch', 5),
     'blob_authors': ('/da0_data/basemaps/b2aFullQ.{key}.tch', 5),
     'file_commits': ('/da0_data/basemaps/f2cFullQ.{key}.tch', 5),
-
-    ####  dictionary entries added after 5/12/19  #####
     'file_blobs': ('/da0_data/basemaps/f2bFullQ.{key}.tch', 5),
-    'commit_time_author': ('/da0_data/basemaps/c2taFullQ.{key}.tch', 5),
-    'project_authors': ('/da0_data/basemaps/p2aFullQ.{key}.tch', 5),
     'blob_files': ('/da0_data/basemaps/b2fFullQ.{key}.tch', 5),
-    'commit_head': ('/da0_data/basemaps/c2hFullQ.{key}.tch', 5),
+
+    'author_trpath':('/da0_data/basemaps/a2trpO.tch', 5),
 
     # another way to get commit parents, currently unused
     # 'commit_parents': ('/da0_data/basemaps/c2pcK.{key}.tch', 7)
 
-    # SHA1 cache, on da3 and d4  668G
+    # SHA1 cache, currently only on da4, da5  668G
     'blob_index_line': ('/fast/All.sha1/sha1.blob_{key}.tch', 7),
     'tree_index_line': ('/fast/All.sha1/sha1.tree_{key}.tch', 7),
     'commit_index_line': ('/fast/All.sha1/sha1.commit_{key}.tch', 7),
