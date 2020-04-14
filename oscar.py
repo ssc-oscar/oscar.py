@@ -50,26 +50,26 @@ PATHS = {
     # relations - good to have but not critical
   
     # move to current version R as they get updated
-    'commit_projects': ('/da0_data/basemaps/c2pFullR.{key}.tch', 5),
-    'commit_children': ('/da0_data/basemaps/c2ccFullR.{key}.tch', 5),
-    'commit_time_author': ('/da0_data/basemaps/c2taFullR.{key}.tch', 5),
-    'commit_root': ('/da0_data/basemaps/c2rFullR.{key}.tch', 5),
-    'commit_parent': ('/da0_data/basemaps/c2pcFullR.{key}.tch', 5),
-    'author_commits': ('/da0_data/basemaps/a2cFullR.{key}.tch', 5),
-    'author_projects': ('/da0_data/basemaps/a2pFullR.{key}.tch', 5),
-    'project_authors': ('/da0_data/basemaps/p2aFullR.{key}.tch', 5),
+    'commit_projects': ('/da0_data/basemaps/c2pFull{ver}.{key}.tch', 5),
+    'commit_children': ('/da0_data/basemaps/c2ccFull{ver}.{key}.tch', 5),
+    'commit_time_author': ('/da0_data/basemaps/c2taFull{ver}.{key}.tch', 5),
+    'commit_root': ('/da0_data/basemaps/c2rFull{ver}.{key}.tch', 5),
+    'commit_parent': ('/da0_data/basemaps/c2pcFull{ver}.{key}.tch', 5),
+    'author_commits': ('/da0_data/basemaps/a2cFull{ver}.{key}.tch', 5),
+    'author_projects': ('/da0_data/basemaps/a2pFull{ver}.{key}.tch', 5),
+    'project_authors': ('/da0_data/basemaps/p2aFull{ver}.{key}.tch', 5),
 
-    'commit_head': ('/da0_data/basemaps/c2hFullQ.{key}.tch', 5),
-    'commit_blobs': ('/da0_data/basemaps/c2bFullQ.{key}.tch', 5),
-    'commit_files': ('/da0_data/basemaps/c2fFullQ.{key}.tch', 5),
-    'project_commits': ('/da0_data/basemaps/p2cFullR.{key}.tch', 5),
-    'blob_commits': ('/da0_data/basemaps/b2cFullQ.{key}.tch', 5),
-    'blob_authors': ('/da0_data/basemaps/b2aFullQ.{key}.tch', 5),
-    'file_commits': ('/da0_data/basemaps/f2cFullQ.{key}.tch', 5),
-    'file_blobs': ('/da0_data/basemaps/f2bFullQ.{key}.tch', 5),
-    'blob_files': ('/da0_data/basemaps/b2fFullQ.{key}.tch', 5),
+    'commit_head': ('/da0_data/basemaps/c2hFull{ver}.{key}.tch', 5),
+    'commit_blobs': ('/da0_data/basemaps/c2bFull{ver}.{key}.tch', 5),
+    'commit_files': ('/da0_data/basemaps/c2fFull{ver}.{key}.tch', 5),
+    'project_commits': ('/da0_data/basemaps/p2cFull{ver}.{key}.tch', 5),
+    'blob_commits': ('/da0_data/basemaps/b2cFull{ver}.{key}.tch', 5),
+    'blob_authors': ('/da0_data/basemaps/b2aFull{ver}.{key}.tch', 5),
+    'file_commits': ('/da0_data/basemaps/f2cFull{ver}.{key}.tch', 5),
+    'file_blobs': ('/da0_data/basemaps/f2bFull{ver}.{key}.tch', 5),
+    'blob_files': ('/da0_data/basemaps/b2fFull{ver}.{key}.tch', 5),
 
-    'author_trpath':('/da0_data/basemaps/a2trpO.tch', 5),
+    'author_trpath':('/da0_data/basemaps/a2trp{ver}.tch', 5),
 
     # another way to get commit parents, currently unused
     # 'commit_parents': ('/da0_data/basemaps/c2pcK.{key}.tch', 7)
@@ -81,6 +81,57 @@ PATHS = {
     'tag_index_line': ('/fast/All.sha1/sha1.tag_{key}.tch', 7)
 }
 
+
+def read_env_var():
+    global PATHS
+    all_blobs = ['commit_sequential_idx', 'commit_sequential_bin', 'tree_sequential_idx',\
+                'tree_sequential_bin', 'tag_data', 'commit_data', 'tree_data', 'blob_data']
+    all_sha1c = ['commit_random', 'tree_random']
+    all_sha1o = ['blob_offset', 'commit_offset', 'tree_offset']
+    basemaps = ['commit_projects', 'commit_children', 'commit_time_author', 'commit_root',\
+                'commit_parent', 'author_commits', 'author_projects', 'project_authors',\
+                'commit_head', 'commit_blobs', 'commit_files', 'project_commits', 'blob_commits',\
+                'blob_authors', 'file_commits', 'file_blobs', 'blob_files', 'author_trpath']    
+    all_sha1 = ['blob_index_line', 'tree_index_line', 'commit_index_line', 'tag_index_line']
+    name_map = {
+        'OSCAR_ALL_BLOBS': all_blobs,
+        'OSCAR_ALL_SHA1C': all_sha1c,
+        'OSCAR_ALL_SHA1O': all_sha1o,
+        'OSCAR_BASEMAPS': basemaps,
+        'OSCAR_ALL_SHA1': all_sha1
+    }
+    env_names = ['_'.join(['OSCAR', name.upper()]) for name in PATHS.keys()]
+    env_ver_names = ['_'.join(['OSCAR', name.upper(), 'VER']) for name in basemaps]
+
+    for v in os.environ.keys():
+        if not os.environ[v]:
+            continue
+        # general directory config
+        if v in name_map.keys():
+            for name in name_map[v]:
+                f = PATHS[name][0].split('/')[-1]
+                PATHS[name] = ('/'.join([os.environ[v].rstrip('/'), f]), PATHS[name][1])
+        # specific directory config overwrites general
+        elif v in env_names:
+            path_key = v.split('_')[1:].lower()
+            f = PATHS[name][0].split('/')[-1]
+            PATHS[path_key] = ('/'.join([os.environ[v].rstring('/'),f]), PATHS[name][1])
+        # specific version config
+        elif v in env_ver_names:
+            path_key = v.split('_')[1:-1].lower()
+            PATHS[path_key] = (PATHS[path_key][0].format(ver=os.environ[v], key='{key}'), PATHS[path_key][1])
+        # general version config
+        elif v == "OSCAR_BASEMAPS_VER":
+            for name in basemaps:
+                if '{key}' in PATHS[name][0]:
+                    PATHS[name] = (PATHS[name][0].format(ver=os.environ[v], key='{key}'), PATHS[name][1])
+
+    # if version not set, default to version Q
+    for key in PATHS.keys():
+        if '{ver}' in PATHS[key][0]:
+            PATHS[key] = (PATHS[key][0].format(ver='Q', key='{key}'), PATHS[key][1])
+
+read_env_var()
 
 class ObjectNotFound(KeyError):
     pass
