@@ -126,10 +126,10 @@ def read_env_var():
                 if '{key}' in PATHS[name][0]:
                     PATHS[name] = (PATHS[name][0].format(ver=os.environ[v], key='{key}'), PATHS[name][1])
 
-    # if version not set, default to version Q
+    # if version not set, default to version R
     for key in PATHS.keys():
         if '{ver}' in PATHS[key][0]:
-            PATHS[key] = (PATHS[key][0].format(ver='Q', key='{key}'), PATHS[key][1])
+            PATHS[key] = (PATHS[key][0].format(ver='R', key='{key}'), PATHS[key][1])
 
 read_env_var()
 
