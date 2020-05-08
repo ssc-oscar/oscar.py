@@ -84,42 +84,61 @@ PATHS = {
 
 def read_env_var():
     global PATHS
-    all_blobs = ['commit_sequential_idx', 'commit_sequential_bin', 'tree_sequential_idx',\
-                'tree_sequential_bin', 'tag_data', 'commit_data', 'tree_data', 'blob_data']
-    all_sha1c = ['commit_random', 'tree_random']
-    all_sha1o = ['blob_offset', 'commit_offset', 'tree_offset']
-    basemaps = ['commit_projects', 'commit_children', 'commit_time_author', 'commit_root',\
-                'commit_parent', 'author_commits', 'author_projects', 'project_authors',\
-                'commit_head', 'commit_blobs', 'commit_files', 'project_commits', 'blob_commits',\
-                'blob_authors', 'file_commits', 'file_blobs', 'blob_files', 'author_trpath']    
-    all_sha1 = ['blob_index_line', 'tree_index_line', 'commit_index_line', 'tag_index_line']
-    name_map = {
+    all_blobs = [
+        'commit_sequential_idx', 'commit_sequential_bin', 'tree_sequential_idx',
+        'tree_sequential_bin', 'tag_data', 'commit_data', 'tree_data', 'blob_data'
+    ]
+    all_sha1c = [
+        'commit_random', 'tree_random'
+    ]
+    all_sha1o = [
+        'blob_offset', 'commit_offset', 'tree_offset'
+    ]
+    basemaps = [
+        'commit_projects', 'commit_children', 'commit_time_author', 'commit_root',
+        'commit_parent', 'author_commits', 'author_projects', 'project_authors',
+        'commit_head', 'commit_blobs', 'commit_files', 'project_commits', 'blob_commits',
+        'blob_authors', 'file_commits', 'file_blobs', 'blob_files', 'author_trpath'
+    ]    
+    all_sha1 = [
+        'blob_index_line', 'tree_index_line', 'commit_index_line', 'tag_index_line'
+    ]
+
+    # This map maps the environment variable name to the key names in the PATHS global variable
+    # For example, environment variable 'OSCAR_BASEMAPS' will contain the directory to find all the basemaps
+    # whoes PATHS key matches the elements in the basemaps array
+    # unless overwrote by each specific basemaps
+    general_name_map = {
         'OSCAR_ALL_BLOBS': all_blobs,
         'OSCAR_ALL_SHA1C': all_sha1c,
         'OSCAR_ALL_SHA1O': all_sha1o,
         'OSCAR_BASEMAPS': basemaps,
         'OSCAR_ALL_SHA1': all_sha1
     }
-    env_names = ['_'.join(['OSCAR', name.upper()]) for name in PATHS.keys()]
-    env_ver_names = ['_'.join(['OSCAR', name.upper(), 'VER']) for name in basemaps]
+    # This maps the environment variable name to the key names in the PATHS global variable
+    # Each key in the PAHTS will have 'OSCAR_' prepended to the beginning
+    # For example: OSCAR_COMMIT_DATA environment variable corresponds to PATHS['commit_data']
+    specific_names = {'_'.join(['OSCAR', name.upper()]): name for name in PATHS.keys()}
+    ver_names = {'_'.join(['OSCAR', name.upper(), 'VER']): name for name in basemaps}
 
     for v in os.environ.keys():
         if not os.environ[v]:
             continue
         # general directory config
-        if v in name_map.keys():
-            for name in name_map[v]:
-                f = PATHS[name][0].split('/')[-1]
-                PATHS[name] = ('/'.join([os.environ[v].rstrip('/'), f]), PATHS[name][1])
+        if v in general_name_map.keys():
+            for name in general_name_map[v]:
+                f = os.path.basename(PATHS[name][0])
+                PATHS[name] = (os.path.join(os.environ[v], f), PATHS[name][1])
         # specific directory config overwrites general
-        elif v in env_names:
-            path_key = v.split('_')[1:].lower()
-            f = PATHS[name][0].split('/')[-1]
-            PATHS[path_key] = ('/'.join([os.environ[v].rstring('/'),f]), PATHS[name][1])
+        elif v in specific_names.keys():
+            f = os.path.basename(PATHS[name][0])
+            PATHS[specific_names[v]] = (os.path.join(os.environ[v],f), PATHS[specific_names[v]][1])
         # specific version config
-        elif v in env_ver_names:
-            path_key = v.split('_')[1:-1].lower()
-            PATHS[path_key] = (PATHS[path_key][0].format(ver=os.environ[v], key='{key}'), PATHS[path_key][1])
+        elif v in ver_names.keys():
+            PATHS[ver_names[v]] = (
+                PATHS[ver_names[v]][0].format(ver=os.environ[v], key='{key}'),
+                PATHS[ver_names[v]][1]
+            )
         # general version config
         elif v == "OSCAR_BASEMAPS_VER":
             for name in basemaps:
