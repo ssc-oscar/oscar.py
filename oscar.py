@@ -142,7 +142,7 @@ def read_env_var():
         # general version config
         elif v == "OSCAR_BASEMAPS_VER":
             for name in basemaps:
-                if '{key}' in PATHS[name][0]:
+                if '{ver}' in PATHS[name][0]:
                     PATHS[name] = (PATHS[name][0].format(ver=os.environ[v], key='{key}'), PATHS[name][1])
 
     # if version not set, default to version Q
