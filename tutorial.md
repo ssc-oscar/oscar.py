@@ -351,6 +351,6 @@ Although it is currently not implemented, one could take this one step further a
 ### subprocess
 Simlar to the C version, system(), this module allows you to run UNIX processes, and also allows you to gather any input, output, or error from those processes, all from within a Python script. Documentation can be found here: https://docs.python.org/3/library/subprocess.html
 ### re
-Good for evaluating regular expressions in files and extracting lines that have certain words or patterns. Documentation can be found here: https://docs.python.org/3/library/re.html
+Good for evaluating regular expressions in files and extracting lines that have certain words or patterns. Documentation can be found here: https://docs.python.org/3/library/re.html 
 ### matplotlib
 Popular graphing library for Python. Documentation can be found here: https://matplotlib.org/index.html
