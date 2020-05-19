@@ -28,13 +28,15 @@ List of relationships:
 * p2a (.s)		* p2c (.s)
 ```
 ------
-#### `/data/play/$LANGthruMaps/` on da0:
+#### `/data/play/$LANGthruMaps/` on da0: 
+
 These thruMaps directories contain mappings of repositories with modules that were utilized at a given UNIX timestamp under a specific commit. The mappings are in c2bPtaPkgO{$LANG}.{0-31}.gz files.   
 Format: `commit;repo_name;timestamp;author;blob;module1;module2;...`  
 Each thruMaps directory has a different language ($LANG) that contains modules relevant to that language.
 ------
 ### da3 Server
-#### .tch files in `/fast/`:
+#### .tch files in `/fast/`: 
+
 da3 contains the same files located on da0, except for b2f, c2cc, f2b, and f2c.
 This folder can be used for faster reading, hence the directory name.  
 In the context of oscar.py, the dictionary values listed in the PATHS dictionary can be changed from `/da0_data/basemaps/...` to `/fast/...` when referencing oscar.py in another program.  
