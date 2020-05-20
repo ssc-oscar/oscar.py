@@ -3,7 +3,7 @@ import lzf
 # import pygit2
 from tokyocabinet import hash as tch
 
-import clickhouse_driver as clickhouse
+#import clickhouse_driver as clickhouse
 
 from datetime import datetime, timedelta, tzinfo
 import difflib
@@ -57,6 +57,7 @@ PATHS = {
     'commit_parent': ('/da0_data/basemaps/c2pcFull{ver}.{key}.tch', 5),
     'author_commits': ('/da0_data/basemaps/a2cFull{ver}.{key}.tch', 5),
     'author_projects': ('/da0_data/basemaps/a2pFull{ver}.{key}.tch', 5),
+    'author_files': ('/da0_data/basemaps/a2fFull{ver}.{key}.tch', 5),
     'project_authors': ('/da0_data/basemaps/p2aFull{ver}.{key}.tch', 5),
 
     'commit_head': ('/da0_data/basemaps/c2hFull{ver}.{key}.tch', 5),
@@ -65,6 +66,7 @@ PATHS = {
     'project_commits': ('/da0_data/basemaps/p2cFull{ver}.{key}.tch', 5),
     'blob_commits': ('/da0_data/basemaps/b2cFull{ver}.{key}.tch', 5),
     'blob_authors': ('/da0_data/basemaps/b2aFull{ver}.{key}.tch', 5),
+    'file_authors': ('/da0_data/basemaps/f2aFull{ver}.{key}.tch', 5),
     'file_commits': ('/da0_data/basemaps/f2cFull{ver}.{key}.tch', 5),
     'file_blobs': ('/da0_data/basemaps/f2bFull{ver}.{key}.tch', 5),
     'blob_files': ('/da0_data/basemaps/b2fFull{ver}.{key}.tch', 5),
@@ -1347,6 +1349,11 @@ class File(_Base):
         super(File, self).__init__(path)
 
     @cached_property
+    def authors(self):
+        data = decomp(self.read_tch('file_authors'))
+        return tuple(author for author in (data and data.split(";")))
+
+    @cached_property
     def commit_shas(self):
         """ SHA1 of all commits changing this file
 
@@ -1439,6 +1446,11 @@ class Author(_Base):
         True
         """
         return (Commit(sha) for sha in self.commit_shas)
+
+    @cached_property
+    def files(self):
+        data = decomp(self.read_tch('author_files'))
+        return tuple(file for file in (data and data.split(";")))
     
     @cached_property
     def project_names(self):
