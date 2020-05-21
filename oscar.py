@@ -3,7 +3,7 @@ import lzf
 # import pygit2
 from tokyocabinet import hash as tch
 
-#import clickhouse_driver as clickhouse
+import clickhouse_driver as clickhouse
 
 from datetime import datetime, timedelta, tzinfo
 import difflib
