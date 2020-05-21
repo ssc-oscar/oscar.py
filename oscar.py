@@ -100,7 +100,8 @@ def read_env_var():
         'commit_projects', 'commit_children', 'commit_time_author', 'commit_root',
         'commit_parent', 'author_commits', 'author_projects', 'project_authors',
         'commit_head', 'commit_blobs', 'commit_files', 'project_commits', 'blob_commits',
-        'blob_authors', 'file_commits', 'file_blobs', 'blob_files', 'author_trpath'
+        'blob_authors', 'file_commits', 'file_blobs', 'blob_files', 'author_trpath',
+        'author_files', 'file_authors'
     ]    
     all_sha1 = [
         'blob_index_line', 'tree_index_line', 'commit_index_line', 'tag_index_line'
