@@ -1625,26 +1625,26 @@
     <span class="sd">&#39;&#39;&#39; Time_project_info class is initialized with table name and database host name</span>
 <span class="sd">        The default table name for projects is projects_all, and the default database name is localhost</span>
 <span class="sd">        This class contains methods to query for project data</span>
-<span class="sd">        The &#39;projects_all&#39; table descrption is the following:</span>
+<span class="sd">        The &#39;b2cPtaPkgR_all&#39; table descrption is the following:</span>
 <span class="sd">        |___name___|______type_______|</span>
-<span class="sd">        | sha1     | FixedString(20) |</span>
-<span class="sd">        | time     | UInt32          |</span>
 <span class="sd">        | blob     | FixedString(20) |</span>
-<span class="sd">        | language | String          |</span>
-<span class="sd">        | repo     | String          |</span>
+<span class="sd">        | commit   | FixedString(20) |</span>
+<span class="sd">        | project  | String          |</span>
+<span class="sd">        | time     | UInt32          |</span>
 <span class="sd">        | author   | String          |</span>
+<span class="sd">        | language | String          |</span>
 <span class="sd">        | deps     | String          |</span>
 <span class="sd">    &#39;&#39;&#39;</span>
-    <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;sha1&#39;</span><span class="p">,</span> <span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="s1">&#39;blob&#39;</span><span class="p">,</span> <span class="s1">&#39;language&#39;</span><span class="p">,</span> <span class="s1">&#39;repo&#39;</span><span class="p">,</span> <span class="s1">&#39;author&#39;</span><span class="p">,</span> <span class="s1">&#39;deps&#39;</span><span class="p">]</span>
+    <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;blob&#39;</span><span class="p">,</span> <span class="s1">&#39;commit&#39;</span><span class="p">,</span> <span class="s1">&#39;project&#39;</span><span class="p">,</span> <span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="s1">&#39;author&#39;</span><span class="p">,</span> <span class="s1">&#39;language&#39;</span><span class="p">,</span> <span class="s1">&#39;deps&#39;</span><span class="p">]</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tb_name</span><span class="o">=</span><span class="s1">&#39;projects_all&#39;</span><span class="p">,</span> <span class="n">db_host</span><span class="o">=</span><span class="s1">&#39;localhost&#39;</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tb_name</span><span class="o">=</span><span class="s1">&#39;b2cPtaPkgR_all&#39;</span><span class="p">,</span> <span class="n">db_host</span><span class="o">=</span><span class="s1">&#39;localhost&#39;</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">Time_project_info</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">tb_name</span><span class="p">,</span> <span class="n">db_host</span><span class="p">)</span>
     
     <span class="k">def</span> <span class="nf">get_values_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39; return a generator for table rows for a given time interval                            </span>
 <span class="sd">        &gt;&gt;&gt; from oscar import Time_project_info as Proj</span>
 <span class="sd">        &gt;&gt;&gt; p = Proj()</span>
-<span class="sd">        &gt;&gt;&gt; rows = p.get_values_iter([&#39;time&#39;,&#39;repo&#39;], 1568571909, 1568571910)</span>
+<span class="sd">        &gt;&gt;&gt; rows = p.get_values_iter([&#39;time&#39;,&#39;project&#39;], 1568571909, 1568571910)</span>
 <span class="sd">        &gt;&gt;&gt; for row in rows:</span>
 <span class="sd">        ...     print(row)</span>
 <span class="sd">        ...</span>
@@ -1658,9 +1658,9 @@
         <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows_iter</span><span class="p">:</span>
             <span class="k">yield</span> <span class="n">row</span>
     
-    <span class="k">def</span> <span class="nf">project_timeline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">repo</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39; return a generator for all rows given a repo name (ordered by time)</span>
-<span class="sd">        &gt;&gt;&gt; rows = p.project_timeline([&#39;time&#39;,&#39;repo&#39;], &#39;mrtrevanderson_CECS_424&#39;)</span>
+    <span class="k">def</span> <span class="nf">project_timeline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">project</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; return a generator for all rows given a project name (ordered by time)</span>
+<span class="sd">        &gt;&gt;&gt; rows = p.project_timeline([&#39;time&#39;,&#39;project&#39;], &#39;mrtrevanderson_CECS_424&#39;)</span>
 <span class="sd">        &gt;&gt;&gt; for row in rows:</span>
 <span class="sd">        ...     print(row)</span>
 <span class="sd">        ...</span>
@@ -1670,15 +1670,15 @@
 <span class="sd">        ...</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">cols</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__wrap_cols</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
-        <span class="n">query_str</span> <span class="o">=</span> <span class="s1">&#39;SELECT </span><span class="si">{}</span><span class="s1"> FROM </span><span class="si">{}</span><span class="s1"> WHERE repo=</span><span class="se">\&#39;</span><span class="si">{}</span><span class="se">\&#39;</span><span class="s1"> ORDER BY time&#39;</span>\
-                    <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cols</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">tb_name</span><span class="p">,</span> <span class="n">repo</span><span class="p">)</span>
+        <span class="n">query_str</span> <span class="o">=</span> <span class="s1">&#39;SELECT </span><span class="si">{}</span><span class="s1"> FROM </span><span class="si">{}</span><span class="s1"> WHERE project=</span><span class="se">\&#39;</span><span class="si">{}</span><span class="se">\&#39;</span><span class="s1"> ORDER BY time&#39;</span>\
+                    <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cols</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">tb_name</span><span class="p">,</span> <span class="n">project</span><span class="p">)</span>
         <span class="n">rows_iter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">query_iter</span><span class="p">(</span><span class="n">query_str</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows_iter</span><span class="p">:</span>
             <span class="k">yield</span> <span class="n">row</span>
 
     <span class="k">def</span> <span class="nf">author_timeline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">author</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39; return a generator for all rows given an author (ordered by time)</span>
-<span class="sd">        &gt;&gt;&gt; rows = p.author_timeline([&#39;time&#39;, &#39;repo&#39;], &#39;Andrew Gacek &lt;andrew.gacek@gmail.com&gt;&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; rows = p.author_timeline([&#39;time&#39;, &#39;project&#39;], &#39;Andrew Gacek &lt;andrew.gacek@gmail.com&gt;&#39;)</span>
 <span class="sd">        &gt;&gt;&gt; for row in rows:</span>
 <span class="sd">        ...     print(row)</span>
 <span class="sd">        ...</span>
@@ -1698,7 +1698,7 @@
         <span class="sd">&#39;&#39;&#39; wraps cols to select before querying</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">cols</span><span class="p">)):</span>
-            <span class="k">if</span> <span class="n">cols</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;sha1&#39;</span> <span class="ow">or</span> <span class="n">cols</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;blob&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">cols</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;commit&#39;</span> <span class="ow">or</span> <span class="n">cols</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;blob&#39;</span><span class="p">:</span>
                 <span class="n">cols</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;lower(hex(</span><span class="si">{}</span><span class="s1">))&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cols</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">cols</span>
 </pre></div>
