@@ -1590,26 +1590,26 @@ class Time_project_info(Clickhouse_DB):
     ''' Time_project_info class is initialized with table name and database host name
         The default table name for projects is projects_all, and the default database name is localhost
         This class contains methods to query for project data
-        The 'projects_all' table descrption is the following:
+        The 'b2cPtaPkgR_all' table descrption is the following:
         |___name___|______type_______|
-        | sha1     | FixedString(20) |
-        | time     | UInt32          |
         | blob     | FixedString(20) |
-        | language | String          |
-        | repo     | String          |
+        | commit   | FixedString(20) |
+        | project  | String          |
+        | time     | UInt32          |
         | author   | String          |
+        | language | String          |
         | deps     | String          |
     '''
-    columns = ['sha1', 'time', 'blob', 'language', 'repo', 'author', 'deps']
+    columns = ['blob', 'commit', 'project', 'time', 'author', 'language', 'deps']
 
-    def __init__(self, tb_name='projects_all', db_host='localhost'):
+    def __init__(self, tb_name='b2cPtaPkgR_all', db_host='localhost'):
         super(Time_project_info, self).__init__(tb_name, db_host)
     
     def get_values_iter(self, cols, start, end):
         ''' return a generator for table rows for a given time interval                            
         >>> from oscar import Time_project_info as Proj
         >>> p = Proj()
-        >>> rows = p.get_values_iter(['time','repo'], 1568571909, 1568571910)
+        >>> rows = p.get_values_iter(['time','project'], 1568571909, 1568571910)
         >>> for row in rows:
         ...     print(row)
         ...
@@ -1623,9 +1623,9 @@ class Time_project_info(Clickhouse_DB):
         for row in rows_iter:
             yield row
     
-    def project_timeline(self, cols, repo):
-        ''' return a generator for all rows given a repo name (ordered by time)
-        >>> rows = p.project_timeline(['time','repo'], 'mrtrevanderson_CECS_424')
+    def project_timeline(self, cols, project):
+        ''' return a generator for all rows given a project name (ordered by time)
+        >>> rows = p.project_timeline(['time','project'], 'mrtrevanderson_CECS_424')
         >>> for row in rows:
         ...     print(row)
         ...
@@ -1635,15 +1635,15 @@ class Time_project_info(Clickhouse_DB):
         ...
         '''
         cols = self.__wrap_cols(cols)
-        query_str = 'SELECT {} FROM {} WHERE repo=\'{}\' ORDER BY time'\
-                    .format(', '.join(cols), self.tb_name, repo)
+        query_str = 'SELECT {} FROM {} WHERE project=\'{}\' ORDER BY time'\
+                    .format(', '.join(cols), self.tb_name, project)
         rows_iter = self.query_iter(query_str)
         for row in rows_iter:
             yield row
 
     def author_timeline(self, cols, author):
         ''' return a generator for all rows given an author (ordered by time)
-        >>> rows = p.author_timeline(['time', 'repo'], 'Andrew Gacek <andrew.gacek@gmail.com>')
+        >>> rows = p.author_timeline(['time', 'project'], 'Andrew Gacek <andrew.gacek@gmail.com>')
         >>> for row in rows:
         ...     print(row)
         ...
@@ -1663,6 +1663,6 @@ class Time_project_info(Clickhouse_DB):
         ''' wraps cols to select before querying
         '''
         for i in range(len(cols)):
-            if cols[i] == 'sha1' or cols[i] == 'blob':
+            if cols[i] == 'commit' or cols[i] == 'blob':
                 cols[i] = 'lower(hex({}))'.format(cols[i])
         return cols
