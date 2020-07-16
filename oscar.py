@@ -10,6 +10,7 @@ import difflib
 from functools import wraps
 import hashlib
 import os
+import re
 import time
 import warnings
 import fnvhash
@@ -18,6 +19,20 @@ import fnvhash
 __version__ = '1.3.3'
 __author__ = "Marat (@cmu.edu)"
 __license__ = "GPL v3"
+
+try:
+    with open('/etc/hostname') as fh:
+        HOSTNAME = fh.read().strip()
+except IOError:
+    raise ImportError('Oscar only support Linux hosts so far')
+
+if not re.match('da\d.eecs.utk.edu$', HOSTNAME):
+    raise ImportError('Oscar is only available on certain servers at UTK')
+
+HOST, DOMAIN = HOSTNAME.split('.', 1)
+if HOST != 'da4':
+    warnings.warn('Commit and tree data are only available on da4. '
+                  'Some functions might not work as expected.\n\n')
 
 PATHS = {
     # data_type: (path, prefix_bit_length)
@@ -154,6 +169,7 @@ def read_env_var():
             PATHS[key] = (PATHS[key][0].format(ver='R', key='{key}'), PATHS[key][1])
 
 read_env_var()
+
 
 class ObjectNotFound(KeyError):
     pass
