@@ -156,6 +156,26 @@ PATHS = _get_paths({
     # })
 })
 
+# prefixes used by World of Code to identify source project platforms
+# See Project.to_url() for more details
+URL_PREFIXES = {
+    "bb": "bitbucket.org",
+    "gl": "gitlab.org",
+    "android.googlesource.com": "android.googlesource.com",
+    "bioconductor.org": "bioconductor.org",
+    "drupal.com": "git.drupal.org",
+    "git.eclipse.org": "git.eclipse.org",
+    "git.kernel.org": "git.kernel.org",
+    "git.postgresql.org": "git.postgresql.org",
+    "git.savannah.gnu.org": "git.savannah.gnu.org",
+    "git.zx2c4.com": "git.zx2c4.com",
+    "gitlab.gnome.org": "gitlab.gnome.org",
+    "kde.org": "anongit.kde.org",
+    "repo.or.cz": "repo.or.cz",
+    "salsa.debian.org": "salsa.debian.org",
+    "sourceforge.net": "git.code.sf.net/p"
+}
+
 
 class ObjectNotFound(KeyError):
     pass
@@ -1293,43 +1313,21 @@ class Project(_Base):
 
             commit = commits.get(first_parent, Commit(first_parent))
 
-    def toURL(self):
-      '''
-      Get the URL for a given project URI
-      >>> Project('CS340-19_lectures').toURL()
-      'http://github.com/CS340-19/lectures'
-      '''
-      p_name = self.uri
-      found = False
-      toUrlMap = {
-        "bb": "bitbucket.org", "gl": "gitlab.org",
-        "android.googlesource.com": "android.googlesource.com",
-        "bioconductor.org": "bioconductor.org",
-        "drupal.com": "git.drupal.org", "git.eclipse.org": "git.eclipse.org",
-        "git.kernel.org": "git.kernel.org",
-        "git.postgresql.org": "git.postgresql.org" ,
-        "git.savannah.gnu.org": "git.savannah.gnu.org",
-        "git.zx2c4.com": "git.zx2c4.com" ,
-        "gitlab.gnome.org": "gitlab.gnome.org",
-        "kde.org": "anongit.kde.org",
-        "repo.or.cz": "repo.or.cz",
-        "salsa.debian.org": "salsa.debian.org",
-        "sourceforge.net": "git.code.sf.net/p"}
+    @cached_property
+    def url(self):
+        """ Get the URL for a given project URI
+        >>> Project('CS340-19_lectures').toURL()
+        'http://github.com/CS340-19/lectures'
+        """
+        chunks = self.uri.split("_", 1)
+        prefix = chunks[0]
+        if (len(chunks) > 2 or prefix == "sourceforge.net") and prefix in URL_PREFIXES:
+            platform = URL_PREFIXES[prefix]
+        else:
+            platform = 'github.com'
+        return '/'.join(
+            ('https:/', platform, + chunks[1], '_'.join(chunks[2:])))
 
-      for URL in toUrlMap.keys():
-        URL_ = URL + "_"
-        if p_name.startswith(URL_) and (p_name.count('_') >= 2 or URL == "sourceforge.net"):
-          replacement = toUrlMap[URL] + "/"
-          p_name = p_name.replace(URL_, replacement)
-          found = True
-          break
-
-      if not found: 
-        p_name = "github.com/" + p_name
- 
-      p_name = p_name.replace('_', '/', 1)
-      return "https://" + p_name  
-    
     @cached_property
     def author_names(self):
         data = decomp(self.read_tch('project_authors'))
