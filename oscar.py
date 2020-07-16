@@ -1104,19 +1104,8 @@ class Commit(GitObject):
     def files(self):
         data = decomp(self.read_tch('commit_files'))
         return tuple(file_name 
-        for file_name in (data and data.split(";")) or [] if file_name and file_name != 'EMPTY')
-
-
-class Commit_info(GitObject):
-    @cached_property
-    def time_author(self):
-        data = self.read_tch('commit_time_author')
-        return tuple(time_author 
-        for time_author in (data and data.split(";")))
-
-    @cached_property
-    def head(self):
-        return slice20(self.read_tch('commit_head'))
+                     for file_name in (data and data.split(";")) or []
+                     if file_name and file_name != 'EMPTY')
 
 
 class Tag(GitObject):
