@@ -34,141 +34,127 @@ if HOST != 'da4':
     warnings.warn('Commit and tree data are only available on da4. '
                   'Some functions might not work as expected.\n\n')
 
-PATHS = {
-    # data_type: (path, prefix_bit_length)
-    # prefix length means that the data are split into 2**n files,
-    # e.g. key is in 0..31 for prefix length of 5 bit.
 
-    # The most critical: raw data for the initial storage, use in sweeps, 100TB da4+ backup
-    'commit_sequential_idx': ('/da4_data/All.blobs/commit_{key}.idx', 7),
-    'commit_sequential_bin': ('/da4_data/All.blobs/commit_{key}.bin', 7),
-    'tree_sequential_idx': ('/da4_data/All.blobs/tree_{key}.idx', 7),
-    'tree_sequential_bin': ('/da4_data/All.blobs/tree_{key}.bin', 7),
-    
-    'tag_data': ('/da4_data/All.blobs/tag_{key}.bin', 7),
-    'commit_data': ('/da4_data/All.blobs/commit_{key}.bin', 7),
-    'tree_data': ('/da4_data/All.blobs/tree_{key}.bin', 7),
-    'blob_data': ('/da4_data/All.blobs/blob_{key}.bin', 7),
-
-    # critical - random access to trees and commits on da4 - need to do offsets for the da3
-    'commit_random': ('/fast/All.sha1c/commit_{key}.tch', 7),
-    'tree_random': ('/fast/All.sha1c/tree_{key}.tch', 7),
-
-    'blob_offset': ('/fast/All.sha1o/sha1.blob_{key}.tch', 7),
-    'commit_offset': ('/fast/All.sha1o/sha1.commit_{key}.tch', 7),
-    'tree_offset': ('/fast/All.sha1o/sha1.tree_{key}.tch', 7),
-    # the rest of x_data is currently unused:
-    # 'commit_data': ('/data/All.blobs/commit_{key}.bin',  # 7)
-    # 'tree_data': ('/data/All.blobs/tree_{key}.bin', 7)
-    # 'tag_data': ('/data/All.blobs/tag_{key}.bin', 7)
-
-    # relations - good to have but not critical
-  
-    # move to current version R as they get updated
-    'commit_projects': ('/da0_data/basemaps/c2pFull{ver}.{key}.tch', 5),
-    'commit_children': ('/da0_data/basemaps/c2ccFull{ver}.{key}.tch', 5),
-    'commit_time_author': ('/da0_data/basemaps/c2taFull{ver}.{key}.tch', 5),
-    'commit_root': ('/da0_data/basemaps/c2rFull{ver}.{key}.tch', 5),
-    'commit_parent': ('/da0_data/basemaps/c2pcFull{ver}.{key}.tch', 5),
-    'author_commits': ('/da0_data/basemaps/a2cFull{ver}.{key}.tch', 5),
-    'author_projects': ('/da0_data/basemaps/a2pFull{ver}.{key}.tch', 5),
-    'author_files': ('/da0_data/basemaps/a2fFull{ver}.{key}.tch', 5),
-    'project_authors': ('/da0_data/basemaps/p2aFull{ver}.{key}.tch', 5),
-
-    'commit_head': ('/da0_data/basemaps/c2hFull{ver}.{key}.tch', 5),
-    'commit_blobs': ('/da0_data/basemaps/c2bFull{ver}.{key}.tch', 5),
-    'commit_files': ('/da0_data/basemaps/c2fFull{ver}.{key}.tch', 5),
-    'project_commits': ('/da0_data/basemaps/p2cFull{ver}.{key}.tch', 5),
-    'blob_commits': ('/da0_data/basemaps/b2cFull{ver}.{key}.tch', 5),
-    'blob_authors': ('/da0_data/basemaps/b2aFull{ver}.{key}.tch', 5),
-    'file_authors': ('/da0_data/basemaps/f2aFull{ver}.{key}.tch', 5),
-    'file_commits': ('/da0_data/basemaps/f2cFull{ver}.{key}.tch', 5),
-    'file_blobs': ('/da0_data/basemaps/f2bFull{ver}.{key}.tch', 5),
-    'blob_files': ('/da0_data/basemaps/b2fFull{ver}.{key}.tch', 5),
-
-    'author_trpath':('/da0_data/basemaps/a2trp{ver}.tch', 5),
-
-    # another way to get commit parents, currently unused
-    # 'commit_parents': ('/da0_data/basemaps/c2pcK.{key}.tch', 7)
-
-    # SHA1 cache, currently only on da4, da5  668G
-    'blob_index_line': ('/fast/All.sha1/sha1.blob_{key}.tch', 7),
-    'tree_index_line': ('/fast/All.sha1/sha1.tree_{key}.tch', 7),
-    'commit_index_line': ('/fast/All.sha1/sha1.commit_{key}.tch', 7),
-    'tag_index_line': ('/fast/All.sha1/sha1.tag_{key}.tch', 7)
-}
+def _latest_version(path_template):
+    if '{ver}' not in path_template:
+        return ''
+    # Using * to allow for two-character versions
+    glob_pattern = path_template.format(key=0, ver='*')
+    filenames = glob.glob(glob_pattern)
+    prefix, postfix = glob_pattern.split('*', 1)
+    versions = [fname[len(prefix):-len(postfix)] for fname in filenames]
+    return max(versions, key=lambda ver: (len(ver), ver))
 
 
-def read_env_var():
-    global PATHS
-    all_blobs = [
-        'commit_sequential_idx', 'commit_sequential_bin', 'tree_sequential_idx',
-        'tree_sequential_bin', 'tag_data', 'commit_data', 'tree_data', 'blob_data'
-    ]
-    all_sha1c = [
-        'commit_random', 'tree_random'
-    ]
-    all_sha1o = [
-        'blob_offset', 'commit_offset', 'tree_offset'
-    ]
-    basemaps = [
-        'commit_projects', 'commit_children', 'commit_time_author', 'commit_root',
-        'commit_parent', 'author_commits', 'author_projects', 'project_authors',
-        'commit_head', 'commit_blobs', 'commit_files', 'project_commits', 'blob_commits',
-        'blob_authors', 'file_commits', 'file_blobs', 'blob_files', 'author_trpath',
-        'author_files', 'file_authors'
-    ]    
-    all_sha1 = [
-        'blob_index_line', 'tree_index_line', 'commit_index_line', 'tag_index_line'
-    ]
+def _key_length(path_template):
+    if '{key}' not in path_template:
+        return 0
+    glob_pattern = path_template.format(key='*', ver='*')
+    filenames = glob.glob(glob_pattern)
+    # key always comes the last, so rsplit is enough to account for two stars
+    prefix, postfix = glob_pattern.rsplit('*', 1)
+    str_keys = [fname[len(prefix):-len(postfix)] for fname in filenames]
+    keys = [int(key) for key in str_keys if key]
+    if not keys:
+        warnings.warn("No keys found for path_template " + path_template)
+    return int(log(max(keys) + 1, 2))
 
-    # This map maps the environment variable name to the key names in the PATHS global variable
-    # For example, environment variable 'OSCAR_BASEMAPS' will contain the directory to find all the basemaps
-    # whoes PATHS key matches the elements in the basemaps array
-    # unless overwrote by each specific basemaps
-    general_name_map = {
-        'OSCAR_ALL_BLOBS': all_blobs,
-        'OSCAR_ALL_SHA1C': all_sha1c,
-        'OSCAR_ALL_SHA1O': all_sha1o,
-        'OSCAR_BASEMAPS': basemaps,
-        'OSCAR_ALL_SHA1': all_sha1
-    }
-    # This maps the environment variable name to the key names in the PATHS global variable
-    # Each key in the PAHTS will have 'OSCAR_' prepended to the beginning
-    # For example: OSCAR_COMMIT_DATA environment variable corresponds to PATHS['commit_data']
-    specific_names = {'_'.join(['OSCAR', name.upper()]): name for name in PATHS.keys()}
-    ver_names = {'_'.join(['OSCAR', name.upper(), 'VER']): name for name in basemaps}
 
-    for v in os.environ.keys():
-        if not os.environ[v]:
-            continue
-        # general directory config
-        if v in general_name_map.keys():
-            for name in general_name_map[v]:
-                f = os.path.basename(PATHS[name][0])
-                PATHS[name] = (os.path.join(os.environ[v], f), PATHS[name][1])
-        # specific directory config overwrites general
-        elif v in specific_names.keys():
-            f = os.path.basename(PATHS[name][0])
-            PATHS[specific_names[v]] = (os.path.join(os.environ[v],f), PATHS[specific_names[v]][1])
-        # specific version config
-        elif v in ver_names.keys():
-            PATHS[ver_names[v]] = (
-                PATHS[ver_names[v]][0].format(ver=os.environ[v], key='{key}'),
-                PATHS[ver_names[v]][1]
-            )
-        # general version config
-        elif v == "OSCAR_BASEMAPS_VER":
-            for name in basemaps:
-                if '{ver}' in PATHS[name][0]:
-                    PATHS[name] = (PATHS[name][0].format(ver=os.environ[v], key='{key}'), PATHS[name][1])
+# this dict is only for debugging purposes and it is not used anywhere
+VERSIONS = {}
 
-    # if version not set, default to version R
-    for key in PATHS.keys():
-        if '{ver}' in PATHS[key][0]:
-            PATHS[key] = (PATHS[key][0].format(ver='R', key='{key}'), PATHS[key][1])
 
-read_env_var()
+def _get_paths(raw_paths):
+    # type: (dict) -> dict
+    """
+    Compose path from
+    Args:
+        raw_paths (Dict[Tuple[str, Dict[str, str]]]): see example below
+
+    Returns:
+        (Dict[str, Tuple[str, int]]: map data type to a path template and a key
+            length, e.g.:
+            'author_commits' -> ('/da0_data/basemaps/a2cFullR.{key}.tch', 5)
+    """
+    paths = {}
+    local_data_prefix = '/' + HOST + '_data'
+    for category, (path_prefix, filenames) in raw_paths.items():
+        cat_path_prefix = os.environ.get(category, path_prefix)
+        cat_version = os.environ.get(category + '_VER') or _latest_version(
+            os.path.join(cat_path_prefix, filenames.values()[0]))
+
+        if path_prefix.startswith(local_data_prefix):
+            path_prefix = '/data' + path_prefix[len(local_data_prefix):]
+
+        for ptype, fname in filenames.items():
+            ppath = os.environ.get(
+                '_'.join(['OSCAR', ptype.upper()]), cat_path_prefix)
+            pver = os.environ.get(
+                '_'.join(['OSCAR', ptype.upper(), 'VER']), cat_version)
+            path_template = os.path.join(ppath, fname)
+            key_length = _key_length(path_template)
+            VERSIONS[ptype] = pver
+            paths[ptype] = (
+                path_template.format(ver=pver, key='{key}'), key_length)
+    return paths
+
+
+PATHS = _get_paths({
+    'OSCAR_ALL_BLOBS': ('/da4_data/All.blobs/', {
+        'commit_sequential_idx': 'commit_{key}.idx',
+        'commit_sequential_bin': 'commit_{key}.bin',
+        'tree_sequential_idx': 'tree_{key}.idx',
+        'tree_sequential_bin': 'tree_{key}.bin',
+        # 'tag_data': 'tag_{key}.bin',  # not used + duplicate
+        # 'commit_data': 'commit_{key}.bin',
+        # 'tree_data': 'tree_{key}.bin',
+        'blob_data': 'blob_{key}.bin',
+    }),
+    'OSCAR_ALL_SHA1C': ('/fast/All.sha1c', {
+        # critical - random access to trees and commits on da4
+        'commit_random': 'commit_{key}.tch',
+        'tree_random': 'tree_{key}.tch',
+    }),
+    'OSCAR_ALL_SHA1O': ('/fast/All.sha1o', {
+        'blob_offset': 'sha1.blob_{key}.tch',
+        # 'commit_offset': 'sha1.commit_{key}.tch',  # missing + unused
+        # 'tree_offset': 'sha1.tree_{key}.tch',
+    }),
+    'OSCAR_BASEMAPS': ('/da0_data/basemaps', {
+        # relations - good to have but not critical
+        'commit_projects': 'c2pFull{ver}.{key}.tch',
+        'commit_children': 'c2ccFull{ver}.{key}.tch',
+        'commit_time_author': 'c2taFull{ver}.{key}.tch',
+        'commit_root': 'c2rFull{ver}.{key}.tch',
+        'commit_parent': 'c2pcFull{ver}.{key}.tch',
+        'author_commits': 'a2cFull{ver}.{key}.tch',
+        'author_projects': 'a2pFull{ver}.{key}.tch',
+        'author_files': 'a2fFull{ver}.{key}.tch',
+        'project_authors': 'p2aFull{ver}.{key}.tch',
+
+        'commit_head': 'c2hFull{ver}.{key}.tch',
+        'commit_blobs': 'c2bFull{ver}.{key}.tch',
+        'commit_files': 'c2fFull{ver}.{key}.tch',
+        'project_commits': 'p2cFull{ver}.{key}.tch',
+        'blob_commits': 'b2cFull{ver}.{key}.tch',
+        'blob_authors': 'b2aFull{ver}.{key}.tch',
+        'file_authors': 'f2aFull{ver}.{key}.tch',
+        'file_commits': 'f2cFull{ver}.{key}.tch',
+        'file_blobs': 'f2bFull{ver}.{key}.tch',
+        'blob_files': 'b2fFull{ver}.{key}.tch',
+
+        'author_trpath': 'a2trp{ver}.tch',
+        # another way to get commit parents, currently unused
+        # 'commit_parents': 'c2pcK.{key}.tch'
+    }),
+    # 'OSCAR_ALL_SHA1': ('/fast/All.sha1', {  # unused
+    #     # SHA1 cache, currently only on da4, da5  668G
+    #     # 'blob_index_line': 'sha1.blob_{key}.tch',  # missing + unused
+    #     # 'tree_index_line': 'sha1.tree_{key}.tch',
+    #     'commit_index_line': 'sha1.commit_{key}.tch',  # unused
+    #     'tag_index_line': 'sha1.tag_{key}.tch',
+    # })
+})
 
 
 class ObjectNotFound(KeyError):
