@@ -1,19 +1,22 @@
 import lzf
 # da4 doesn't have libgit2-dev to install pygit2 yet
 # import pygit2
-from tokyocabinet import hash as tch
-
-import clickhouse_driver as clickhouse
 
 from datetime import datetime, timedelta, tzinfo
 import difflib
+import fnvhash  # TODO: implement Cython version
 from functools import wraps
+import glob
 import hashlib
+from math import log
 import os
 import re
 import time
 import warnings
-import fnvhash
+
+from tokyocabinet import hash as tch
+
+import clickhouse_driver as clickhouse
 
 
 __version__ = '1.3.3'
@@ -289,6 +292,7 @@ def slice20(raw_data):
     return tuple(raw_data[i:i + 20].encode('hex')
                  for i in range(0, len(raw_data), 20))
 
+
 class CommitTimezone(tzinfo):
     # a lightweight version of pytz._FixedOffset
     def __init__(self, hours, minutes):
@@ -372,12 +376,13 @@ def read_tch(path, key, silent=False):
     try:
         return _get_tch(path)[key]
     except:
-      return None
-        #raise IOError("Tokyocabinet file " + path + " not found")
-    #except KeyError:
-     #   if silent:
-     #       return ''
-     #   raise ObjectNotFound(path + " " + key)
+        return None
+        # raise IOError("Tokyocabinet file " + path + " not found")
+    # except KeyError:
+    #   if silent:
+    #       return ''
+    #   raise ObjectNotFound(path + " " + key)
+
 
 def tch_keys(path, key_prefix=''):
     return _get_tch(path).fwmkeys(key_prefix)
@@ -444,8 +449,8 @@ class _Base(object):
         This might be useful to get a list of all projects, or a list of
         all file names.
 
-        Returns:
-            a generator of `Project` objects
+        Yields:
+            (Project): project
         """
         if not cls._keys_registry_dtype:
             raise NotImplemented
@@ -549,14 +554,14 @@ class GitObject(_Base):
     def file_sha(cls, path):
         buffsize = 1024 ** 2
         size = os.stat(path).st_size
-        fh = open(path, 'rb')
-        sha1 = hashlib.sha1()
-        sha1.update("%s %d\x00" % (cls.type, size))
-        while size > 0:
-            data = fh.read(min(size, buffsize))
-            if not data:
-                return sha1.hexdigest()
-            sha1.update(data)
+        with open(path, 'rb') as fh:
+            sha1 = hashlib.sha1()
+            sha1.update("%s %d\x00" % (cls.type, size))
+            while True:
+                data = fh.read(min(size, buffsize))
+                if not data:
+                    return sha1.hexdigest()
+                sha1.update(data)
 
     def __str__(self):
         """
@@ -908,8 +913,8 @@ class Commit(GitObject):
             parent (Commit): another commit to compare to.
                 Expected order is `diff = child_commit - parent_commit`
 
-        Returns:
-            Generator[Tuple[Optional[str], Optional[str], Optional[str], Optional[str]]]:
+        Yields:
+            Tuple[Optional[str], Optional[str], Optional[str], Optional[str]]:
                 4-tuples: `(old_path, new_path, old_sha, new_sha)`
 
             Examples:
@@ -947,16 +952,16 @@ class Commit(GitObject):
         for fname in new_paths.intersection(old_paths):
             if new_files[fname] != old_files[fname]:
                 # i.e. the Blob sha is the same
-                yield (fname, fname, old_files[fname], new_files[fname])
+                yield fname, fname, old_files[fname], new_files[fname]
 
         added_paths = new_paths - old_paths
         deleted_paths = old_paths - new_paths
 
         if threshold >= 1:  # i.e. only exact matches are considered
             for fname in added_paths:
-                yield (None, fname, None, new_files[fname])
+                yield None, fname, None, new_files[fname]
             for fname in deleted_paths:
-                yield (fname, None, old_files[fname], None)
+                yield fname, None, old_files[fname], None
             return
 
         # search for matches
@@ -976,15 +981,15 @@ class Commit(GitObject):
                 if sm.real_quick_ratio() > threshold \
                         and sm.quick_ratio() > threshold \
                         and sm.ratio() > threshold:
-                    yield (deleted_fname, added_fname, deleted_blob, added_blob)
+                    yield deleted_fname, added_fname, deleted_blob, added_blob
                     del(deleted_blobs[deleted_fname])
                     matched = True
                     break
             if not matched:  # this is a new file
-                yield (None, added_fname, None, added_blob)
+                yield None, added_fname, None, added_blob
 
         for deleted_fname, deleted_blob in deleted_blobs.items():
-            yield (deleted_fname, None, deleted_blob, None)
+            yield deleted_fname, None, deleted_blob, None
 
     @property
     def parents(self):
@@ -1101,6 +1106,7 @@ class Commit(GitObject):
         return tuple(file_name 
         for file_name in (data and data.split(";")) or [] if file_name and file_name != 'EMPTY')
 
+
 class Commit_info(GitObject):
     @cached_property
     def time_author(self):
@@ -1110,8 +1116,8 @@ class Commit_info(GitObject):
 
     @cached_property
     def head(self):
-      data = slice20(self.read_tch('commit_head'))
-      return data 
+        return slice20(self.read_tch('commit_head'))
+
 
 class Tag(GitObject):
     """ Tag doesn't have any functionality associated.
@@ -1332,7 +1338,8 @@ class Project(_Base):
     def author_names(self):
         data = decomp(self.read_tch('project_authors'))
         return tuple(author_name 
-        for author_name in (data and data.split(";")) or [] if author_name and author_name != 'EMPTY')
+                     for author_name in (data and data.split(";")) or []
+                     if author_name and author_name != 'EMPTY')
 
 
 class File(_Base):
@@ -1372,8 +1379,8 @@ class File(_Base):
         True
         """
         file_path = self.key
-        #if not file_path.endswith("\n"):
-        #    file_path += "\n"
+        # if not file_path.endswith("\n"):
+        #     file_path += "\n"
         tch_path = resolve_path('file_commits', file_path, self.use_fnv_keys)
         return slice20(read_tch(tch_path, file_path, silent=True))
 
@@ -1467,10 +1474,11 @@ A generator of all Commit objects authored by the Author
       data = decomp(self.read_tch('author_trpath'))
       return tuple(path for path in (data and data.split(";")))
 
+
 class Clickhouse_DB(object):
-    ''' Clickhouse_DB class represents an instance of the clickhouse client
+    """ Clickhouse_DB class represents an instance of the clickhouse client
         It is initialized with a table name and a host name for the database
-    '''
+    """
     def __init__(self, tb_name, db_host):
         self.tb_name = tb_name
         self.db_host = db_host
@@ -1524,8 +1532,9 @@ class Clickhouse_DB(object):
             raise ValueError('start and end must be of the same type')
         return (True if isinstance(start, int) else False)
 
+
 class Time_commit_info(Clickhouse_DB):
-    ''' Time_commit_info class is initialized with table name and database host name
+    """ Time_commit_info class is initialized with table name and database host name
         the default table for commits is commits_all, and the default host is localhost
         No connection is established before the query is made.
         The 'commits_all' table description is the following:
@@ -1537,23 +1546,23 @@ class Time_commit_info(Clickhouse_DB):
         | parent  | String          |
         | comment | String          |
         | content | String          |
-    '''
+    """
     columns = ['sha1', 'time', 'tree', 'author', 'parent', 'comment', 'content']
 
     def __init__(self, tb_name='commits_all', db_host='localhost'):
         super(Time_commit_info, self).__init__(tb_name, db_host)
     
     def commit_counts(self, start, end=None):
-        ''' return the count of commits between given date and time
+        """ return the count of commits between given date and time
         >>> t = Time_commit_info()
         >>> t.commit_counts(1568656268)
         8
-        '''
+        """
         rows = self.query_select('count(*)', self.tb_name, start, end)
         return rows[0][0]
     
     def commits_iter(self, start, end=None):
-        ''' return a generator of Commit instances within a given date and time
+        """ return a generator of Commit instances within a given date and time
         >>> t = Time_commit_info()
         >>> commits = t.commits_iter(1568656268)
         >>> c = commits.next()
@@ -1561,33 +1570,33 @@ class Time_commit_info(Clickhouse_DB):
         <class 'oscar.Commit'>
         >>> c.parent_shas
         ('9c4cc4f6f8040ed98388c7dedeb683469f7210f5',)
-        '''
+        """
         row_iter = self.query_select_iter('lower(hex(sha1))', self.tb_name, start, end)
         for row in row_iter:
             yield Commit(row[0])
 
     def commits_shas(self, start, end=None):
-        ''' return a list of shas within the given time and date
+        """ return a list of shas within the given time and date
         >>> t = Time_commit_info()
         >>> shas = t.commits_shas(1568656268)
         >>> type(shas)
         <type 'list'>
-        '''
+        """
         rows = self.query_select('lower(hex(sha1))', self.tb_name, start, end)
         return [row[0] for row in rows]
 
     def commits_shas_iter(self, start, end=None):
-        ''' return a generator of all sha1 within the given time and date
+        """ return a generator of all sha1 within the given time and date
         >>> t = Time_commit_info()
         >>> for sha1 in t.commits_shas_iter(1568656268):
         ...     print(sha1)
-        ''' 
+        """
         row_iter = self.query_select_iter('lower(hex(sha1))', self.tb_name, start, end)
         for row in row_iter:
             yield row[0]
         
 class Time_project_info(Clickhouse_DB):
-    ''' Time_project_info class is initialized with table name and database host name
+    """ Time_project_info class is initialized with table name and database host name
         The default table name for projects is projects_all, and the default database name is localhost
         This class contains methods to query for project data
         The 'projects_all' table descrption is the following:
@@ -1599,14 +1608,14 @@ class Time_project_info(Clickhouse_DB):
         | repo     | String          |
         | author   | String          |
         | deps     | String          |
-    '''
+    """
     columns = ['sha1', 'time', 'blob', 'language', 'repo', 'author', 'deps']
 
     def __init__(self, tb_name='projects_all', db_host='localhost'):
         super(Time_project_info, self).__init__(tb_name, db_host)
     
     def get_values_iter(self, cols, start, end):
-        ''' return a generator for table rows for a given time interval                            
+        """ return a generator for table rows for a given time interval
         >>> from oscar import Time_project_info as Proj
         >>> p = Proj()
         >>> rows = p.get_values_iter(['time','repo'], 1568571909, 1568571910)
@@ -1617,14 +1626,14 @@ class Time_project_info(Clickhouse_DB):
         (1568571909, 'gitlab.com_surajpatel_tic_toc_toe')
         (1568571909, 'gitlab.com_surajpatel_tic_toc_toe')
         ...
-        '''
+        """
         cols = self.__wrap_cols(cols)
         rows_iter = self.query_select_iter(', '.join(cols), self.tb_name, start, end)
         for row in rows_iter:
             yield row
     
     def project_timeline(self, cols, repo):
-        ''' return a generator for all rows given a repo name (ordered by time)
+        """ return a generator for all rows given a repo name (ordered by time)
         >>> rows = p.project_timeline(['time','repo'], 'mrtrevanderson_CECS_424')
         >>> for row in rows:
         ...     print(row)
@@ -1633,7 +1642,7 @@ class Time_project_info(Clickhouse_DB):
         (1568571909, 'mrtrevanderson_CECS_424')
         (1568571909, 'mrtrevanderson_CECS_424')
         ...
-        '''
+        """
         cols = self.__wrap_cols(cols)
         query_str = 'SELECT {} FROM {} WHERE repo=\'{}\' ORDER BY time'\
                     .format(', '.join(cols), self.tb_name, repo)
@@ -1642,7 +1651,7 @@ class Time_project_info(Clickhouse_DB):
             yield row
 
     def author_timeline(self, cols, author):
-        ''' return a generator for all rows given an author (ordered by time)
+        """ return a generator for all rows given an author (ordered by time)
         >>> rows = p.author_timeline(['time', 'repo'], 'Andrew Gacek <andrew.gacek@gmail.com>')
         >>> for row in rows:
         ...     print(row)
@@ -1651,7 +1660,7 @@ class Time_project_info(Clickhouse_DB):
         (677, 'smaccm_vm_hack')
         (1180017188, 'teyjus_teyjus')
         ... 
-        '''
+        """
         cols = self.__wrap_cols(cols)
         query_str = 'SELECT {} FROM {} WHERE author=\'{}\' ORDER BY time'\
                     .format(', '.join(cols), self.tb_name, author)
@@ -1660,8 +1669,8 @@ class Time_project_info(Clickhouse_DB):
             yield row
 
     def __wrap_cols(self, cols):
-        ''' wraps cols to select before querying
-        '''
+        """ wraps cols to select before querying
+        """
         for i in range(len(cols)):
             if cols[i] == 'sha1' or cols[i] == 'blob':
                 cols[i] = 'lower(hex({}))'.format(cols[i])
