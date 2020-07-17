@@ -14,9 +14,10 @@ import re
 import time
 import warnings
 
+import clickhouse_driver as clickhouse
+import six
 from tokyocabinet import hash as tch
 
-import clickhouse_driver as clickhouse
 
 
 __version__ = '1.3.3'
@@ -450,7 +451,7 @@ class _Base(object):
         all file names.
 
         Yields:
-            (Project): project
+            Project: a project
         """
         if not cls._keys_registry_dtype:
             raise NotImplemented
@@ -640,7 +641,6 @@ class Blob(GitObject):
         return (Commit(bin_sha) for bin_sha in self.commit_shas)
 
 
-
 class Tree(GitObject):
     """ A representation of git tree object, basically - a directory.
 
@@ -731,7 +731,8 @@ class Tree(GitObject):
         This will generate 3-tuples of the same format as direct tree
         iteration, but will recursively include subtrees content.
 
-        :return: generator of (mode, filename, blob/tree sha)
+        Yields:
+            Tuple[str, str, str]: (mode, filename, blob/tree sha)
 
         >>> c = Commit("1e971a073f40d74a1e72e07c682e1cba0bae159b")
         >>> len(list(c.tree.traverse()))
@@ -1478,8 +1479,7 @@ class Clickhouse_DB(object):
         return self.client.execute(query_str)
     
     def query_iter(self, query_str):
-        row_iter = self.client.execute_iter(query_str)
-        for row in row_iter:
+        for row in self.client.execute_iter(query_str):
             yield row
 
     def query_select(self, s_col, s_from, s_start, s_end):
@@ -1492,12 +1492,12 @@ class Clickhouse_DB(object):
         # iterative query
         s_where = self.__where_condition(s_start, s_end)
         query_str = 'select {} from {} where {}'.format(s_col, s_from, s_where)
-        row_iter = self.client.execute_iter(query_str)
-        for row in row_iter:
+        for row in self.client.execute_iter(query_str):
             yield row
     
     def __where_condition(self, start, end):
-        # checks if start and end date or time is valid and build the where clause
+        # checks if start and end date or time is valid and build the where
+        # clause
         dt = 'time'
         if not self.__check_time(start, end):
             dt = 'date'
@@ -1506,27 +1506,28 @@ class Clickhouse_DB(object):
             
         if end is None:
             return '{}={}'.format(dt, start)
-        else:
-            return '{}>={}  AND {}<={}'.format(dt, start, dt, end)
+        return '{}>={}  AND {}<={}'.format(dt, start, dt, end)
 
     def __check_time(self, start, end):
-        # make sure start and end are of the same type and must be either strings or ints
+        # make sure start and end are of the same type and must be either
+        # strings or ints
         if start is None:
             raise ValueError('start time cannot be None')
-        elif not isinstance(start, int) and not isinstance(start, basestring):
+        if not isinstance(start, (int, six.string_types)):
             raise ValueError('start time must be either int or string')
-        elif end is not None and not isinstance(end, int) and not isinstance(end, basestring):
+        if end is not None and not isinstance(end, (int, six.string_types)):
             raise ValueError('end time must be either int or string')
-        elif end is not None and type(start) is not type(end):
+        if end is not None and type(start) is not type(end):
             raise ValueError('start and end must be of the same type')
-        return (True if isinstance(start, int) else False)
+        return isinstance(start, int)
 
 
 class Time_commit_info(Clickhouse_DB):
-    """ Time_commit_info class is initialized with table name and database host name
-        the default table for commits is commits_all, and the default host is localhost
-        No connection is established before the query is made.
-        The 'commits_all' table description is the following:
+    """ Time_commit_info class is initialized with table name and database host
+    name the default table for commits is commits_all, and the default host is
+    localhost No connection is established before the query is made.
+
+    The 'commits_all' table description is the following:
         |__name___|______type_______|
         | sha1    | FixedString(20) |
         | time    | Int32           |
@@ -1547,10 +1548,9 @@ class Time_commit_info(Clickhouse_DB):
         >>> t.commit_counts(1568656268)
         8
         """
-        rows = self.query_select('count(*)', self.tb_name, start, end)
-        return rows[0][0]
+        return self.query_select('count(*)', self.tb_name, start, end)[0][0]
     
-    def commits_iter(self, start, end=None):
+    def commits(self, start, end=None):
         """ return a generator of Commit instances within a given date and time
         >>> t = Time_commit_info()
         >>> commits = t.commits_iter(1568656268)
@@ -1560,34 +1560,25 @@ class Time_commit_info(Clickhouse_DB):
         >>> c.parent_shas
         ('9c4cc4f6f8040ed98388c7dedeb683469f7210f5',)
         """
-        row_iter = self.query_select_iter('lower(hex(sha1))', self.tb_name, start, end)
-        for row in row_iter:
-            yield Commit(row[0])
+        for sha in self.commits_shas(start, end):
+            yield Commit(sha)
 
     def commits_shas(self, start, end=None):
-        """ return a list of shas within the given time and date
-        >>> t = Time_commit_info()
-        >>> shas = t.commits_shas(1568656268)
-        >>> type(shas)
-        <type 'list'>
-        """
-        rows = self.query_select('lower(hex(sha1))', self.tb_name, start, end)
-        return [row[0] for row in rows]
-
-    def commits_shas_iter(self, start, end=None):
         """ return a generator of all sha1 within the given time and date
         >>> t = Time_commit_info()
-        >>> for sha1 in t.commits_shas_iter(1568656268):
+        >>> for sha1 in t.commits_shas(1568656268):
         ...     print(sha1)
         """
-        row_iter = self.query_select_iter('lower(hex(sha1))', self.tb_name, start, end)
-        for row in row_iter:
+        for row in self.query_select_iter(
+                'lower(hex(sha1))', self.tb_name, start, end):
             yield row[0]
-        
+
+
 class Time_project_info(Clickhouse_DB):
-    """ Time_project_info class is initialized with table name and database host name
-        The default table name for projects is projects_all, and the default database name is localhost
-        This class contains methods to query for project data
+    """ Time_project_info class is initialized with table name and database host
+    name. The default table name for projects is projects_all, and the default
+    database name is localhost. This class contains methods to query for project
+    data.
         The 'projects_all' table descrption is the following:
         |___name___|______type_______|
         | sha1     | FixedString(20) |
@@ -1617,10 +1608,8 @@ class Time_project_info(Clickhouse_DB):
         ...
         """
         cols = self.__wrap_cols(cols)
-        rows_iter = self.query_select_iter(', '.join(cols), self.tb_name, start, end)
-        for row in rows_iter:
-            yield row
-    
+        return self.query_select_iter(', '.join(cols), self.tb_name, start, end)
+
     def project_timeline(self, cols, repo):
         """ return a generator for all rows given a repo name (ordered by time)
         >>> rows = p.project_timeline(['time','repo'], 'mrtrevanderson_CECS_424')
@@ -1635,13 +1624,12 @@ class Time_project_info(Clickhouse_DB):
         cols = self.__wrap_cols(cols)
         query_str = 'SELECT {} FROM {} WHERE repo=\'{}\' ORDER BY time'\
                     .format(', '.join(cols), self.tb_name, repo)
-        rows_iter = self.query_iter(query_str)
-        for row in rows_iter:
-            yield row
+        return self.query_iter(query_str)
 
     def author_timeline(self, cols, author):
         """ return a generator for all rows given an author (ordered by time)
-        >>> rows = p.author_timeline(['time', 'repo'], 'Andrew Gacek <andrew.gacek@gmail.com>')
+        >>> rows = p.author_timeline(
+        ...     ['time', 'repo'], 'Andrew Gacek <andrew.gacek@gmail.com>')
         >>> for row in rows:
         ...     print(row)
         ...
@@ -1653,13 +1641,10 @@ class Time_project_info(Clickhouse_DB):
         cols = self.__wrap_cols(cols)
         query_str = 'SELECT {} FROM {} WHERE author=\'{}\' ORDER BY time'\
                     .format(', '.join(cols), self.tb_name, author)
-        rows_iter = self.query_iter(query_str)
-        for row in rows_iter:
-            yield row
+        return self.query_iter(query_str)
 
     def __wrap_cols(self, cols):
-        """ wraps cols to select before querying
-        """
+        """ wraps cols to select before querying """
         for i in range(len(cols)):
             if cols[i] == 'sha1' or cols[i] == 'blob':
                 cols[i] = 'lower(hex({}))'.format(cols[i])
