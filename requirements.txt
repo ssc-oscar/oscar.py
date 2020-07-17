@@ -1,4 +1,6 @@
 pygit2
+gitdb2==2.0.6
 python-lzf
 tokyocabinet
 fnvhash
+clickhouse-driver

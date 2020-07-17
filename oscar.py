@@ -13,7 +13,7 @@ import warnings
 import fnvhash
 
 
-__version__ = '1.2.3'
+__version__ = '1.3.3'
 __author__ = "Marat (@cmu.edu)"
 __license__ = "GPL v3"
 
@@ -22,48 +22,59 @@ PATHS = {
     # prefix length means that the data are split into 2**n files,
     # e.g. key is in 0..31 for prefix length of 5 bit.
 
-    # The most critical: raw data for the initial storage, use in sweeps,
-    # 100TB da4+ backup
-    'commit_sequential_idx': ('/data/All.blobs/commit_{key}.idx', 7),
-    'commit_sequential_bin': ('/data/All.blobs/commit_{key}.bin', 7),
-    'tree_sequential_idx': ('/data/All.blobs/blob_{key}.idx', 7),
-    'tree_sequential_bin': ('/data/All.blobs/blob_{key}.bin', 7),
+    # The most critical: raw data for the initial storage, use in sweeps, 100TB da4+ backup
+    'commit_sequential_idx': ('/da4_data/All.blobs/commit_{key}.idx', 7),
+    'commit_sequential_bin': ('/da4_data/All.blobs/commit_{key}.bin', 7),
+    'tree_sequential_idx': ('/da4_data/All.blobs/tree_{key}.idx', 7),
+    'tree_sequential_bin': ('/da4_data/All.blobs/tree_{key}.bin', 7),
+    
+    'tag_data': ('/da4_data/All.blobs/tag_{key}.bin', 7),
+    'commit_data': ('/da4_data/All.blobs/commit_{key}.bin', 7),
+    'tree_data': ('/da4_data/All.blobs/tree_{key}.bin', 7),
+    'blob_data': ('/da4_data/All.blobs/blob_{key}.bin', 7),
 
-    # critical - random access to trees and commits on da3 and da4, 10TB
+    # critical - random access to trees and commits on da4 - need to do offsets for the da3
     'commit_random': ('/fast/All.sha1c/commit_{key}.tch', 7),
     'tree_random': ('/fast/All.sha1c/tree_{key}.tch', 7),
 
     'blob_offset': ('/fast/All.sha1o/sha1.blob_{key}.tch', 7),
-    'blob_data': ('/data/All.blobs/blob_{key}.bin', 7),
+    'commit_offset': ('/fast/All.sha1o/sha1.commit_{key}.tch', 7),
+    'tree_offset': ('/fast/All.sha1o/sha1.tree_{key}.tch', 7),
     # the rest of x_data is currently unused:
     # 'commit_data': ('/data/All.blobs/commit_{key}.bin',  # 7)
     # 'tree_data': ('/data/All.blobs/tree_{key}.bin', 7)
     # 'tag_data': ('/data/All.blobs/tag_{key}.bin', 7)
 
     # relations - good to have but not critical
-    'commit_projects': ('/da0_data/basemaps/c2pFullP.{key}.tch', 5),
-    'commit_children': ('/da0_data/basemaps/c2ccFullP.{key}.tch', 5),
-    'commit_blobs': ('/da0_data/basemaps/c2bFullP.{key}.tch', 5),
-    'commit_files': ('/da0_data/basemaps/c2fFullP.{key}.tch', 5),
-    'project_commits': ('/da0_data/basemaps/p2cFullP.{key}.tch', 5),
-    'author_commits': ('/da0_data/basemaps/a2cFullP.{key}.tch', 5),
-    'author_projects': ('/da0_data/basemaps/a2pFullP.{key}.tch', 5),
-    'author_trpath':('/da0_data/basemaps/a2trpO.tch', 5),
-    'blob_commits': ('/da0_data/basemaps/b2cFullP.{key}.tch', 5),
-    'blob_authors': ('/da0_data/basemaps/b2aFullP.{key}.tch', 5),
-    'file_commits': ('/da0_data/basemaps/f2cFullP.{key}.tch', 5),
+  
+    # move to current version R as they get updated
+    'commit_projects': ('/da0_data/basemaps/c2pFull{ver}.{key}.tch', 5),
+    'commit_children': ('/da0_data/basemaps/c2ccFull{ver}.{key}.tch', 5),
+    'commit_time_author': ('/da0_data/basemaps/c2taFull{ver}.{key}.tch', 5),
+    'commit_root': ('/da0_data/basemaps/c2rFull{ver}.{key}.tch', 5),
+    'commit_parent': ('/da0_data/basemaps/c2pcFull{ver}.{key}.tch', 5),
+    'author_commits': ('/da0_data/basemaps/a2cFull{ver}.{key}.tch', 5),
+    'author_projects': ('/da0_data/basemaps/a2pFull{ver}.{key}.tch', 5),
+    'author_files': ('/da0_data/basemaps/a2fFull{ver}.{key}.tch', 5),
+    'project_authors': ('/da0_data/basemaps/p2aFull{ver}.{key}.tch', 5),
 
-    # dictionary entries added after 5/12/19
-    'file_blobs': ('/da0_data/basemaps/f2bFullP.{key}.tch', 5),
-    'commit_time_author': ('/da0_data/basemaps/c2taFullP.{key}.tch', 5),
-    'project_authors': ('/da0_data/basemaps/p2aFullP.{key}.tch', 5),
-    'blob_files': ('/da0_data/basemaps/b2fFullP.{key}.tch', 5),
-    'commit_head': ('/da0_data/basemaps/c2hFullO.{key}.tch', 5),
+    'commit_head': ('/da0_data/basemaps/c2hFull{ver}.{key}.tch', 5),
+    'commit_blobs': ('/da0_data/basemaps/c2bFull{ver}.{key}.tch', 5),
+    'commit_files': ('/da0_data/basemaps/c2fFull{ver}.{key}.tch', 5),
+    'project_commits': ('/da0_data/basemaps/p2cFull{ver}.{key}.tch', 5),
+    'blob_commits': ('/da0_data/basemaps/b2cFull{ver}.{key}.tch', 5),
+    'blob_authors': ('/da0_data/basemaps/b2aFull{ver}.{key}.tch', 5),
+    'file_authors': ('/da0_data/basemaps/f2aFull{ver}.{key}.tch', 5),
+    'file_commits': ('/da0_data/basemaps/f2cFull{ver}.{key}.tch', 5),
+    'file_blobs': ('/da0_data/basemaps/f2bFull{ver}.{key}.tch', 5),
+    'blob_files': ('/da0_data/basemaps/b2fFull{ver}.{key}.tch', 5),
+
+    'author_trpath':('/da0_data/basemaps/a2trp{ver}.tch', 5),
 
     # another way to get commit parents, currently unused
     # 'commit_parents': ('/da0_data/basemaps/c2pcK.{key}.tch', 7)
 
-    # SHA1 cache, on da3 and d4  668G
+    # SHA1 cache, currently only on da4, da5  668G
     'blob_index_line': ('/fast/All.sha1/sha1.blob_{key}.tch', 7),
     'tree_index_line': ('/fast/All.sha1/sha1.tree_{key}.tch', 7),
     'commit_index_line': ('/fast/All.sha1/sha1.commit_{key}.tch', 7),
@@ -88,6 +99,76 @@ URLMAP = {
     "sourceforge.net": "git.code.sf.net/p"
 }
 
+def read_env_var():
+    global PATHS
+    all_blobs = [
+        'commit_sequential_idx', 'commit_sequential_bin', 'tree_sequential_idx',
+        'tree_sequential_bin', 'tag_data', 'commit_data', 'tree_data', 'blob_data'
+    ]
+    all_sha1c = [
+        'commit_random', 'tree_random'
+    ]
+    all_sha1o = [
+        'blob_offset', 'commit_offset', 'tree_offset'
+    ]
+    basemaps = [
+        'commit_projects', 'commit_children', 'commit_time_author', 'commit_root',
+        'commit_parent', 'author_commits', 'author_projects', 'project_authors',
+        'commit_head', 'commit_blobs', 'commit_files', 'project_commits', 'blob_commits',
+        'blob_authors', 'file_commits', 'file_blobs', 'blob_files', 'author_trpath',
+        'author_files', 'file_authors'
+    ]    
+    all_sha1 = [
+        'blob_index_line', 'tree_index_line', 'commit_index_line', 'tag_index_line'
+    ]
+
+    # This map maps the environment variable name to the key names in the PATHS global variable
+    # For example, environment variable 'OSCAR_BASEMAPS' will contain the directory to find all the basemaps
+    # whoes PATHS key matches the elements in the basemaps array
+    # unless overwrote by each specific basemaps
+    general_name_map = {
+        'OSCAR_ALL_BLOBS': all_blobs,
+        'OSCAR_ALL_SHA1C': all_sha1c,
+        'OSCAR_ALL_SHA1O': all_sha1o,
+        'OSCAR_BASEMAPS': basemaps,
+        'OSCAR_ALL_SHA1': all_sha1
+    }
+    # This maps the environment variable name to the key names in the PATHS global variable
+    # Each key in the PAHTS will have 'OSCAR_' prepended to the beginning
+    # For example: OSCAR_COMMIT_DATA environment variable corresponds to PATHS['commit_data']
+    specific_names = {'_'.join(['OSCAR', name.upper()]): name for name in PATHS.keys()}
+    ver_names = {'_'.join(['OSCAR', name.upper(), 'VER']): name for name in basemaps}
+
+    for v in os.environ.keys():
+        if not os.environ[v]:
+            continue
+        # general directory config
+        if v in general_name_map.keys():
+            for name in general_name_map[v]:
+                f = os.path.basename(PATHS[name][0])
+                PATHS[name] = (os.path.join(os.environ[v], f), PATHS[name][1])
+        # specific directory config overwrites general
+        elif v in specific_names.keys():
+            f = os.path.basename(PATHS[name][0])
+            PATHS[specific_names[v]] = (os.path.join(os.environ[v],f), PATHS[specific_names[v]][1])
+        # specific version config
+        elif v in ver_names.keys():
+            PATHS[ver_names[v]] = (
+                PATHS[ver_names[v]][0].format(ver=os.environ[v], key='{key}'),
+                PATHS[ver_names[v]][1]
+            )
+        # general version config
+        elif v == "OSCAR_BASEMAPS_VER":
+            for name in basemaps:
+                if '{ver}' in PATHS[name][0]:
+                    PATHS[name] = (PATHS[name][0].format(ver=os.environ[v], key='{key}'), PATHS[name][1])
+
+    # if version not set, default to version R
+    for key in PATHS.keys():
+        if '{ver}' in PATHS[key][0]:
+            PATHS[key] = (PATHS[key][0].format(ver='R', key='{key}'), PATHS[key][1])
+
+read_env_var()
 
 class ObjectNotFound(KeyError):
     pass
@@ -291,16 +372,16 @@ def read_tch(path, key, silent=False):
     Main purpose of this method is to cached open .tch handlers
     in _TCH_POOL to speedup reads
     """
+
     try:
         return _get_tch(path)[key]
-    except IOError:
-        if silent:
-            return None
-    except KeyError:
-        if silent:
-            return None
-        raise ObjectNotFound(path + " " + key)
-
+    except:
+      return None
+        #raise IOError("Tokyocabinet file " + path + " not found")
+    #except KeyError:
+     #   if silent:
+     #       return ''
+     #   raise ObjectNotFound(path + " " + key)
 
 def tch_keys(path, key_prefix=''):
     return _get_tch(path).fwmkeys(key_prefix)
@@ -560,6 +641,7 @@ class Blob(GitObject):
         return (Commit(bin_sha) for bin_sha in self.commit_shas)
 
 
+
 class Tree(GitObject):
     """ A representation of git tree object, basically - a directory.
 
@@ -650,8 +732,7 @@ class Tree(GitObject):
         This will generate 3-tuples of the same format as direct tree
         iteration, but will recursively include subtrees content.
 
-        Returns:
-            Generator: a generator of (mode, filename, blob/tree sha) tuples
+        :return: generator of (mode, filename, blob/tree sha)
 
         >>> c = Commit("1e971a073f40d74a1e72e07c682e1cba0bae159b")
         >>> len(list(c.tree.traverse()))
@@ -673,9 +754,8 @@ class Tree(GitObject):
         """ Formatted tree content, including recursive files and subtrees
         It is intended for debug purposes only.
 
-        Returns:
-            str: multiline string, where each line contains mode, name and sha,
-                with subtrees expanded
+        :return: multiline string, where each line contains mode, name and sha,
+            with subtrees expanded
         """
         files = sorted(self.traverse(), key=lambda x: x[1])
         return "\n".join(" ".join(line) for line in files)
@@ -1024,11 +1104,8 @@ class Commit(GitObject):
     @cached_property
     def files(self):
         data = decomp(self.read_tch('commit_files'))
-        return tuple(
-            file_name
-            for file_name in (data and data.split(";")) or []
-            if file_name and file_name != 'EMPTY')
-
+        return tuple(file_name 
+        for file_name in (data and data.split(";")) or [] if file_name and file_name != 'EMPTY')
 
 class Commit_info(GitObject):
     @cached_property
@@ -1041,7 +1118,6 @@ class Commit_info(GitObject):
     def head(self):
       data = slice20(self.read_tch('commit_head'))
       return data 
-
 
 class Tag(GitObject):
     """ Tag doesn't have any functionality associated.
@@ -1244,21 +1320,41 @@ class Project(_Base):
             commit = commits.get(first_parent, Commit(first_parent))
 
     def toURL(self):
-        """
-        Get the URL for a given project URI
-        >>> Project('CS340-19_lectures').toURL()
-        'https://github.com/CS340-19/lectures'
-        >>> Project('bb_user_project').toURL()
-        'https://bitbucket.org/user/project'
-        """
-        chunks = self.uri.split("_", 2)
-        if (len(chunks) == 3 or chunks[0] == "sourceforge.net") \
-                and chunks[0] in URLMAP:
-            chunks[0] = URLMAP[chunks[0]]
-        else:
-            chunks.insert(0, "github.com")
+      '''
+      Get the URL for a given project URI
+      >>> Project('CS340-19_lectures').toURL()
+      'http://github.com/CS340-19/lectures'
+      '''
+      p_name = self.uri
+      found = False
+      toUrlMap = {
+        "bb": "bitbucket.org", "gl": "gitlab.org",
+        "android.googlesource.com": "android.googlesource.com",
+        "bioconductor.org": "bioconductor.org",
+        "drupal.com": "git.drupal.org", "git.eclipse.org": "git.eclipse.org",
+        "git.kernel.org": "git.kernel.org",
+        "git.postgresql.org": "git.postgresql.org" ,
+        "git.savannah.gnu.org": "git.savannah.gnu.org",
+        "git.zx2c4.com": "git.zx2c4.com" ,
+        "gitlab.gnome.org": "gitlab.gnome.org",
+        "kde.org": "anongit.kde.org",
+        "repo.or.cz": "repo.or.cz",
+        "salsa.debian.org": "salsa.debian.org",
+        "sourceforge.net": "git.code.sf.net/p"}
 
-        return "https://" + "/".join(chunks)
+      for URL in toUrlMap.keys():
+        URL_ = URL + "_"
+        if p_name.startswith(URL_) and (p_name.count('_') >= 2 or URL == "sourceforge.net"):
+          replacement = toUrlMap[URL] + "/"
+          p_name = p_name.replace(URL_, replacement)
+          found = True
+          break
+
+      if not found: 
+        p_name = "github.com/" + p_name
+ 
+      p_name = p_name.replace('_', '/', 1)
+      return "https://" + p_name  
     
     @cached_property
     def author_names(self):
@@ -1282,6 +1378,11 @@ class File(_Base):
     def __init__(self, path):
         self.path = path
         super(File, self).__init__(path)
+
+    @cached_property
+    def authors(self):
+        data = decomp(self.read_tch('file_authors'))
+        return tuple(author for author in (data and data.split(";")))
 
     @cached_property
     def commit_shas(self):
@@ -1376,6 +1477,11 @@ class Author(_Base):
         True
         """
         return (Commit(sha) for sha in self.commit_shas)
+
+    @cached_property
+    def files(self):
+        data = decomp(self.read_tch('author_files'))
+        return tuple(file for file in (data and data.split(";")))
     
     @cached_property
     def project_names(self):

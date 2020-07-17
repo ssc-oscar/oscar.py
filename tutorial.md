@@ -20,24 +20,28 @@ Keys for identifying letters:
 
 List of relationships:
 ```
-* a2c (.s)		* a2f			* a2ft				* a2L (.s only)		* a2p (.s)			* a2trp0 (.s)
+* a2c (.s)		* a2f			* a2ft			* a2L (.s only)		* a2p (.s)		* a2trp0 (.s)
 * b2c (.s)		* b2f (.s)
 * c2b (.s)		* c2cc			* c2f (.s)		
-* c2h			* c2pc			* c2p (.s)			* c2ta (.s)
+* c2h			* c2pc			* c2p (.s)		* c2ta (.s)
 * f2b (.s)		* f2c (.s)		
 * p2a (.s)		* p2c (.s)
-```	
+```
 ------
-#### `/data/play/$LANGthruMaps/` on da0:  
+#### `/data/play/$LANGthruMaps/` on da0: 
+
 These thruMaps directories contain mappings of repositories with modules that were utilized at a given UNIX timestamp under a specific commit. The mappings are in c2bPtaPkgO{$LANG}.{0-31}.gz files.   
 Format: `commit;repo_name;timestamp;author;blob;module1;module2;...`  
 Each thruMaps directory has a different language ($LANG) that contains modules relevant to that language.
+
 ------
 ### da3 Server
-#### .tch files in `/fast/`:  
+#### .tch files in `/fast/`: 
+
 da3 contains the same files located on da0, except for b2f, c2cc, f2b, and f2c.
-This folder can be used for faster reading, hence the directory name.  
+This folder can be used for faster reading, hence the directory name. 
 In the context of oscar.py, the dictionary values listed in the PATHS dictionary can be changed from `/da0_data/basemaps/...` to `/fast/...` when referencing oscar.py in another program.  
+
 ------
 ## OSCAR functions from oscar.py
 Note: "/<function_name>" after a function name denotes the version of that function that returns a Generator object  
@@ -150,6 +154,7 @@ Now that we have the .first files put together, we can take this one step furthe
 If you want to compare first-time usage over time for Tensorflow and Keras for the .ipynb language .first files you created, run: `UNIX> python3.6 modtrends.py tensorflow.first keras.first`  
 The final graph looks something like this:  
 [![Tensorflow vs Keras](../ipynb_first/Tensorflow-vs-Keras.png "Tensorflow vs Keras")](https://github.com/ssc-oscar/aiframeworks/blob/master/charts/ipynb_charts/Tensorflow-vs-Keras.png)
+
 -------
 ### Detecting percentage language use and changes over time (Complex) 
 An application to calculate this would be useful for seeing how different authors changed languages over a range of years, based on the commits they have made to different files.  
@@ -347,6 +352,8 @@ Although it is currently not implemented, one could take this one step further a
 --------
 ## Useful Python imports for applications
 ### subprocess
-Simlar to the C version, system(), this module allows you to run UNIX processes, and also allows you to gather any input, output, or error from those processes, all from within a Python script. 
+Simlar to the C version, system(), this module allows you to run UNIX processes, and also allows you to gather any input, output, or error from those processes, all from within a Python script. Documentation can be found here: https://docs.python.org/3/library/subprocess.html
 ### re
+Good for evaluating regular expressions in files and extracting lines that have certain words or patterns. Documentation can be found here: https://docs.python.org/3/library/re.html 
 ### matplotlib
+Popular graphing library for Python. Documentation can be found here: https://matplotlib.org/index.html
