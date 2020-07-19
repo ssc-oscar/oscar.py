@@ -30,10 +30,12 @@ except IOError:
     raise ImportError('Oscar only support Linux hosts so far')
 
 if not re.match('da\d.eecs.utk.edu$', HOSTNAME):
-    raise ImportError('Oscar is only available on certain servers at UTK, please modify to match your cluster configuration')
+    raise ImportError('Oscar is only available on certain servers at UTK, '
+                      'please modify to match your cluster configuration')
 
 HOST, DOMAIN = HOSTNAME.split('.', 1)
-if HOST != 'da4' and HOST != 'da5':
+COMMIT_HOSTS = ('da4', 'da5')
+if HOST not in COMMIT_HOSTS:
     warnings.warn('Commit and tree direct content is only available on da4. '
                   'Some functions might not work as expected.\n\n')
 
@@ -112,14 +114,18 @@ PATHS = _get_paths({
         'blob_data': 'blob_{key}.bin',
     }),
     'OSCAR_ALL_SHA1C': ('/fast/All.sha1c', {
-        # critical - random access to trees and commits: only on da4 and da5 - performance is best when /fast is on SSD raid
+        # critical - random access to trees and commits: only on da4 and da5
+        # - performance is best when /fast is on SSD raid
         'commit_random': 'commit_{key}.tch',
         'tree_random': 'tree_{key}.tch',
     }),
+    # all three are available on da[3-5]
     'OSCAR_ALL_SHA1O': ('/fast/All.sha1o', {
-        'blob_offset': 'sha1.blob_{key}.tch',      # all three are available on da[3-5]
-        'commit_offset': 'sha1.commit_{key}.tch',  # Speed is a bit lower since the content is read from HDD raid
-        'tree_offset': 'sha1.tree_{key}.tch',      # This way to access trees/commits is not used in python implementation 
+        'blob_offset': 'sha1.blob_{key}.tch',
+        # Speed is a bit lower since the content is read from HDD raid
+        'commit_offset': 'sha1.commit_{key}.tch',
+        # This way to access trees/commits is not used in python implementation
+        'tree_offset': 'sha1.tree_{key}.tch',
     }),
     'OSCAR_BASEMAPS': ('/da0_data/basemaps', {
         # relations - good to have but not critical
@@ -132,7 +138,8 @@ PATHS = _get_paths({
         'author_commits': 'a2cFull{ver}.{key}.tch',
         'author_projects': 'a2pFull{ver}.{key}.tch',
         'author_files': 'a2fFull{ver}.{key}.tch',
-        'author_blob': 'a2bFull{ver}.{key}.tch',   # this points aunlt to the author-created blobs (see b2a) 
+        # this points aunlt to the author-created blobs (see b2a)
+        'author_blob': 'a2bFull{ver}.{key}.tch',
         'project_authors': 'p2aFull{ver}.{key}.tch',
 
         'commit_head': 'c2hFull{ver}.{key}.tch',
@@ -140,7 +147,8 @@ PATHS = _get_paths({
         'commit_files': 'c2fFull{ver}.{key}.tch',
         'project_commits': 'p2cFull{ver}.{key}.tch',
         'blob_commits': 'b2cFull{ver}.{key}.tch',
-        'blob_author': 'b2aFull{ver}.{key}.tch',  # this actually points to the first time/author/commit only
+        # this actually points to the first time/author/commit only
+        'blob_author': 'b2aFull{ver}.{key}.tch',
         'file_authors': 'f2aFull{ver}.{key}.tch',
         'file_commits': 'f2cFull{ver}.{key}.tch',
         'file_blobs': 'f2bFull{ver}.{key}.tch',
@@ -150,7 +158,8 @@ PATHS = _get_paths({
         # another way to get commit parents, currently unused
         # 'commit_parents': 'c2pcK.{key}.tch'
     }),
-    'OSCAR_ALL_SHA1': ('/fast/All.sha1', {  # these can be used to check if the object exists in WoC
+    # These can be used to check if the object exists in WoC
+    'OSCAR_ALL_SHA1': ('/fast/All.sha1', {
         # SHA1 cache, currently only on da4, da5  668G
         'blob_index_line': 'sha1.blob_{key}.tch',  # missing + unused
         'tree_index_line': 'sha1.tree_{key}.tch',
@@ -161,7 +170,8 @@ PATHS = _get_paths({
 
 # prefixes used by World of Code to identify source project platforms
 # See Project.to_url() for more details
-# Prefixes have been deprecated by replacing them with the string resembling actual URL
+# Prefixes have been deprecated by replacing them with the string resembling
+# actual URL
 URL_PREFIXES = {
     "bitbucket.org": "bitbucket.org",
     "gitlab.com": "gitlab.com",
@@ -1636,7 +1646,7 @@ class Time_project_info(Clickhouse_DB):
         ...
         """
         cols = self.__wrap_cols(cols)
-        query_str = 'SELECT {} FROM {} WHERE repo=\'{}\' ORDER BY time'\
+        query_str = 'SELECT {} FROM {} WHERE project=\'{}\' ORDER BY time'\
                     .format(', '.join(cols), self.tb_name, repo)
         return self.query_iter(query_str)
 
