@@ -18,7 +18,6 @@ import six
 from tokyocabinet import hash as tch
 
 
-
 __version__ = '1.3.3'
 __author__ = "Marat (@cmu.edu)"
 __license__ = "GPL v3"
@@ -29,7 +28,7 @@ try:
 except IOError:
     raise ImportError('Oscar only support Linux hosts so far')
 
-if not re.match('da\d.eecs.utk.edu$', HOSTNAME):
+if not re.match(r'da\d.eecs.utk.edu$', HOSTNAME):
     raise ImportError('Oscar is only available on certain servers at UTK, '
                       'please modify to match your cluster configuration')
 
@@ -88,8 +87,8 @@ def _get_paths(raw_paths):
         cat_version = os.environ.get(category + '_VER') or _latest_version(
             os.path.join(cat_path_prefix, filenames.values()[0]))
 
-        if path_prefix.startswith(local_data_prefix):
-            path_prefix = '/data' + path_prefix[len(local_data_prefix):]
+        if cat_path_prefix.startswith(local_data_prefix):
+            cat_path_prefix = '/data' + cat_path_prefix[len(local_data_prefix):]
 
         for ptype, fname in filenames.items():
             ppath = os.environ.get(
@@ -142,7 +141,6 @@ PATHS = _get_paths({
         'author_blob': 'a2bFull{ver}.{key}.tch',
         'project_authors': 'p2aFull{ver}.{key}.tch',
 
-        'commit_head': 'c2hFull{ver}.{key}.tch',
         'commit_blobs': 'c2bFull{ver}.{key}.tch',
         'commit_files': 'c2fFull{ver}.{key}.tch',
         'project_commits': 'p2cFull{ver}.{key}.tch',
@@ -1334,12 +1332,13 @@ class Project(_Base):
     @cached_property
     def url(self):
         """ Get the URL for a given project URI
-        >>> Project('CS340-19_lectures').toURL()
+        >>> Project('CS340-19_lectures').url
         'http://github.com/CS340-19/lectures'
         """
         chunks = self.uri.split("_", 1)
         prefix = chunks[0]
-        if (len(chunks) > 2 or prefix == "sourceforge.net") and prefix in URL_PREFIXES:
+        if ((len(chunks) > 2 or prefix == "sourceforge.net")
+                and prefix in URL_PREFIXES):
             platform = URL_PREFIXES[prefix]
         else:
             platform = 'github.com'
@@ -1470,7 +1469,7 @@ class Author(_Base):
     @cached_property
     def files(self):
         data = decomp(self.read_tch('author_files'))
-        return tuple(file for file in (data and data.split(";")))
+        return tuple(fname for fname in (data and data.split(";")))
     
     @cached_property
     def project_names(self):
@@ -1479,12 +1478,13 @@ A generator of all Commit objects authored by the Author
         """
         data = decomp(self.read_tch('author_projects'))
         return tuple(project_name
-          for project_name in (data and data.split(";")) or [] if project_name and project_name != 'EMPTY')
+                     for project_name in (data and data.split(";") or [])
+                     if project_name and project_name != 'EMPTY')
     
     @cached_property
     def torvald(self):
-      data = decomp(self.read_tch('author_trpath'))
-      return tuple(path for path in (data and data.split(";")))
+        data = decomp(self.read_tch('author_trpath'))
+        return tuple(path for path in (data and data.split(";")))
 
 
 class Clickhouse_DB(object):
@@ -1494,8 +1494,10 @@ class Clickhouse_DB(object):
     def __init__(self, tb_name, db_host):
         self.tb_name = tb_name
         self.db_host = db_host
-        self.client_settings = {'strings_as_bytes':True, 'max_block_size':100000}
-        self.client = clickhouse.Client(host=self.db_host, settings=self.client_settings)
+        self.client_settings = {
+            'strings_as_bytes': True, 'max_block_size': 100000}
+        self.client = clickhouse.Client(
+            host=self.db_host, settings=self.client_settings)
 
     def query(self, query_str):
         return self.client.execute(query_str)
@@ -1530,7 +1532,8 @@ class Clickhouse_DB(object):
             return '{}={}'.format(dt, start)
         return '{}>={}  AND {}<={}'.format(dt, start, dt, end)
 
-    def __check_time(self, start, end):
+    @staticmethod
+    def __check_time(start, end):
         # make sure start and end are of the same type and must be either
         # strings or ints
         if start is None:
@@ -1619,8 +1622,7 @@ class Time_project_info(Clickhouse_DB):
     
     def get_values_iter(self, cols, start, end):
         """ return a generator for table rows for a given time interval
-        >>> from oscar import Time_project_info as Proj
-        >>> p = Proj()
+        >>> p = Time_project_info()
         >>> rows = p.get_values_iter(['time','project'], 1568571909, 1568571910)
         >>> for row in rows:
         ...     print(row)
@@ -1635,6 +1637,7 @@ class Time_project_info(Clickhouse_DB):
 
     def project_timeline(self, cols, repo):
         """ return a generator for all rows given a repo name (ordered by time)
+        >>> p = Time_project_info()
         >>> rows = p.project_timeline(
         ...     ['time','project'], 'mrtrevanderson_CECS_424')
         >>> for row in rows:
@@ -1652,6 +1655,7 @@ class Time_project_info(Clickhouse_DB):
 
     def author_timeline(self, cols, author):
         """ return a generator for all rows given an author (ordered by time)
+        >>> p = Time_project_info()
         >>> rows = p.author_timeline(
         ...     ['time', 'project'], 'Andrew Gacek <andrew.gacek@gmail.com>')
         >>> for row in rows:
@@ -1667,7 +1671,8 @@ class Time_project_info(Clickhouse_DB):
                     .format(', '.join(cols), self.tb_name, author)
         return self.query_iter(query_str)
 
-    def __wrap_cols(self, cols):
+    @staticmethod
+    def __wrap_cols(cols):
         """ wraps cols to select before querying """
         for i in range(len(cols)):
             if cols[i] == 'commit' or cols[i] == 'blob':
