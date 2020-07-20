@@ -1,159 +1,195 @@
 import lzf
-# da4 doesn't have libgit2-dev to install pygit2 yet
-# import pygit2
-from tokyocabinet import hash as tch
-
-import clickhouse_driver as clickhouse
+import pygit2
 
 from datetime import datetime, timedelta, tzinfo
 import difflib
+import fnvhash  # TODO: implement Cython version
 from functools import wraps
+import glob
 import hashlib
+from math import log
 import os
+import re
 import time
 import warnings
-import fnvhash
+
+import clickhouse_driver as clickhouse
+import six
+from tokyocabinet import hash as tch
+
 
 
 __version__ = '1.3.3'
 __author__ = "Marat (@cmu.edu)"
 __license__ = "GPL v3"
 
-PATHS = {
-    # data_type: (path, prefix_bit_length)
-    # prefix length means that the data are split into 2**n files,
-    # e.g. key is in 0..31 for prefix length of 5 bit.
+try:
+    with open('/etc/hostname') as fh:
+        HOSTNAME = fh.read().strip()
+except IOError:
+    raise ImportError('Oscar only support Linux hosts so far')
 
-    # The most critical: raw data for the initial storage, use in sweeps, 100TB da4+ backup
-    'commit_sequential_idx': ('/da4_data/All.blobs/commit_{key}.idx', 7),
-    'commit_sequential_bin': ('/da4_data/All.blobs/commit_{key}.bin', 7),
-    'tree_sequential_idx': ('/da4_data/All.blobs/tree_{key}.idx', 7),
-    'tree_sequential_bin': ('/da4_data/All.blobs/tree_{key}.bin', 7),
-    
-    'tag_data': ('/da4_data/All.blobs/tag_{key}.bin', 7),
-    'commit_data': ('/da4_data/All.blobs/commit_{key}.bin', 7),
-    'tree_data': ('/da4_data/All.blobs/tree_{key}.bin', 7),
-    'blob_data': ('/da4_data/All.blobs/blob_{key}.bin', 7),
+if not re.match('da\d.eecs.utk.edu$', HOSTNAME):
+    raise ImportError('Oscar is only available on certain servers at UTK, '
+                      'please modify to match your cluster configuration')
 
-    # critical - random access to trees and commits on da4 - need to do offsets for the da3
-    'commit_random': ('/fast/All.sha1c/commit_{key}.tch', 7),
-    'tree_random': ('/fast/All.sha1c/tree_{key}.tch', 7),
+HOST, DOMAIN = HOSTNAME.split('.', 1)
+COMMIT_HOSTS = ('da4', 'da5')
+if HOST not in COMMIT_HOSTS:
+    warnings.warn('Commit and tree direct content is only available on da4. '
+                  'Some functions might not work as expected.\n\n')
 
-    'blob_offset': ('/fast/All.sha1o/sha1.blob_{key}.tch', 7),
-    'commit_offset': ('/fast/All.sha1o/sha1.commit_{key}.tch', 7),
-    'tree_offset': ('/fast/All.sha1o/sha1.tree_{key}.tch', 7),
-    # the rest of x_data is currently unused:
-    # 'commit_data': ('/data/All.blobs/commit_{key}.bin',  # 7)
-    # 'tree_data': ('/data/All.blobs/tree_{key}.bin', 7)
-    # 'tag_data': ('/data/All.blobs/tag_{key}.bin', 7)
 
-    # relations - good to have but not critical
-  
-    # move to current version R as they get updated
-    'commit_projects': ('/da0_data/basemaps/c2pFull{ver}.{key}.tch', 5),
-    'commit_children': ('/da0_data/basemaps/c2ccFull{ver}.{key}.tch', 5),
-    'commit_time_author': ('/da0_data/basemaps/c2taFull{ver}.{key}.tch', 5),
-    'commit_root': ('/da0_data/basemaps/c2rFull{ver}.{key}.tch', 5),
-    'commit_parent': ('/da0_data/basemaps/c2pcFull{ver}.{key}.tch', 5),
-    'author_commits': ('/da0_data/basemaps/a2cFull{ver}.{key}.tch', 5),
-    'author_projects': ('/da0_data/basemaps/a2pFull{ver}.{key}.tch', 5),
-    'author_files': ('/da0_data/basemaps/a2fFull{ver}.{key}.tch', 5),
-    'project_authors': ('/da0_data/basemaps/p2aFull{ver}.{key}.tch', 5),
+def _latest_version(path_template):
+    if '{ver}' not in path_template:
+        return ''
+    # Using * to allow for two-character versions
+    glob_pattern = path_template.format(key=0, ver='*')
+    filenames = glob.glob(glob_pattern)
+    prefix, postfix = glob_pattern.split('*', 1)
+    versions = [fname[len(prefix):-len(postfix)] for fname in filenames]
+    return max(versions, key=lambda ver: (len(ver), ver))
 
-    'commit_head': ('/da0_data/basemaps/c2hFull{ver}.{key}.tch', 5),
-    'commit_blobs': ('/da0_data/basemaps/c2bFull{ver}.{key}.tch', 5),
-    'commit_files': ('/da0_data/basemaps/c2fFull{ver}.{key}.tch', 5),
-    'project_commits': ('/da0_data/basemaps/p2cFull{ver}.{key}.tch', 5),
-    'blob_commits': ('/da0_data/basemaps/b2cFull{ver}.{key}.tch', 5),
-    'blob_authors': ('/da0_data/basemaps/b2aFull{ver}.{key}.tch', 5),
-    'file_authors': ('/da0_data/basemaps/f2aFull{ver}.{key}.tch', 5),
-    'file_commits': ('/da0_data/basemaps/f2cFull{ver}.{key}.tch', 5),
-    'file_blobs': ('/da0_data/basemaps/f2bFull{ver}.{key}.tch', 5),
-    'blob_files': ('/da0_data/basemaps/b2fFull{ver}.{key}.tch', 5),
 
-    'author_trpath':('/da0_data/basemaps/a2trp{ver}.tch', 5),
+def _key_length(path_template):
+    if '{key}' not in path_template:
+        return 0
+    glob_pattern = path_template.format(key='*', ver='*')
+    filenames = glob.glob(glob_pattern)
+    # key always comes the last, so rsplit is enough to account for two stars
+    prefix, postfix = glob_pattern.rsplit('*', 1)
+    str_keys = [fname[len(prefix):-len(postfix)] for fname in filenames]
+    keys = [int(key) for key in str_keys if key]
+    if not keys:
+        warnings.warn("No keys found for path_template " + path_template)
+    return int(log(max(keys) + 1, 2))
 
-    # another way to get commit parents, currently unused
-    # 'commit_parents': ('/da0_data/basemaps/c2pcK.{key}.tch', 7)
 
-    # SHA1 cache, currently only on da4, da5  668G
-    'blob_index_line': ('/fast/All.sha1/sha1.blob_{key}.tch', 7),
-    'tree_index_line': ('/fast/All.sha1/sha1.tree_{key}.tch', 7),
-    'commit_index_line': ('/fast/All.sha1/sha1.commit_{key}.tch', 7),
-    'tag_index_line': ('/fast/All.sha1/sha1.tag_{key}.tch', 7)
+# this dict is only for debugging purposes and it is not used anywhere
+VERSIONS = {}
+
+
+def _get_paths(raw_paths):
+    # type: (dict) -> dict
+    """
+    Compose path from
+    Args:
+        raw_paths (Dict[Tuple[str, Dict[str, str]]]): see example below
+
+    Returns:
+        (Dict[str, Tuple[str, int]]: map data type to a path template and a key
+            length, e.g.:
+            'author_commits' -> ('/da0_data/basemaps/a2cFullR.{key}.tch', 5)
+    """
+    paths = {}
+    local_data_prefix = '/' + HOST + '_data'
+    for category, (path_prefix, filenames) in raw_paths.items():
+        cat_path_prefix = os.environ.get(category, path_prefix)
+        cat_version = os.environ.get(category + '_VER') or _latest_version(
+            os.path.join(cat_path_prefix, filenames.values()[0]))
+
+        if path_prefix.startswith(local_data_prefix):
+            path_prefix = '/data' + path_prefix[len(local_data_prefix):]
+
+        for ptype, fname in filenames.items():
+            ppath = os.environ.get(
+                '_'.join(['OSCAR', ptype.upper()]), cat_path_prefix)
+            pver = os.environ.get(
+                '_'.join(['OSCAR', ptype.upper(), 'VER']), cat_version)
+            path_template = os.path.join(ppath, fname)
+            key_length = _key_length(path_template)
+            VERSIONS[ptype] = pver
+            paths[ptype] = (
+                path_template.format(ver=pver, key='{key}'), key_length)
+    return paths
+
+
+PATHS = _get_paths({
+    'OSCAR_ALL_BLOBS': ('/da4_data/All.blobs/', {
+        'commit_sequential_idx': 'commit_{key}.idx',
+        'commit_sequential_bin': 'commit_{key}.bin',
+        'tree_sequential_idx': 'tree_{key}.idx',
+        'tree_sequential_bin': 'tree_{key}.bin',
+        'tag_data': 'tag_{key}.bin',  # not used yet
+        'blob_data': 'blob_{key}.bin',
+    }),
+    'OSCAR_ALL_SHA1C': ('/fast/All.sha1c', {
+        # critical - random access to trees and commits: only on da4 and da5
+        # - performance is best when /fast is on SSD raid
+        'commit_random': 'commit_{key}.tch',
+        'tree_random': 'tree_{key}.tch',
+    }),
+    # all three are available on da[3-5]
+    'OSCAR_ALL_SHA1O': ('/fast/All.sha1o', {
+        'blob_offset': 'sha1.blob_{key}.tch',
+        # Speed is a bit lower since the content is read from HDD raid
+        'commit_offset': 'sha1.commit_{key}.tch',
+        # This way to access trees/commits is not used in python implementation
+        'tree_offset': 'sha1.tree_{key}.tch',
+    }),
+    'OSCAR_BASEMAPS': ('/da0_data/basemaps', {
+        # relations - good to have but not critical
+        'commit_projects': 'c2pFull{ver}.{key}.tch',
+        'commit_children': 'c2ccFull{ver}.{key}.tch',
+        'commit_time_author': 'c2taFull{ver}.{key}.tch',
+        'commit_root': 'c2rFull{ver}.{key}.tch',
+        'commit_head': 'c2hFull{ver}.{key}.tch',
+        'commit_parent': 'c2pcFull{ver}.{key}.tch',
+        'author_commits': 'a2cFull{ver}.{key}.tch',
+        'author_projects': 'a2pFull{ver}.{key}.tch',
+        'author_files': 'a2fFull{ver}.{key}.tch',
+        # this points aunlt to the author-created blobs (see b2a)
+        'author_blob': 'a2bFull{ver}.{key}.tch',
+        'project_authors': 'p2aFull{ver}.{key}.tch',
+
+        'commit_head': 'c2hFull{ver}.{key}.tch',
+        'commit_blobs': 'c2bFull{ver}.{key}.tch',
+        'commit_files': 'c2fFull{ver}.{key}.tch',
+        'project_commits': 'p2cFull{ver}.{key}.tch',
+        'blob_commits': 'b2cFull{ver}.{key}.tch',
+        # this actually points to the first time/author/commit only
+        'blob_author': 'b2aFull{ver}.{key}.tch',
+        'file_authors': 'f2aFull{ver}.{key}.tch',
+        'file_commits': 'f2cFull{ver}.{key}.tch',
+        'file_blobs': 'f2bFull{ver}.{key}.tch',
+        'blob_files': 'b2fFull{ver}.{key}.tch',
+
+        'author_trpath': 'a2trp{ver}.tch',
+        # another way to get commit parents, currently unused
+        # 'commit_parents': 'c2pcK.{key}.tch'
+    }),
+    # These can be used to check if the object exists in WoC
+    'OSCAR_ALL_SHA1': ('/fast/All.sha1', {
+        # SHA1 cache, currently only on da4, da5  668G
+        'blob_index_line': 'sha1.blob_{key}.tch',  # missing + unused
+        'tree_index_line': 'sha1.tree_{key}.tch',
+        'commit_index_line': 'sha1.commit_{key}.tch',  # unused
+        'tag_index_line': 'sha1.tag_{key}.tch',
+    })
+})
+
+# prefixes used by World of Code to identify source project platforms
+# See Project.to_url() for more details
+# Prefixes have been deprecated by replacing them with the string resembling
+# actual URL
+URL_PREFIXES = {
+    "bitbucket.org": "bitbucket.org",
+    "gitlab.com": "gitlab.com",
+    "android.googlesource.com": "android.googlesource.com",
+    "bioconductor.org": "bioconductor.org",
+    "drupal.com": "git.drupal.org",
+    "git.eclipse.org": "git.eclipse.org",
+    "git.kernel.org": "git.kernel.org",
+    "git.postgresql.org": "git.postgresql.org",
+    "git.savannah.gnu.org": "git.savannah.gnu.org",
+    "git.zx2c4.com": "git.zx2c4.com",
+    "gitlab.gnome.org": "gitlab.gnome.org",
+    "kde.org": "anongit.kde.org",
+    "repo.or.cz": "repo.or.cz",
+    "salsa.debian.org": "salsa.debian.org",
+    "sourceforge.net": "git.code.sf.net/p"
 }
 
-
-def read_env_var():
-    global PATHS
-    all_blobs = [
-        'commit_sequential_idx', 'commit_sequential_bin', 'tree_sequential_idx',
-        'tree_sequential_bin', 'tag_data', 'commit_data', 'tree_data', 'blob_data'
-    ]
-    all_sha1c = [
-        'commit_random', 'tree_random'
-    ]
-    all_sha1o = [
-        'blob_offset', 'commit_offset', 'tree_offset'
-    ]
-    basemaps = [
-        'commit_projects', 'commit_children', 'commit_time_author', 'commit_root',
-        'commit_parent', 'author_commits', 'author_projects', 'project_authors',
-        'commit_head', 'commit_blobs', 'commit_files', 'project_commits', 'blob_commits',
-        'blob_authors', 'file_commits', 'file_blobs', 'blob_files', 'author_trpath',
-        'author_files', 'file_authors'
-    ]    
-    all_sha1 = [
-        'blob_index_line', 'tree_index_line', 'commit_index_line', 'tag_index_line'
-    ]
-
-    # This map maps the environment variable name to the key names in the PATHS global variable
-    # For example, environment variable 'OSCAR_BASEMAPS' will contain the directory to find all the basemaps
-    # whoes PATHS key matches the elements in the basemaps array
-    # unless overwrote by each specific basemaps
-    general_name_map = {
-        'OSCAR_ALL_BLOBS': all_blobs,
-        'OSCAR_ALL_SHA1C': all_sha1c,
-        'OSCAR_ALL_SHA1O': all_sha1o,
-        'OSCAR_BASEMAPS': basemaps,
-        'OSCAR_ALL_SHA1': all_sha1
-    }
-    # This maps the environment variable name to the key names in the PATHS global variable
-    # Each key in the PAHTS will have 'OSCAR_' prepended to the beginning
-    # For example: OSCAR_COMMIT_DATA environment variable corresponds to PATHS['commit_data']
-    specific_names = {'_'.join(['OSCAR', name.upper()]): name for name in PATHS.keys()}
-    ver_names = {'_'.join(['OSCAR', name.upper(), 'VER']): name for name in basemaps}
-
-    for v in os.environ.keys():
-        if not os.environ[v]:
-            continue
-        # general directory config
-        if v in general_name_map.keys():
-            for name in general_name_map[v]:
-                f = os.path.basename(PATHS[name][0])
-                PATHS[name] = (os.path.join(os.environ[v], f), PATHS[name][1])
-        # specific directory config overwrites general
-        elif v in specific_names.keys():
-            f = os.path.basename(PATHS[name][0])
-            PATHS[specific_names[v]] = (os.path.join(os.environ[v],f), PATHS[specific_names[v]][1])
-        # specific version config
-        elif v in ver_names.keys():
-            PATHS[ver_names[v]] = (
-                PATHS[ver_names[v]][0].format(ver=os.environ[v], key='{key}'),
-                PATHS[ver_names[v]][1]
-            )
-        # general version config
-        elif v == "OSCAR_BASEMAPS_VER":
-            for name in basemaps:
-                if '{ver}' in PATHS[name][0]:
-                    PATHS[name] = (PATHS[name][0].format(ver=os.environ[v], key='{key}'), PATHS[name][1])
-
-    # if version not set, default to version R
-    for key in PATHS.keys():
-        if '{ver}' in PATHS[key][0]:
-            PATHS[key] = (PATHS[key][0].format(ver='R', key='{key}'), PATHS[key][1])
-
-read_env_var()
 
 class ObjectNotFound(KeyError):
     pass
@@ -168,8 +204,11 @@ def unber(s):
     BER is a way to pack several variable-length ints into one
     binary string. Here we do the reverse
 
-    :param s: a binary string with packed values
-    :return: a list of unpacked values
+    Args:
+        s (str): a binary string with packed values
+
+    Returns:
+         str: a list of unpacked values
 
     >>> unber('\x00\x83M')
     [0, 461]
@@ -195,8 +234,12 @@ def lzf_length(raw_data):
     output. Check Compress::LZF sources for the definition of this bit magic
         (namely, LZF.xs, decompress_sv)
 
-    :param raw_data: data compressed with Perl Compress::LZF
-    :return: tuple of (header_size, uncompressed_content_length) in bytes
+    Args:
+        raw_data (bytes): data compressed with Perl Compress::LZF
+
+    Returns:
+         Tuple[int, int]: (header_size, uncompressed_content_length) in bytes
+
     >>> lzf_length('\xc4\x9b')
     (2, 283)
     >>> lzf_length('\xc3\xa4')
@@ -236,8 +279,11 @@ def decomp(raw_data):
     and then does usual lzf decompression.
     Please check Compress::LZF sources for the definition of this bit magic
 
-    :param raw_data: data compressed with Perl Compress::LZF
-    :return: string of unpacked data
+    Args:
+        raw_data (bytes): data compressed with Perl Compress::LZF
+
+    Returns:
+        str: unpacked data
     """
     if not raw_data:
         return ""
@@ -266,6 +312,7 @@ def slice20(raw_data):
 
     return tuple(raw_data[i:i + 20].encode('hex')
                  for i in range(0, len(raw_data), 20))
+
 
 class CommitTimezone(tzinfo):
     # a lightweight version of pytz._FixedOffset
@@ -299,11 +346,11 @@ def parse_commit_date(timestamp):
         datetime.fromtimestamp without a timezone will convert it to host tz
     github api is in UTC (this is what trailing 'Z' means)
 
-    :param timestamp: Commit.authored_at or Commit.commited_at,
-        e.g. '1337145807 +1100'
-    :type timestamp: str
-    :return: UTC datetime
-    :rtype: datetime.datetime or None
+    Args:
+        timestamp (str): Commit.authored_at or Commit.commited_at,
+            e.g. '1337145807 +1100'
+    Returns:
+        Optional[datetime.datetime]: UTC datetime
 
     >>> parse_commit_date('1337145807 +1100')
     datetime.datetime(2012, 5, 16, 16, 23, 27, tzinfo=<Timezone: 11:00>)
@@ -350,12 +397,13 @@ def read_tch(path, key, silent=False):
     try:
         return _get_tch(path)[key]
     except:
-      return None
-        #raise IOError("Tokyocabinet file " + path + " not found")
-    #except KeyError:
-     #   if silent:
-     #       return ''
-     #   raise ObjectNotFound(path + " " + key)
+        return None
+        # raise IOError("Tokyocabinet file " + path + " not found")
+    # except KeyError:
+    #   if silent:
+    #       return ''
+    #   raise ObjectNotFound(path + " " + key)
+
 
 def tch_keys(path, key_prefix=''):
     return _get_tch(path).fwmkeys(key_prefix)
@@ -380,7 +428,8 @@ class _Base(object):
 
     def __init__(self, key):
         """
-        :param key: unique identifier for an object of this type
+        Args:
+             key (str): unique identifier for an object of this type
         """
         self.key = key
 
@@ -422,8 +471,8 @@ class _Base(object):
         This might be useful to get a list of all projects, or a list of
         all file names.
 
-        Returns:
-            a generator of `Project` objects
+        Yields:
+            Project: a project
         """
         if not cls._keys_registry_dtype:
             raise NotImplemented
@@ -464,7 +513,8 @@ class GitObject(_Base):
 
     def __init__(self, sha):
         """
-        :param sha: either a 40 char hex or a 20 bytes binary SHA1 hash
+        Args:
+             sha (str): either a 40 char hex or a 20 bytes binary SHA1 hash
         >>> sha = '05cf84081b63cda822ee407e688269b494a642de'
         >>> GitObject(sha.decode('hex')).sha == sha
         True
@@ -527,14 +577,14 @@ class GitObject(_Base):
     def file_sha(cls, path):
         buffsize = 1024 ** 2
         size = os.stat(path).st_size
-        fh = open(path, 'rb')
-        sha1 = hashlib.sha1()
-        sha1.update("%s %d\x00" % (cls.type, size))
-        while size > 0:
-            data = fh.read(min(size, buffsize))
-            if not data:
-                return sha1.hexdigest()
-            sha1.update(data)
+        with open(path, 'rb') as fh:
+            sha1 = hashlib.sha1()
+            sha1.update("%s %d\x00" % (cls.type, size))
+            while True:
+                data = fh.read(min(size, buffsize))
+                if not data:
+                    return sha1.hexdigest()
+                sha1.update(data)
 
     def __str__(self):
         """
@@ -611,7 +661,6 @@ class Blob(GitObject):
         **NOTE: commits removing this blob are not included**
         """
         return (Commit(bin_sha) for bin_sha in self.commit_shas)
-
 
 
 class Tree(GitObject):
@@ -704,7 +753,8 @@ class Tree(GitObject):
         This will generate 3-tuples of the same format as direct tree
         iteration, but will recursively include subtrees content.
 
-        :return: generator of (mode, filename, blob/tree sha)
+        Yields:
+            Tuple[str, str, str]: (mode, filename, blob/tree sha)
 
         >>> c = Commit("1e971a073f40d74a1e72e07c682e1cba0bae159b")
         >>> len(list(c.tree.traverse()))
@@ -886,8 +936,8 @@ class Commit(GitObject):
             parent (Commit): another commit to compare to.
                 Expected order is `diff = child_commit - parent_commit`
 
-        Returns:
-            Generator[Tuple[Optional[str], Optional[str], Optional[str], Optional[str]]]:
+        Yields:
+            Tuple[Optional[str], Optional[str], Optional[str], Optional[str]]:
                 4-tuples: `(old_path, new_path, old_sha, new_sha)`
 
             Examples:
@@ -925,16 +975,16 @@ class Commit(GitObject):
         for fname in new_paths.intersection(old_paths):
             if new_files[fname] != old_files[fname]:
                 # i.e. the Blob sha is the same
-                yield (fname, fname, old_files[fname], new_files[fname])
+                yield fname, fname, old_files[fname], new_files[fname]
 
         added_paths = new_paths - old_paths
         deleted_paths = old_paths - new_paths
 
         if threshold >= 1:  # i.e. only exact matches are considered
             for fname in added_paths:
-                yield (None, fname, None, new_files[fname])
+                yield None, fname, None, new_files[fname]
             for fname in deleted_paths:
-                yield (fname, None, old_files[fname], None)
+                yield fname, None, old_files[fname], None
             return
 
         # search for matches
@@ -954,15 +1004,15 @@ class Commit(GitObject):
                 if sm.real_quick_ratio() > threshold \
                         and sm.quick_ratio() > threshold \
                         and sm.ratio() > threshold:
-                    yield (deleted_fname, added_fname, deleted_blob, added_blob)
+                    yield deleted_fname, added_fname, deleted_blob, added_blob
                     del(deleted_blobs[deleted_fname])
                     matched = True
                     break
             if not matched:  # this is a new file
-                yield (None, added_fname, None, added_blob)
+                yield None, added_fname, None, added_blob
 
         for deleted_fname, deleted_blob in deleted_blobs.items():
-            yield (deleted_fname, None, deleted_blob, None)
+            yield deleted_fname, None, deleted_blob, None
 
     @property
     def parents(self):
@@ -1077,19 +1127,9 @@ class Commit(GitObject):
     def files(self):
         data = decomp(self.read_tch('commit_files'))
         return tuple(file_name 
-        for file_name in (data and data.split(";")) or [] if file_name and file_name != 'EMPTY')
+                     for file_name in (data and data.split(";")) or []
+                     if file_name and file_name != 'EMPTY')
 
-class Commit_info(GitObject):
-    @cached_property
-    def time_author(self):
-        data = self.read_tch('commit_time_author')
-        return tuple(time_author 
-        for time_author in (data and data.split(";")))
-
-    @cached_property
-    def head(self):
-      data = slice20(self.read_tch('commit_head'))
-      return data 
 
 class Tag(GitObject):
     """ Tag doesn't have any functionality associated.
@@ -1291,48 +1331,27 @@ class Project(_Base):
 
             commit = commits.get(first_parent, Commit(first_parent))
 
-    def toURL(self):
-      '''
-      Get the URL for a given project URI
-      >>> Project('CS340-19_lectures').toURL()
-      'http://github.com/CS340-19/lectures'
-      '''
-      p_name = self.uri
-      found = False
-      toUrlMap = {
-        "bb": "bitbucket.org", "gl": "gitlab.org",
-        "android.googlesource.com": "android.googlesource.com",
-        "bioconductor.org": "bioconductor.org",
-        "drupal.com": "git.drupal.org", "git.eclipse.org": "git.eclipse.org",
-        "git.kernel.org": "git.kernel.org",
-        "git.postgresql.org": "git.postgresql.org" ,
-        "git.savannah.gnu.org": "git.savannah.gnu.org",
-        "git.zx2c4.com": "git.zx2c4.com" ,
-        "gitlab.gnome.org": "gitlab.gnome.org",
-        "kde.org": "anongit.kde.org",
-        "repo.or.cz": "repo.or.cz",
-        "salsa.debian.org": "salsa.debian.org",
-        "sourceforge.net": "git.code.sf.net/p"}
+    @cached_property
+    def url(self):
+        """ Get the URL for a given project URI
+        >>> Project('CS340-19_lectures').toURL()
+        'http://github.com/CS340-19/lectures'
+        """
+        chunks = self.uri.split("_", 1)
+        prefix = chunks[0]
+        if (len(chunks) > 2 or prefix == "sourceforge.net") and prefix in URL_PREFIXES:
+            platform = URL_PREFIXES[prefix]
+        else:
+            platform = 'github.com'
+        return '/'.join(
+            ('https:/', platform, + chunks[1], '_'.join(chunks[2:])))
 
-      for URL in toUrlMap.keys():
-        URL_ = URL + "_"
-        if p_name.startswith(URL_) and (p_name.count('_') >= 2 or URL == "sourceforge.net"):
-          replacement = toUrlMap[URL] + "/"
-          p_name = p_name.replace(URL_, replacement)
-          found = True
-          break
-
-      if not found: 
-        p_name = "github.com/" + p_name
- 
-      p_name = p_name.replace('_', '/', 1)
-      return "https://" + p_name  
-    
     @cached_property
     def author_names(self):
         data = decomp(self.read_tch('project_authors'))
         return tuple(author_name 
-        for author_name in (data and data.split(";")) or [] if author_name and author_name != 'EMPTY')
+                     for author_name in (data and data.split(";")) or []
+                     if author_name and author_name != 'EMPTY')
 
 
 class File(_Base):
@@ -1372,8 +1391,8 @@ class File(_Base):
         True
         """
         file_path = self.key
-        #if not file_path.endswith("\n"):
-        #    file_path += "\n"
+        # if not file_path.endswith("\n"):
+        #     file_path += "\n"
         tch_path = resolve_path('file_commits', file_path, self.use_fnv_keys)
         return slice20(read_tch(tch_path, file_path, silent=True))
 
@@ -1467,10 +1486,11 @@ A generator of all Commit objects authored by the Author
       data = decomp(self.read_tch('author_trpath'))
       return tuple(path for path in (data and data.split(";")))
 
+
 class Clickhouse_DB(object):
-    ''' Clickhouse_DB class represents an instance of the clickhouse client
+    """ Clickhouse_DB class represents an instance of the clickhouse client
         It is initialized with a table name and a host name for the database
-    '''
+    """
     def __init__(self, tb_name, db_host):
         self.tb_name = tb_name
         self.db_host = db_host
@@ -1481,8 +1501,7 @@ class Clickhouse_DB(object):
         return self.client.execute(query_str)
     
     def query_iter(self, query_str):
-        row_iter = self.client.execute_iter(query_str)
-        for row in row_iter:
+        for row in self.client.execute_iter(query_str):
             yield row
 
     def query_select(self, s_col, s_from, s_start, s_end):
@@ -1495,12 +1514,12 @@ class Clickhouse_DB(object):
         # iterative query
         s_where = self.__where_condition(s_start, s_end)
         query_str = 'select {} from {} where {}'.format(s_col, s_from, s_where)
-        row_iter = self.client.execute_iter(query_str)
-        for row in row_iter:
+        for row in self.client.execute_iter(query_str):
             yield row
     
     def __where_condition(self, start, end):
-        # checks if start and end date or time is valid and build the where clause
+        # checks if start and end date or time is valid and build the where
+        # clause
         dt = 'time'
         if not self.__check_time(start, end):
             dt = 'date'
@@ -1509,26 +1528,28 @@ class Clickhouse_DB(object):
             
         if end is None:
             return '{}={}'.format(dt, start)
-        else:
-            return '{}>={}  AND {}<={}'.format(dt, start, dt, end)
+        return '{}>={}  AND {}<={}'.format(dt, start, dt, end)
 
     def __check_time(self, start, end):
-        # make sure start and end are of the same type and must be either strings or ints
+        # make sure start and end are of the same type and must be either
+        # strings or ints
         if start is None:
             raise ValueError('start time cannot be None')
-        elif not isinstance(start, int) and not isinstance(start, basestring):
+        if not isinstance(start, (int, six.string_types)):
             raise ValueError('start time must be either int or string')
-        elif end is not None and not isinstance(end, int) and not isinstance(end, basestring):
+        if end is not None and not isinstance(end, (int, six.string_types)):
             raise ValueError('end time must be either int or string')
-        elif end is not None and type(start) is not type(end):
+        if end is not None and type(start) is not type(end):
             raise ValueError('start and end must be of the same type')
-        return (True if isinstance(start, int) else False)
+        return isinstance(start, int)
+
 
 class Time_commit_info(Clickhouse_DB):
-    ''' Time_commit_info class is initialized with table name and database host name
-        the default table for commits is commits_all, and the default host is localhost
-        No connection is established before the query is made.
-        The 'commits_all' table description is the following:
+    """ Time_commit_info class is initialized with table name and database host
+    name the default table for commits is commits_all, and the default host is
+    localhost No connection is established before the query is made.
+
+    The 'commits_all' table description is the following:
         |__name___|______type_______|
         | sha1    | FixedString(20) |
         | time    | Int32           |
@@ -1537,23 +1558,22 @@ class Time_commit_info(Clickhouse_DB):
         | parent  | String          |
         | comment | String          |
         | content | String          |
-    '''
+    """
     columns = ['sha1', 'time', 'tree', 'author', 'parent', 'comment', 'content']
 
     def __init__(self, tb_name='commits_all', db_host='localhost'):
         super(Time_commit_info, self).__init__(tb_name, db_host)
     
     def commit_counts(self, start, end=None):
-        ''' return the count of commits between given date and time
+        """ return the count of commits between given date and time
         >>> t = Time_commit_info()
         >>> t.commit_counts(1568656268)
         8
-        '''
-        rows = self.query_select('count(*)', self.tb_name, start, end)
-        return rows[0][0]
+        """
+        return self.query_select('count(*)', self.tb_name, start, end)[0][0]
     
-    def commits_iter(self, start, end=None):
-        ''' return a generator of Commit instances within a given date and time
+    def commits(self, start, end=None):
+        """ return a generator of Commit instances within a given date and time
         >>> t = Time_commit_info()
         >>> commits = t.commits_iter(1568656268)
         >>> c = commits.next()
@@ -1561,36 +1581,27 @@ class Time_commit_info(Clickhouse_DB):
         <class 'oscar.Commit'>
         >>> c.parent_shas
         ('9c4cc4f6f8040ed98388c7dedeb683469f7210f5',)
-        '''
-        row_iter = self.query_select_iter('lower(hex(sha1))', self.tb_name, start, end)
-        for row in row_iter:
-            yield Commit(row[0])
+        """
+        for sha in self.commits_shas(start, end):
+            yield Commit(sha)
 
     def commits_shas(self, start, end=None):
-        ''' return a list of shas within the given time and date
+        """ return a generator of all sha1 within the given time and date
         >>> t = Time_commit_info()
-        >>> shas = t.commits_shas(1568656268)
-        >>> type(shas)
-        <type 'list'>
-        '''
-        rows = self.query_select('lower(hex(sha1))', self.tb_name, start, end)
-        return [row[0] for row in rows]
-
-    def commits_shas_iter(self, start, end=None):
-        ''' return a generator of all sha1 within the given time and date
-        >>> t = Time_commit_info()
-        >>> for sha1 in t.commits_shas_iter(1568656268):
+        >>> for sha1 in t.commits_shas(1568656268):
         ...     print(sha1)
-        ''' 
-        row_iter = self.query_select_iter('lower(hex(sha1))', self.tb_name, start, end)
-        for row in row_iter:
+        """
+        for row in self.query_select_iter(
+                'lower(hex(sha1))', self.tb_name, start, end):
             yield row[0]
-        
+
+
 class Time_project_info(Clickhouse_DB):
-    ''' Time_project_info class is initialized with table name and database host name
-        The default table name for projects is projects_all, and the default database name is localhost
-        This class contains methods to query for project data
-        The 'b2cPtaPkgR_all' table descrption is the following:
+    """ Time_project_info class is initialized with table name and database host
+    name. The default table name for projects is b2cPtaPkgR_all, and the default
+    database name is localhost. This class contains methods to query for project
+    data.
+        The table descrption is the following:
         |___name___|______type_______|
         | blob     | FixedString(20) |
         | commit   | FixedString(20) |
@@ -1599,14 +1610,15 @@ class Time_project_info(Clickhouse_DB):
         | author   | String          |
         | language | String          |
         | deps     | String          |
-    '''
-    columns = ['blob', 'commit', 'project', 'time', 'author', 'language', 'deps']
+    """
+    columns = ('blob', 'commit', 'project', 'time', 'author', 'language',
+               'deps')
 
     def __init__(self, tb_name='b2cPtaPkgR_all', db_host='localhost'):
         super(Time_project_info, self).__init__(tb_name, db_host)
     
     def get_values_iter(self, cols, start, end):
-        ''' return a generator for table rows for a given time interval                            
+        """ return a generator for table rows for a given time interval
         >>> from oscar import Time_project_info as Proj
         >>> p = Proj()
         >>> rows = p.get_values_iter(['time','project'], 1568571909, 1568571910)
@@ -1617,15 +1629,14 @@ class Time_project_info(Clickhouse_DB):
         (1568571909, 'gitlab.com_surajpatel_tic_toc_toe')
         (1568571909, 'gitlab.com_surajpatel_tic_toc_toe')
         ...
-        '''
+        """
         cols = self.__wrap_cols(cols)
-        rows_iter = self.query_select_iter(', '.join(cols), self.tb_name, start, end)
-        for row in rows_iter:
-            yield row
-    
-    def project_timeline(self, cols, project):
-        ''' return a generator for all rows given a project name (ordered by time)
-        >>> rows = p.project_timeline(['time','project'], 'mrtrevanderson_CECS_424')
+        return self.query_select_iter(', '.join(cols), self.tb_name, start, end)
+
+    def project_timeline(self, cols, repo):
+        """ return a generator for all rows given a repo name (ordered by time)
+        >>> rows = p.project_timeline(
+        ...     ['time','project'], 'mrtrevanderson_CECS_424')
         >>> for row in rows:
         ...     print(row)
         ...
@@ -1633,17 +1644,16 @@ class Time_project_info(Clickhouse_DB):
         (1568571909, 'mrtrevanderson_CECS_424')
         (1568571909, 'mrtrevanderson_CECS_424')
         ...
-        '''
+        """
         cols = self.__wrap_cols(cols)
         query_str = 'SELECT {} FROM {} WHERE project=\'{}\' ORDER BY time'\
-                    .format(', '.join(cols), self.tb_name, project)
-        rows_iter = self.query_iter(query_str)
-        for row in rows_iter:
-            yield row
+                    .format(', '.join(cols), self.tb_name, repo)
+        return self.query_iter(query_str)
 
     def author_timeline(self, cols, author):
-        ''' return a generator for all rows given an author (ordered by time)
-        >>> rows = p.author_timeline(['time', 'project'], 'Andrew Gacek <andrew.gacek@gmail.com>')
+        """ return a generator for all rows given an author (ordered by time)
+        >>> rows = p.author_timeline(
+        ...     ['time', 'project'], 'Andrew Gacek <andrew.gacek@gmail.com>')
         >>> for row in rows:
         ...     print(row)
         ...
@@ -1651,17 +1661,14 @@ class Time_project_info(Clickhouse_DB):
         (677, 'smaccm_vm_hack')
         (1180017188, 'teyjus_teyjus')
         ... 
-        '''
+        """
         cols = self.__wrap_cols(cols)
         query_str = 'SELECT {} FROM {} WHERE author=\'{}\' ORDER BY time'\
                     .format(', '.join(cols), self.tb_name, author)
-        rows_iter = self.query_iter(query_str)
-        for row in rows_iter:
-            yield row
+        return self.query_iter(query_str)
 
     def __wrap_cols(self, cols):
-        ''' wraps cols to select before querying
-        '''
+        """ wraps cols to select before querying """
         for i in range(len(cols)):
             if cols[i] == 'commit' or cols[i] == 'blob':
                 cols[i] = 'lower(hex({}))'.format(cols[i])

@@ -17,18 +17,36 @@ files are stored.
 
 ### Reference
 
-Please see <https://ssc-oscar.github.io/oscar.py>
-for the reference.
+Please see <https://ssc-oscar.github.io/oscar.py> for the reference.
 
 
-### Deployment
+### How to contribute - read carefully
 
-Don't forget to tag the release with new tag (e.g., v1.2.1 for version 1.2.1) if the version is updated
+`master` is for releases only. Development happens on feature branches,
+which stem from `dev` branch and merge back. Once in a while `dev` is merged
+to master, producing a new release. This rule is mostly because of the server
+layout preventing us from running unit tests automatically.
 
-Also 
-```
-git push --tags
-```
-By default tags are not pushed and travis build will fail (unable to find release tag)
+We use [conventional commits](https://www.conventionalcommits.org) message
+convention. This means that you MUST prepend commit messages with one of:
+- **fix:** in case the change fixes a problem without changing any interfaces.
+    Example commit message: `fix: missing clickhouse-driver dependency (closes #123)`.
+- **feat:** the change implements a new feature, without affecting existing
+    interfaces. Example: `feat: implement author timeline`.
+- **chore:** the change does not affect functionality, e.g. PEP8 fixes.
+    E.g.: `chore: PEP8 fixes`
+- **docs:**: similar to `chore:` but explicitly related to documentation.
+    E.g.: `docs: add timeline usage examples`
+- **refactor:** similar to `chore:`
 
-Submit a fix: blabla or feat: blabla PR for travis to deploy it to pypi
+In case of breaking changes (i.e. if any interfaces were changed, breaking 
+backward compatibility), commit message should contain **BREAKING CHANGE**
+in the footer.
+
+Commit messages will be used to automatically bump version. `fix`, `chore`, `docs` 
+will produce patch versions, `feat` will result in a minor version bump, and in
+case of breaking changes the major version will be incremented.
+As a consequence, **you must never change version number manually**.
+
+Not following these procedures might take your pull request extra time to
+review and in some cases will require rewriting the commit history.
