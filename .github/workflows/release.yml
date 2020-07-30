@@ -1,0 +1,65 @@
+name: Semantic Release
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.8'
+
+    - name: Python Semantic Release
+      uses: relekang/python-semantic-release@v7.2.1
+      with:
+        github_token: ${{ secrets.GH_TOKEN }}
+        pypi_token: ${{ secrets.PYPI_TOKEN }}
+
+  pages:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        name: Checkout main branch
+
+      - uses: actions/checkout@v2
+        name: Checkout gh-pages
+        with:
+          ref: gh-pages
+          path: docs/build/html
+
+      - name: Cache pip
+        uses: actions/cache@v1
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('setup.py') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Build pages with sphinx
+        run: |
+          python3 -m pip install --upgrade pip setuptools wheel
+          # basically, make install_dev but explicitly use pip3
+          pip3 install requests sphinx sphinx-autobuild
+          if [ -f requirements.txt ]; then pip3 install -r requirements.txt; fi
+          export PATH=~/.local/bin:$PATH
+          sphinx-build -M html "docs" "docs/build"
+
+      - name: Upload pages git gh-pages branch
+        run: |
+          cd docs/build/html
+          # since following git config is not --global, cd to repo dir first
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          # git commit will fail if there are no changes, thus ignore exit code
+          git commit -m "github pages" -a && git push || true
