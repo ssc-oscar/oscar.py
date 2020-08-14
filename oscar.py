@@ -138,8 +138,8 @@ PATHS = _get_paths({
         'author_commits': 'a2cFull{ver}.{key}.tch',
         'author_projects': 'a2pFull{ver}.{key}.tch',
         'author_files': 'a2fFull{ver}.{key}.tch',
-        # this points aunlt to the author-created blobs (see b2a)
-        'author_blob': 'a2bFull{ver}.{key}.tch',
+        # this points aunlt to the author-created blobs (see b2a) f - first
+        'author_blob': 'a2fbFull{ver}.{key}.tch',
         'project_authors': 'p2aFull{ver}.{key}.tch',
 
         'commit_blobs': 'c2bFull{ver}.{key}.tch',
