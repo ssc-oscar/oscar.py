@@ -61,6 +61,7 @@ def _key_length(path_template):
     keys = [int(key) for key in str_keys if key]
     if not keys:
         warnings.warn("No keys found for path_template " + path_template)
+        return 0
     return int(log(max(keys) + 1, 2))
 
 
