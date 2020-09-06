@@ -1,26 +1,23 @@
-import lzf
-import pygit2
 
 from datetime import datetime, timedelta, tzinfo
 import difflib
-import fnvhash  # TODO: implement Cython version
 from functools import wraps
 import glob
 import hashlib
+from libc.stdint cimport uint8_t, uint32_t
+from libc.stdlib cimport free
 from math import log
 import os
 import re
 import time
 import warnings
 
-import clickhouse_driver as clickhouse
-import six
-from tokyocabinet import hash as tch
+import lzf
 
 
 __version__ = '1.3.3'
-__author__ = "Marat (@cmu.edu)"
-__license__ = "GPL v3"
+__author__ = 'Marat (@cmu.edu)'
+__license__ = 'GPL v3'
 
 try:
     with open('/etc/hostname') as fh:
@@ -50,7 +47,8 @@ def _latest_version(path_template):
     return max(versions, key=lambda ver: (len(ver), ver))
 
 
-def _key_length(path_template):
+def _key_length(str path_template):
+    # type: (str) -> int
     if '{key}' not in path_template:
         return 0
     glob_pattern = path_template.format(key='*', ver='*')
@@ -59,16 +57,14 @@ def _key_length(path_template):
     prefix, postfix = glob_pattern.rsplit('*', 1)
     str_keys = [fname[len(prefix):-len(postfix)] for fname in filenames]
     keys = [int(key) for key in str_keys if key]
-    if not keys:
-        warnings.warn("No keys found for path_template " + path_template)
-    return int(log(max(keys) + 1, 2))
+    return int(log(max(keys, default=0) + 1, 2))
 
 
 # this dict is only for debugging purposes and it is not used anywhere
 VERSIONS = {}
 
 
-def _get_paths(raw_paths):
+def _get_paths(dict raw_paths):
     # type: (dict) -> dict
     """
     Compose path from
@@ -85,7 +81,7 @@ def _get_paths(raw_paths):
     for category, (path_prefix, filenames) in raw_paths.items():
         cat_path_prefix = os.environ.get(category, path_prefix)
         cat_version = os.environ.get(category + '_VER') or _latest_version(
-            os.path.join(cat_path_prefix, filenames.values()[0]))
+            os.path.join(cat_path_prefix, list(filenames.values())[0]))
 
         if cat_path_prefix.startswith(local_data_prefix):
             cat_path_prefix = '/data' + cat_path_prefix[len(local_data_prefix):]
@@ -97,6 +93,9 @@ def _get_paths(raw_paths):
                 '_'.join(['OSCAR', ptype.upper(), 'VER']), cat_version)
             path_template = os.path.join(ppath, fname)
             key_length = _key_length(path_template)
+            if not key_length:
+                warnings.warn("No keys found for path_template %s:\n%s" % (
+                    ptype, path_template))
             VERSIONS[ptype] = pver
             paths[ptype] = (
                 path_template.format(ver=pver, key='{key}'), key_length)
@@ -122,9 +121,11 @@ PATHS = _get_paths({
     'OSCAR_ALL_SHA1O': ('/fast/All.sha1o', {
         'blob_offset': 'sha1.blob_{key}.tch',
         # Speed is a bit lower since the content is read from HDD raid
-        'commit_offset': 'sha1.commit_{key}.tch',
+        # Sep 6 2020: 'commit_offset' and 'tree_offset' files are MIA
+        # TODO: remove once confirmed
+        # 'commit_offset': 'sha1.commit_{key}.tch',
         # This way to access trees/commits is not used in python implementation
-        'tree_offset': 'sha1.tree_{key}.tch',
+        # 'tree_offset': 'sha1.tree_{key}.tch',
     }),
     'OSCAR_BASEMAPS': ('/da0_data/basemaps', {
         # relations - good to have but not critical
@@ -138,7 +139,7 @@ PATHS = _get_paths({
         'author_projects': 'a2pFull{ver}.{key}.tch',
         'author_files': 'a2fFull{ver}.{key}.tch',
         # this points aunlt to the author-created blobs (see b2a)
-        'author_blob': 'a2bFull{ver}.{key}.tch',
+        # 'author_blob': 'a2bFull{ver}.{key}.tch',  # MIA as of Sep 6 2020
         'project_authors': 'p2aFull{ver}.{key}.tch',
 
         'commit_blobs': 'c2bFull{ver}.{key}.tch',
@@ -152,15 +153,15 @@ PATHS = _get_paths({
         'file_blobs': 'f2bFull{ver}.{key}.tch',
         'blob_files': 'b2fFull{ver}.{key}.tch',
 
-        'author_trpath': 'a2trp{ver}.tch',
+        # 'author_trpath': 'a2trp{ver}.tch',  # MIA as of Sep 6 2020
         # another way to get commit parents, currently unused
         # 'commit_parents': 'c2pcK.{key}.tch'
     }),
     # These can be used to check if the object exists in WoC
     'OSCAR_ALL_SHA1': ('/fast/All.sha1', {
         # SHA1 cache, currently only on da4, da5  668G
-        'blob_index_line': 'sha1.blob_{key}.tch',  # missing + unused
-        'tree_index_line': 'sha1.tree_{key}.tch',
+        # 'blob_index_line': 'sha1.blob_{key}.tch',  # missing + unused
+        # 'tree_index_line': 'sha1.tree_{key}.tch',
         'commit_index_line': 'sha1.commit_{key}.tch',  # unused
         'tag_index_line': 'sha1.tag_{key}.tch',
     })
@@ -171,21 +172,21 @@ PATHS = _get_paths({
 # Prefixes have been deprecated by replacing them with the string resembling
 # actual URL
 URL_PREFIXES = {
-    "bitbucket.org": "bitbucket.org",
-    "gitlab.com": "gitlab.com",
-    "android.googlesource.com": "android.googlesource.com",
-    "bioconductor.org": "bioconductor.org",
-    "drupal.com": "git.drupal.org",
-    "git.eclipse.org": "git.eclipse.org",
-    "git.kernel.org": "git.kernel.org",
-    "git.postgresql.org": "git.postgresql.org",
-    "git.savannah.gnu.org": "git.savannah.gnu.org",
-    "git.zx2c4.com": "git.zx2c4.com",
-    "gitlab.gnome.org": "gitlab.gnome.org",
-    "kde.org": "anongit.kde.org",
-    "repo.or.cz": "repo.or.cz",
-    "salsa.debian.org": "salsa.debian.org",
-    "sourceforge.net": "git.code.sf.net/p"
+    'bitbucket.org': 'bitbucket.org',
+    'gitlab.com': 'gitlab.com',
+    'android.googlesource.com': 'android.googlesource.com',
+    'bioconductor.org': 'bioconductor.org',
+    'drupal.com': 'git.drupal.org',
+    'git.eclipse.org': 'git.eclipse.org',
+    'git.kernel.org': 'git.kernel.org',
+    'git.postgresql.org': 'git.postgresql.org',
+    'git.savannah.gnu.org': 'git.savannah.gnu.org',
+    'git.zx2c4.com': 'git.zx2c4.com',
+    'gitlab.gnome.org': 'gitlab.gnome.org',
+    'kde.org': 'anongit.kde.org',
+    'repo.or.cz': 'repo.or.cz',
+    'salsa.debian.org': 'salsa.debian.org',
+    'sourceforge.net': 'git.code.sf.net/p'
 }
 
 
@@ -193,8 +194,7 @@ class ObjectNotFound(KeyError):
     pass
 
 
-def unber(s):
-    # type: (str) -> list
+cdef unber(bytes buf):
     r""" Perl BER unpacking
     Format definition: from http://perldoc.perl.org/functions/pack.html
         (see "w" template description)
@@ -203,22 +203,25 @@ def unber(s):
     binary string. Here we do the reverse
 
     Args:
-        s (str): a binary string with packed values
+        buf (bytes): a binary string with packed values
 
     Returns:
          str: a list of unpacked values
 
-    >>> unber('\x00\x83M')
+    >>> unber(b'\x00\x83M')
     [0, 461]
-    >>> unber('\x83M\x96\x14')
+    >>> unber(b'\x83M\x96\x14')
     [461, 2836]
-    >>> unber('\x99a\x89\x12')
+    >>> unber(b'\x99a\x89\x12')
     [3297, 1170]
     """
-    res = []
-    acc = 0
-    for char in s:
-        b = ord(char)
+    # PY: 262ns, Cy: 78ns
+    cdef:
+        list res = []
+        int acc = 0
+        uint8_t b
+
+    for b in buf:
         acc = (acc << 7) + (b & 0x7f)
         if not b & 0x80:
             res.append(acc)
@@ -226,11 +229,12 @@ def unber(s):
     return res
 
 
-def lzf_length(raw_data):
-    # type: (str) -> (int, int)
+cdef (int, int) lzf_length(bytes raw_data):
+    # type: (bytes) -> (int, int)
     r""" Get length of uncompressed data from a header of Compress::LZF
     output. Check Compress::LZF sources for the definition of this bit magic
         (namely, LZF.xs, decompress_sv)
+        https://metacpan.org/source/MLEHMANN/Compress-LZF-3.8/LZF.xs
 
     Args:
         raw_data (bytes): data compressed with Perl Compress::LZF
@@ -238,44 +242,43 @@ def lzf_length(raw_data):
     Returns:
          Tuple[int, int]: (header_size, uncompressed_content_length) in bytes
 
-    >>> lzf_length('\xc4\x9b')
+    >>> lzf_length(b'\xc4\x9b')
     (2, 283)
-    >>> lzf_length('\xc3\xa4')
+    >>> lzf_length(b'\xc3\xa4')
     (2, 228)
-    >>> lzf_length('\xc3\x8a')
+    >>> lzf_length(b'\xc3\x8a')
     (2, 202)
-    >>> lzf_length('\xca\x87')
+    >>> lzf_length(b'\xca\x87')
     (2, 647)
-    >>> lzf_length('\xe1\xaf\xa9')
+    >>> lzf_length(b'\xe1\xaf\xa9')
     (3, 7145)
-    >>> lzf_length('\xe0\xa7\x9c')
+    >>> lzf_length(b'\xe0\xa7\x9c')
     (3, 2524)
     """
-    if not raw_data:
-        raise ValueError("LZF compressed data are missing header")
-    lower = ord(raw_data[0])
-    csize = len(raw_data)
-    start = 1
-    mask = 0x80
+    # PY:543ns, Cy: 1usec
+    cdef:
+        # compressed size, header length, uncompressed size
+        int csize=len(raw_data), start=1, usize
+        # first byte, mask, buffer iterator placeholder
+        uint8_t lower=raw_data[0], mask=0x80, b
+
     while mask and csize > start and (lower & mask):
         mask >>= 1 + (mask == 0x80)
         start += 1
     if not mask or csize < start:
-        raise ValueError("LZF compressed data header is corrupted")
+        raise ValueError('LZF compressed data header is corrupted')
     usize = lower & (mask - 1)
-    for i in range(1, start):
-        usize = (usize << 6) + (ord(raw_data[i]) & 0x3f)
+    for b in raw_data[1:]:
+        usize = (usize << 6) + (b & 0x3f)
     if not usize:
-        raise ValueError("LZF compressed data header is corrupted")
+        raise ValueError('LZF compressed data header is corrupted')
     return start, usize
 
-
-def decomp(raw_data):
-    # type: (str) -> str
+def decomp(bytes raw_data):
+    # type: (bytes) -> bytes
     """ lzf wrapper to handle perl tweaks in Compress::LZF
     This function extracts uncompressed size header
     and then does usual lzf decompression.
-    Please check Compress::LZF sources for the definition of this bit magic
 
     Args:
         raw_data (bytes): data compressed with Perl Compress::LZF
@@ -284,11 +287,27 @@ def decomp(raw_data):
         str: unpacked data
     """
     if not raw_data:
-        return ""
-    elif raw_data[0] == '\x00':
+        return b""
+    if raw_data[0] == 0:
         return raw_data[1:]
     start, usize = lzf_length(raw_data)
     return lzf.decompress(raw_data[start:], usize)
+
+
+cdef uint32_t fnvhash(bytes data):
+    """
+    Returns the 32 bit FNV-1a hash value for the given data.
+    >>> hex(fnvhash(b'foo'))
+    '0xa9f37ed7'
+    """
+    # PY: 5.8usec Cy: 66.8ns
+    cdef:
+        uint32_t hval = 0x811c9dc5
+        uint8_t b
+    for b in data:
+        hval ^= b
+        hval *= 0x01000193
+    return hval
 
 
 def cached_property(func):
@@ -302,7 +321,7 @@ def cached_property(func):
     return property(wrapper)
 
 
-def slice20(raw_data):
+def slice20(bytes raw_data):
     """ Slice raw_data into 20-byte chunks and hex encode each of them
     """
     if raw_data is None:
@@ -331,11 +350,10 @@ class CommitTimezone(tzinfo):
         h, m = divmod(self.offset.seconds // 60, 60)
         return "<Timezone: %02d:%02d>" % (h, m)
 
-
 DAY_Z = datetime.fromtimestamp(0, CommitTimezone(0, 0))
 
 
-def parse_commit_date(timestamp):
+def parse_commit_date(str timestamp):
     """ Parse date string of authored_at/commited_at
 
     git log time is in the original timezone
@@ -355,11 +373,16 @@ def parse_commit_date(timestamp):
     >>> parse_commit_date('3337145807 +1100') is None
     True
     """
-    ts, tz = timestamp.split()
-    sign = -1 if tz.startswith('-') else 1
+    ts_str, tz = timestamp.split(maxsplit=1)
+    cdef:
+        int sign = -1 if tz.startswith('-') else 1
+        int ts = int(ts_str)
+        int hours = sign * int(tz[-4:-2])
+        int minutes = sign * int(tz[-2])
     try:
-        ts = int(ts)
-        hours, minutes = sign * int(tz[-4:-2]), sign * int(tz[-2])
+        ts = int(ts_str)
+        hours = sign * int(tz[-4:-2])
+        minutes = sign * int(tz[-2])
         dt = datetime.fromtimestamp(ts, CommitTimezone(hours, minutes))
     except ValueError:
         # i.e. if timestamp or timezone is invalid
@@ -371,49 +394,120 @@ def parse_commit_date(timestamp):
 
     return dt
 
+cdef extern from "Python.h":
+    object PyBytes_FromStringAndSize(char *s, Py_ssize_t len)
+
+
+cdef extern from 'vendor/tokyocabinet/tchdb.h':
+    ctypedef struct TCHDB:  # type of structure for a hash database
+        pass
+
+    cdef enum:  # enumeration for open modes
+        HDBOREADER = 1 << 0,  # open as a reader
+        HDBONOLCK = 1 << 4,  # open without locking
+
+    const char *tchdberrmsg(int ecode)
+    TCHDB *tchdbnew()
+    int tchdbecode(TCHDB *hdb)
+    bint tchdbopen(TCHDB *hdb, const char *path, int omode)
+    bint tchdbclose(TCHDB *hdb)
+    # bint tchdbput(TCHDB *hdb, const void *kbuf, int ksiz, const void *vbuf, int vsiz)
+    # bint tchdbout(TCHDB *hdb, const void *kbuf, int ksiz) nogil
+    void *tchdbget(TCHDB *hdb, const void *kbuf, int ksiz, int *sp)
+    bint tchdbiterinit(TCHDB *hdb)
+    void *tchdbiternext(TCHDB *hdb, int *sp)
+    # TCLIST *tchdbfwmkeys(TCHDB *hdb, const void *pbuf, int psiz, int max)
+
+
+cdef class Hash:
+    cdef TCHDB* _db
+
+    def __cinit__(self, char *path, int mode = HDBOREADER | HDBONOLCK):
+        self._db = tchdbnew()
+        if self._db is NULL:
+            raise MemoryError()
+        cdef bint result = tchdbopen(self._db, path, mode)
+        if not result:
+            raise IOError('Failed to open .tch file: ' + self._error())
+
+    def _error(self):
+        cdef int code = tchdbecode(self._db)
+        cdef bytes msg = tchdberrmsg(code)
+        return msg.decode('ascii')
+
+    def __iter__(self):
+        cdef:
+            bint result = tchdbiterinit(self._db)
+            char *buf
+            int sp
+            bytes key
+        if not result:
+            raise IOError('Failed to iterate .tch file: ' + self._error())
+        while True:
+            buf = <char *>tchdbiternext(self._db, &sp)
+            if buf is NULL:
+                break
+            key = PyBytes_FromStringAndSize(buf, sp)
+            free(buf)
+            yield key
+
+    cdef bytes read(self, bytes key):
+        cdef:
+            char *k = key
+            char *buf
+            int sp
+            int ksize=len(key)
+        buf = <char *>tchdbget(self._db, k, ksize, &sp)
+        if buf is NULL:
+            raise ObjectNotFound()
+        cdef bytes value = PyBytes_FromStringAndSize(buf, sp)
+        free(buf)
+        return value
+
+    def __getitem__(self, bytes key):
+        return self.read(key)
+
+    def __del__(self):
+        cdef bint result = tchdbclose(self._db)
+        if not result:
+            raise IOError('Failed to close .tch: ' + self._error())
+
+    def __dealloc__(self):
+        free(self._db)
+
 
 # Pool of open TokyoCabinet databases to save few milliseconds on opening
-_TCH_POOL = {}
+cdef dict _TCH_POOL = {}
 
+def _get_tch(char *path):
+    cdef TCHDB* _db
+    cdef bint result
 
-def _get_tch(path):
-    if not path.endswith('.tch'):
-        path += '.tch'
     if path not in _TCH_POOL:
-        _TCH_POOL[path] = tch.Hash()
-        _TCH_POOL[path].open(path, tch.HDBOREADER | tch.HDBONOLCK)
-        # _TCH_POOL[path].setmutex()
+        _TCH_POOL[path] = Hash(path)
     return _TCH_POOL[path]
 
 
-def read_tch(path, key, silent=False):
+def read_tch(char *path, bytes key):
     """ Read a value from a Tokyo Cabinet file by the specified key
     Main purpose of this method is to cached open .tch handlers
     in _TCH_POOL to speedup reads
     """
-
     try:
         return _get_tch(path)[key]
-    except:
+    except KeyError:
         return None
-        # raise IOError("Tokyocabinet file " + path + " not found")
-    # except KeyError:
-    #   if silent:
-    #       return ''
-    #   raise ObjectNotFound(path + " " + key)
 
 
-def tch_keys(path, key_prefix=''):
-    return _get_tch(path).fwmkeys(key_prefix)
-
-
-def resolve_path(dtype, object_key, use_fnv=False):
+def resolve_path(str dtype, bytes object_key, use_fnv=False):
     # type: (str, str, bool) -> str
-    """ Get path to a file using data type and object key (for sharding) """
+    """ Get path to a file using data type and object key (for sharding)
+    >>> resolve_path()
+    """
     path, prefix_length = PATHS[dtype]
 
-    p = fnvhash.fnv1a_32(object_key) if use_fnv else ord(object_key[0])
-    prefix = p & (2**prefix_length - 1)
+    cdef uint8_t p = fnvhash(object_key) if use_fnv else object_key[0]
+    cdef uint8_t prefix = p & (2**prefix_length - 1)
     return path.format(key=prefix)
 
 
@@ -463,23 +557,26 @@ class _Base(object):
         return read_tch(self.resolve_path(dtype), self.key, silent)
 
     @classmethod
-    def all(cls):
-        """ Iterate all objects of the given type
+    def all_keys(cls):
+        """ Iterate keys of all objects of the given type
 
         This might be useful to get a list of all projects, or a list of
         all file names.
 
         Yields:
-            Project: a project
+            bytes: objects key
         """
         if not cls._keys_registry_dtype:
             raise NotImplemented
 
         base_path, prefix_length = PATHS[cls._keys_registry_dtype]
         for file_prefix in range(2 ** prefix_length):
-            tch_path = base_path.format(key=file_prefix)
-            for key in tch_keys(tch_path):
-                yield cls(key)
+            yield from _get_tch(base_path.format(key=file_prefix))
+
+    @classmethod
+    def all(cls):
+        for key in cls.all_keys():
+            yield cls(key)
 
 
 class GitObject(_Base):
@@ -535,11 +632,13 @@ class GitObject(_Base):
         return resolve_path(dtype, self.bin_sha, self.use_fnv_keys)
 
     def read_tch(self, dtype, silent=True):
+        # type: (str, bool) -> bytes
         """ Resolve the path and read .tch"""
         return read_tch(self.resolve_path(dtype), self.bin_sha, silent)
 
     @cached_property
     def data(self):
+        # type: () -> bytes
         if self.type not in ('commit', 'tree'):
             raise NotImplementedError
         # default implementation will only work for commits and trees
@@ -547,6 +646,7 @@ class GitObject(_Base):
 
     @classmethod
     def string_sha(cls, data):
+        # type: (bytes) -> str
         """Manually compute blob sha from its content passed as `data`.
 
         The main use case for this method is to identify source of a file.
@@ -627,12 +727,12 @@ class Blob(GitObject):
 
     @cached_property
     def position(self):
+        # type: () -> (int, int)
         """ Get offset and length of the blob data in the storage """
         try:
-            offset, length = unber(self.read_tch('blob_offset'))
+            return unber(self.read_tch('blob_offset'))
         except ValueError:  # empty read -> value not found
             raise ObjectNotFound('Blob data not found (bad sha?)')
-        return offset, length
 
     @cached_property
     def data(self):
@@ -877,7 +977,7 @@ class Commit(GitObject):
         for a in attrs:
             setattr(self, a, None)
 
-        self.header, self.full_message = self.data.split("\n\n", 1)
+        self.header, self.full_message = self.data.split('\n\n', 1)
         self.message = self.full_message.split("\n", 1)[0]
         parent_shas = []
         signature = None
@@ -912,14 +1012,12 @@ class Commit(GitObject):
             elif key == "author":
                 # author name can have arbitrary number of spaces while
                 # timestamp is guaranteed to have one, so rsplit
-                chunks = value.rsplit(" ", 2)
-                self.author = chunks[0]
-                self.authored_at = parse_commit_date(" ".join(chunks[1:]))
+                self.author, *time_chunks = value.rsplit(" ", 2)
+                self.authored_at = parse_commit_date(" ".join(time_chunks))
             elif key == "committer":
                 # same logic as author
-                chunks = value.rsplit(" ", 2)
-                self.committer = chunks[0]
-                self.committed_at = parse_commit_date(" ".join(chunks[1:]))
+                self.committer, *time_chunks = value.rsplit(" ", 2)
+                self.committed_at = parse_commit_date(" ".join(time_chunks))
             elif key == 'gpgsig':
                 signature = value
                 reading_signature = True
@@ -1042,8 +1140,7 @@ class Commit(GitObject):
         True
         """
         data = decomp(self.read_tch('commit_projects'))
-        return tuple(project_name
-                     for project_name in (data and data.split(";")) or []
+        return tuple(project_name for project_name in data.split(b";")
                      if project_name and project_name != 'EMPTY')
 
     @property
@@ -1104,9 +1201,9 @@ class Commit(GitObject):
         It should be faster but as of now it is not accurate
         """
         warnings.warn(
-            "This relation is known to miss every first file in all trees. "
-            "Consider using Commit.tree.blobs as a slower but more accurate "
-            "alternative", DeprecationWarning)
+            'This relation is known to miss every first file in all trees. '
+            'Consider using Commit.tree.blobs as a slower but more accurate '
+            'alternative', DeprecationWarning)
         return slice20(self.read_tch('commit_blobs'))
 
     @property
@@ -1124,7 +1221,7 @@ class Commit(GitObject):
     @cached_property
     def files(self):
         data = decomp(self.read_tch('commit_files'))
-        return tuple(file_name 
+        return tuple(file_name
                      for file_name in (data and data.split(";")) or []
                      if file_name and file_name != 'EMPTY')
 
@@ -1144,7 +1241,7 @@ class Project(_Base):
         - Bitbucket: `bb_{user}_{repo}`
         - Bioconductor: `bioconductor.org_{user}_{repo}`
         - kde: `kde.org_{user}_{repo}`
-        - drupal: `drupal.org_{user}_{repo}` 
+        - drupal: `drupal.org_{user}_{repo}`
         - Googlesouce: `android.googlesource.com_{repo}_{user}`
         - Linux kernel: `git.kernel.org_{user}_{repo}`
         - PostgreSQL: `git.postgresql.org_{user}_{repo}`
@@ -1154,7 +1251,7 @@ class Project(_Base):
         - repo.or.cz: `repo.or.cz_{user}_{repo}`
         - Salsa: `salsa.debian.org_{user}_{repo}`
         - SourceForge: `sourceforge.net_{user}_{repo}`
-  
+
     Projects are iterable:
 
         >>> for commit in Project('user2589_minicms'):  # doctest: +SKIP
@@ -1348,7 +1445,7 @@ class Project(_Base):
     @cached_property
     def author_names(self):
         data = decomp(self.read_tch('project_authors'))
-        return tuple(author_name 
+        return tuple(author_name
                      for author_name in (data and data.split(";")) or []
                      if author_name and author_name != 'EMPTY')
 
@@ -1470,211 +1567,18 @@ class Author(_Base):
     def files(self):
         data = decomp(self.read_tch('author_files'))
         return tuple(fname for fname in (data and data.split(";")))
-    
+
     @cached_property
     def project_names(self):
-        """ URIs of projects where author has committed to 
-A generator of all Commit objects authored by the Author
+        """ URIs of projects where author has committed to
+        A generator of all Commit objects authored by the Author
         """
         data = decomp(self.read_tch('author_projects'))
         return tuple(project_name
                      for project_name in (data and data.split(";") or [])
                      if project_name and project_name != 'EMPTY')
-    
+
     @cached_property
     def torvald(self):
         data = decomp(self.read_tch('author_trpath'))
         return tuple(path for path in (data and data.split(";")))
-
-
-class Clickhouse_DB(object):
-    """ Clickhouse_DB class represents an instance of the clickhouse client
-        It is initialized with a table name and a host name for the database
-    """
-    def __init__(self, tb_name, db_host):
-        self.tb_name = tb_name
-        self.db_host = db_host
-        self.client_settings = {
-            'strings_as_bytes': True, 'max_block_size': 100000}
-        self.client = clickhouse.Client(
-            host=self.db_host, settings=self.client_settings)
-
-    def query(self, query_str):
-        return self.client.execute(query_str)
-    
-    def query_iter(self, query_str):
-        for row in self.client.execute_iter(query_str):
-            yield row
-
-    def query_select(self, s_col, s_from, s_start, s_end):
-        # normal query
-        s_where = self.__where_condition(s_start, s_end)
-        query_str = 'select {} from {} where {}'.format(s_col, s_from, s_where)
-        return self.client.execute(query_str)
-        
-    def query_select_iter(self, s_col, s_from, s_start, s_end):
-        # iterative query
-        s_where = self.__where_condition(s_start, s_end)
-        query_str = 'select {} from {} where {}'.format(s_col, s_from, s_where)
-        for row in self.client.execute_iter(query_str):
-            yield row
-    
-    def __where_condition(self, start, end):
-        # checks if start and end date or time is valid and build the where
-        # clause
-        dt = 'time'
-        if not self.__check_time(start, end):
-            dt = 'date'
-            start = 'toDate(\'{}\')'.format(start)
-            end = 'toDate(\'{}\')'.format(end) if end else None
-            
-        if end is None:
-            return '{}={}'.format(dt, start)
-        return '{}>={}  AND {}<={}'.format(dt, start, dt, end)
-
-    @staticmethod
-    def __check_time(start, end):
-        # make sure start and end are of the same type and must be either
-        # strings or ints
-        if start is None:
-            raise ValueError('start time cannot be None')
-        if not isinstance(start, (int, six.string_types)):
-            raise ValueError('start time must be either int or string')
-        if end is not None and not isinstance(end, (int, six.string_types)):
-            raise ValueError('end time must be either int or string')
-        if end is not None and type(start) is not type(end):
-            raise ValueError('start and end must be of the same type')
-        return isinstance(start, int)
-
-
-class Time_commit_info(Clickhouse_DB):
-    """ Time_commit_info class is initialized with table name and database host
-    name the default table for commits is commits_all, and the default host is
-    localhost No connection is established before the query is made.
-
-    The 'commits_all' table description is the following:
-        |__name___|______type_______|
-        | sha1    | FixedString(20) |
-        | time    | Int32           |
-        | tree    | FixedString(20) |
-        | author  | String          |
-        | parent  | String          |
-        | comment | String          |
-        | content | String          |
-    """
-    columns = ['sha1', 'time', 'tree', 'author', 'parent', 'comment', 'content']
-
-    def __init__(self, tb_name='commits_all', db_host='localhost'):
-        super(Time_commit_info, self).__init__(tb_name, db_host)
-    
-    def commit_counts(self, start, end=None):
-        """ return the count of commits between given date and time
-        >>> t = Time_commit_info()
-        >>> t.commit_counts(1568656268)
-        8
-        """
-        return self.query_select('count(*)', self.tb_name, start, end)[0][0]
-    
-    def commits(self, start, end=None):
-        """ return a generator of Commit instances within a given date and time
-        >>> t = Time_commit_info()
-        >>> commits = t.commits_iter(1568656268)
-        >>> c = commits.next()
-        >>> type(c)
-        <class 'oscar.Commit'>
-        >>> c.parent_shas
-        ('9c4cc4f6f8040ed98388c7dedeb683469f7210f5',)
-        """
-        for sha in self.commits_shas(start, end):
-            yield Commit(sha)
-
-    def commits_shas(self, start, end=None):
-        """ return a generator of all sha1 within the given time and date
-        >>> t = Time_commit_info()
-        >>> for sha1 in t.commits_shas(1568656268):
-        ...     print(sha1)
-        """
-        for row in self.query_select_iter(
-                'lower(hex(sha1))', self.tb_name, start, end):
-            yield row[0]
-
-
-class Time_project_info(Clickhouse_DB):
-    """ Time_project_info class is initialized with table name and database host
-    name. The default table name for projects is b2cPtaPkgR_all, and the default
-    database name is localhost. This class contains methods to query for project
-    data.
-        The table descrption is the following:
-        |___name___|______type_______|
-        | blob     | FixedString(20) |
-        | commit   | FixedString(20) |
-        | project  | String          |
-        | time     | UInt32          |
-        | author   | String          |
-        | language | String          |
-        | deps     | String          |
-    """
-    columns = ('blob', 'commit', 'project', 'time', 'author', 'language',
-               'deps')
-
-    def __init__(self, tb_name='b2cPtaPkgR_all', db_host='localhost'):
-        super(Time_project_info, self).__init__(tb_name, db_host)
-    
-    def get_values_iter(self, cols, start, end):
-        """ return a generator for table rows for a given time interval
-        >>> p = Time_project_info()
-        >>> rows = p.get_values_iter(['time','project'], 1568571909, 1568571910)
-        >>> for row in rows:
-        ...     print(row)
-        ...
-        (1568571909, 'mrtrevanderson_CECS_424')
-        (1568571909, 'gitlab.com_surajpatel_tic_toc_toe')
-        (1568571909, 'gitlab.com_surajpatel_tic_toc_toe')
-        ...
-        """
-        cols = self.__wrap_cols(cols)
-        return self.query_select_iter(', '.join(cols), self.tb_name, start, end)
-
-    def project_timeline(self, cols, repo):
-        """ return a generator for all rows given a repo name (ordered by time)
-        >>> p = Time_project_info()
-        >>> rows = p.project_timeline(
-        ...     ['time','project'], 'mrtrevanderson_CECS_424')
-        >>> for row in rows:
-        ...     print(row)
-        ...
-        (1568571909, 'mrtrevanderson_CECS_424')
-        (1568571909, 'mrtrevanderson_CECS_424')
-        (1568571909, 'mrtrevanderson_CECS_424')
-        ...
-        """
-        cols = self.__wrap_cols(cols)
-        query_str = 'SELECT {} FROM {} WHERE project=\'{}\' ORDER BY time'\
-                    .format(', '.join(cols), self.tb_name, repo)
-        return self.query_iter(query_str)
-
-    def author_timeline(self, cols, author):
-        """ return a generator for all rows given an author (ordered by time)
-        >>> p = Time_project_info()
-        >>> rows = p.author_timeline(
-        ...     ['time', 'project'], 'Andrew Gacek <andrew.gacek@gmail.com>')
-        >>> for row in rows:
-        ...     print(row)
-        ...
-        (49, 'smaccm_camera_demo')
-        (677, 'smaccm_vm_hack')
-        (1180017188, 'teyjus_teyjus')
-        ... 
-        """
-        cols = self.__wrap_cols(cols)
-        query_str = 'SELECT {} FROM {} WHERE author=\'{}\' ORDER BY time'\
-                    .format(', '.join(cols), self.tb_name, author)
-        return self.query_iter(query_str)
-
-    @staticmethod
-    def __wrap_cols(cols):
-        """ wraps cols to select before querying """
-        for i in range(len(cols)):
-            if cols[i] == 'commit' or cols[i] == 'blob':
-                cols[i] = 'lower(hex({}))'.format(cols[i])
-        return cols

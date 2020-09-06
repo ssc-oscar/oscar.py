@@ -1,17 +1,18 @@
-import requests
+"""
+Unit tests - only to check functions do what they are expected to do.
+Please avoid checking the integrity of the dataset.
+"""
 
 from collections import defaultdict
-import doctest
 import logging
-import os
 import unittest
-import requests
 
 from oscar import *
-#from dpg import *
+
 
 class TestStatus(unittest.TestCase):
     """Check what data/relations are available"""
+
     def test_status(self):
         # this test never fails. Instead, it logs status to stderr
         levels = {
@@ -62,58 +63,62 @@ class TestRelations(unittest.TestCase):
     https://bitbucket.org/swsc/lookup/src/master/README.md
 
     author2commit   - done
-	author2project  - done
+    author2project  - done
     author2file     - done // Fail
     blob2commit     - done // 2x  Fails
-	cmt_time_author - needs testing
-	cmt_head	    - needs testing
+    cmt_time_author - needs testing
+    cmt_head	    - needs testing
     commit2blob     - done // Fail
     commit2project  - done
     commit2children - done
     file2commit     - done
     project2commit  - done
-	project_url	    - done
+    project_url	    - done
     """
+
     def test_project_url(self):
-		proj = 'CS340-19_MoonMan'
-		url = Project(proj).toURL()
-		request = requests.get(url)
-		self.assertIs(request.status_code == 200, True,
-					"%s can supposedly be found at %s, but website is not a legitimate URL"
-					% (proj, url))
+        proj = 'CS340-19_MoonMan'
+        url = Project(proj).toURL()
+        request = requests.get(url)
+        self.assertEqual(
+            request.status_code,  200,
+            "%s can supposedly be found at %s, but website is not a legitimate "
+            "URL" % (proj, url))
 
     def test_author_torvald(self):
-		pass		
+        pass
 
     def test_commit_head(self):
-		commit = 'e38126dbca6572912013621d2aa9e6f7c50f36bc'
-		head, depth = Commit_info(commit).head
-		self.assertIs(tuple(Commit(commit).parent_shas), False, 
-					"c2hFullO lists %s as the head commit, but %s has parent shas"
-					  % (head, head))
+        commit = 'e38126dbca6572912013621d2aa9e6f7c50f36bc'
+        head, depth = Commit_info(commit).head
+        # WTF?
+        self.assertIs(
+            tuple(Commit(commit).parent_shas), False,
+            "c2hFullO lists %s as the head commit, but %s has parent shas"
+            "" % (head, head))
 
     def test_commit_time_author(self):
-		commit = 'e38126dbca6572912013621d2aa9e6f7c50f36bc'
-		time, author = Commit_info(commit).time_author
-		self.assertEqual(author, Commit(commit).author,
-				"c2taFullO lists commit author as %s, but the author listed in Cmt2Auth is %s"
-				 % (author, Commit(commit).author))
+        commit = 'e38126dbca6572912013621d2aa9e6f7c50f36bc'
+        time, author = Commit_info(commit).time_author
+        self.assertEqual(
+            author, Commit(commit).author,
+            "c2taFullO lists commit author as %s, but the author listed in "
+            "Cmt2Auth is %s" % (author, Commit(commit).author))
 
     def test_author_projects(self):
-		""" Test dpg.py for list author names for a project, and whether other projects for 
-			those same authors can be listed. """
-		proj = 'CS340-19_students'
-		print("List of " + proj + " authors:")
-		print("--------------------------------------")
-		for author in Project(proj).author_names:
-			print(author)
-			print("|-> also worked on these projects: "),
-			for p_name in Author(author.encode('utf-8')).project_names:
-				if p_name == proj:
-					continue
-				else:
-					print(p_name), 
-			print("\n")
+        """ Test dpg.py for list author names for a project, and whether other
+        projects for those same authors can be listed. """
+        proj = 'CS340-19_students'
+        print("List of " + proj + " authors:")
+        print("--------------------------------------")
+        for author in Project(proj).author_names:
+            print(author)
+            print("|-> also worked on these projects: "),
+            for p_name in Author(author.encode('utf-8')).project_names:
+                if p_name == proj:
+                    continue
+                print(p_name),
+            print("\n")
 
     def test_author_commit(self):
         """ Test if all commits made by an author are listed in Auth2Cmt """
@@ -325,6 +330,4 @@ class TestRelations(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    import oscar
-    doctest.testmod(oscar)
     unittest.main()
