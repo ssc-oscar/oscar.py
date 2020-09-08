@@ -357,7 +357,7 @@ class CommitTimezone(tzinfo):
 DAY_Z = datetime.fromtimestamp(0, CommitTimezone(0, 0))
 
 
-def parse_commit_date(str timestamp, str tz):
+def parse_commit_date(bytes timestamp, bytes tz):
     """ Parse date string of authored_at/commited_at
 
     git log time is in the original timezone
@@ -373,9 +373,9 @@ def parse_commit_date(str timestamp, str tz):
     Returns:
         Optional[datetime.datetime]: UTC datetime
 
-    >>> parse_commit_date('1337145807', '+1130')
+    >>> parse_commit_date(b'1337145807', b'+1130')
     datetime.datetime(2012, 5, 16, 16, 23, 27, tzinfo=<Timezone: 11:30>)
-    >>> parse_commit_date('3337145807', '+1100') is None
+    >>> parse_commit_date(b'3337145807', b'+1100') is None
     True
     """
     cdef:
@@ -749,24 +749,25 @@ class Tree(GitObject):
         cdef:
             uint32_t i = 0
             uint32_t start
+            uint32_t data_len = len(self.data)
             bytes fname
             bytes sha
-        while i < len(self.data):
+        while i < data_len:
             # mode
             start = i
-            while i < len(data) and data[i] != b' ':
+            while i < data_len and data[i] != b' ':
                 i += 1
             mode = bytes(data[start:i])
             i += 1
             # file name
             start = i
-            while i < len(data) and data[i] != 0:
+            while i < data_len and data[i] != 0:
                 i += 1
             fname = bytes(data[start:i])
             # sha
             start = i + 1
             i += 21
-            sha = bytes(data[start:i])
+            sha = bytes(data[start:min(i, data_len)])
             yield mode, fname, sha
 
     def __len__(self):
@@ -792,7 +793,7 @@ class Tree(GitObject):
         Yields:
             Tuple[str, str, str]: (mode, filename, blob/tree sha)
 
-        >>> c = Commit("1e971a073f40d74a1e72e07c682e1cba0bae159b")
+        >>> c = Commit('1e971a073f40d74a1e72e07c682e1cba0bae159b')
         >>> len(list(c.tree.traverse()))
         8
         >>> c = Commit('e38126dbca6572912013621d2aa9e6f7c50f36bc')
@@ -803,21 +804,11 @@ class Tree(GitObject):
             yield mode, fname, sha
             # trees are always 40000:
             # https://stackoverflow.com/questions/1071241
-            if mode == "40000":
+            if mode == b'40000':
                 for mode2, fname2, sha2 in Tree(sha).traverse():
-                    yield mode2, fname + '/' + fname2, sha2
+                    yield mode2, fname + b'/' + fname2, sha2
 
-    @property
-    def full(self):
-        """ Formatted tree content, including recursive files and subtrees
-        It is intended for debug purposes only.
-
-        :return: multiline string, where each line contains mode, name and sha,
-            with subtrees expanded
-        """
-        files = sorted(self.traverse(), key=lambda x: x[1])
-        return b'\n'.join(b' '.join(line) for line in files)
-
+    @cached_property
     def str(self):
         """
         >>> print(Tree('954829887af5d9071aa92c427133ca2cdd0813cc'))
@@ -830,7 +821,7 @@ class Tree(GitObject):
         100644 utils.py 2cfbd298f18a75d1f0f51c2f6a1f2fcdf41a9559
         100644 views.py 973a78a1fe9e69d4d3b25c92b3889f7e91142439
         """
-        return b'\n'.join(b' '.join(line[:-1] + [binascii.hexlify(line[-1])])
+        return b'\n'.join(b' '.join(line[:-1] + (binascii.hexlify(line[-1]),))
                           for line in self).decode('ascii')
 
     @cached_property
@@ -897,7 +888,7 @@ class Commit(GitObject):
 
         Commit: https://github.com/user2589/minicms/commit/e38126db
         >>> c = Commit('e38126dbca6572912013621d2aa9e6f7c50f36bc')
-        >>> c.author.startswith('Marat')
+        >>> c.author.startswith(b'Marat')
         True
         >>> c.authored_at
         datetime.datetime(2012, 5, 19, 1, 14, 8, tzinfo=<Timezone: 11:00>)
@@ -913,28 +904,29 @@ class Commit(GitObject):
         attrs = ('tree', 'parent_shas', 'message', 'full_message', 'author',
                  'committer', 'authored_at', 'committed_at', 'signature')
         if attr not in attrs:
-            raise AttributeError
+            raise AttributeError(
+                '\'%s\'has no attribute \'%s\'' % (self.__class__.__name__, attr))
 
         for a in attrs:
             setattr(self, a, None)
 
-        self.header, self.full_message = self.data.split('\n\n', 1)
-        self.message = self.full_message.split("\n", 1)[0]
-        parent_shas = []
-        signature = None
-        reading_signature = False
-        for line in self.header.split("\n"):
+        self.header, self.full_message = self.data.split(b'\n\n', 1)
+        self.message = self.full_message.split(b'\n', 1)[0]
+        cdef list parent_shas = []
+        cdef bytes signature = None
+        cdef bint reading_signature = False
+        for line in self.header.split(b'\n'):
             if reading_signature:
                 # examples:
                 #   1cc6f4418dcc09f64dcbb0410fec76ceaa5034ab
                 #   cbbc685c45bdff4da5ea0984f1dd3a73486b4556
                 signature += line
-                if line.strip() == "-----END PGP SIGNATURE-----":
+                if line.strip() == b'-----END PGP SIGNATURE-----':
                     self.signature = signature
                     reading_signature = False
                 continue
 
-            if line.startswith(" "):  # mergetag object, not supported (yet?)
+            if line.startswith(b' '):  # mergetag object, not supported (yet?)
                 # example: c1313c68c7f784efaf700fbfb771065840fc260a
                 continue
 
@@ -942,24 +934,25 @@ class Commit(GitObject):
             if not line:  # sometimes there is an empty line after gpgsig
                 continue
             try:
-                key, value = line.split(" ", 1)
+                key, value = line.split(b' ', 1)
             except ValueError:
-                raise ValueError("Unexpected header in commit " + self.sha)
+                raise ValueError('Unexpected header in commit ' + self.sha)
 
-            if key == "tree":
-                self.tree = Tree(value)
-            elif key == "parent":  # multiple parents possible
-                parent_shas.append(value)
-            elif key == "author":
+            if key == b'tree':
+                # value is bytes holding hex values -> need to decode
+                self.tree = Tree(binascii.unhexlify(value))
+            elif key == b'parent':  # multiple parents possible
+                parent_shas.append(binascii.unhexlify(value))
+            elif key == b'author':
                 # author name can have arbitrary number of spaces while
                 # timestamp is guaranteed to have one, so rsplit
-                self.author, timestamp, timezone = value.rsplit(" ", 2)
+                self.author, timestamp, timezone = value.rsplit(b' ', 2)
                 self.authored_at = parse_commit_date(timestamp, timezone)
-            elif key == "committer":
+            elif key == b'committer':
                 # same logic as author
-                self.committer, timestamp, timezone = value.rsplit(" ", 2)
+                self.committer, timestamp, timezone = value.rsplit(b' ', 2)
                 self.committed_at = parse_commit_date(timestamp, timezone)
-            elif key == 'gpgsig':
+            elif key == b'gpgsig':
                 signature = value
                 reading_signature = True
         self.parent_shas = tuple(parent_shas)

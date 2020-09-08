@@ -22,10 +22,10 @@ class TestBasics(unittest.TestCase):
         self.assertEqual(repr(ctz), '<Timezone: 09:30>')
 
     def test_parse_commit_date(self):
-        cdate = parse_commit_date('1337145807', '+1100')
-        self.assertEqual(cdate.strftime("%Y-%m-%d %H:%M:%S %z"),
+        cdate = parse_commit_date(b'1337145807', b'+1100')
+        self.assertEqual(cdate.strftime('%Y-%m-%d %H:%M:%S %z'),
                          '2012-05-16 16:23:27 +1100')
-        self.assertIsNone(parse_commit_date('3337145807', '+1100'))
+        self.assertIsNone(parse_commit_date(b'3337145807', b'+1100'))
 
 
 class TestHash(unittest.TestCase):
@@ -75,6 +75,26 @@ class TestCommit(unittest.TestCase):
             b'committer Pavel Puchkin <neoascetic@gmail.com> 1375321597 +1100\n'
             b'\nLicense changed :P\n', data)
 
+    def test_attrs(self):
+        c = Commit('e38126dbca6572912013621d2aa9e6f7c50f36bc')
+        self.assertTrue(c.author.startswith('Marat'))
+        self.assertTrue(c.committer.startswith('Marat'))
+        self.assertEqual(c.message, b'support no i18n')
+        parent_sha = b'ab124ab4baa42cd9f554b7bb038e19d4e3647957'
+        self.assertEqual(c.parent_shas, (binascii.unhexlify(parent_sha),))
+        self.assertEqual(c.committed_at.strftime('%Y-%m-%d %H:%M:%S %z'),
+                         '2012-05-18 03:14:08 -1100')
+        self.assertEqual(c.authored_at.strftime('%Y-%m-%d %H:%M:%S %z'),
+                         '2012-05-18 03:14:08 -1100')
+        self.assertIsInstance(c.tree, Tree)
+        self.assertEqual(c.tree.sha, '6845f55f47ddfdbe4628a83fdaba35fa4ae3c894')
+        self.assertRaises(AttributeError, lambda: c.arbitrary_attr)
+        self.assertIsNone(c.signature)
+
+        c = Commit('1cc6f4418dcc09f64dcbb0410fec76ceaa5034ab')
+        self.assertIsInstance(c.signature, bytes)
+        self.assertGreater(len(c.signature), 450)  # 454 for this commit
+
 
 class TestBlob(unittest.TestCase):
     # GitObject: all, instantiate from str/bytes
@@ -115,20 +135,25 @@ class TestTree(unittest.TestCase):
             b'\x00F\xaa\xf0q\xf1\xb8Y\xc5\xbfE\'3\xc2X<p\xd9,\xd0\xc8'
         ))
 
+    def test_files(self):
+        tree = Tree('d4ddbae978c9ec2dc3b7b3497c2086ecf7be7d9d')
+        self.assertIn(b'.gitignore', tree.files)
+        self.assertNotIn(b'minicms', tree.files)  # folders are not included
+
     def test_in(self):
         tree = Tree('d4ddbae978c9ec2dc3b7b3497c2086ecf7be7d9d')
         self.assertIn(b'.gitignore', tree)
         self.assertNotIn(File(b'.keep'), tree)
-        self.assertIn('0046aaf071f1b859c5bf452733c2583c70d92cd0c8', tree)
-        self.assertIn(Blob('0046aaf071f1b859c5bf452733c2583c70d92cd0c8'), tree)
+        self.assertIn('46aaf071f1b859c5bf452733c2583c70d92cd0c8', tree)
+        self.assertIn(Blob('46aaf071f1b859c5bf452733c2583c70d92cd0c8'), tree)
 
     def test_len(self):
         tree = Tree('d4ddbae978c9ec2dc3b7b3497c2086ecf7be7d9d')
-        self.assertEqual(len(tree), 6)
+        self.assertEqual(len(tree), 16)
         
     def test_pprint(self):
         self.assertEqual(
-            Tree('954829887af5d9071aa92c427133ca2cdd0813cc').str(),
+            Tree('d4ddbae978c9ec2dc3b7b3497c2086ecf7be7d9d').str,
             '100755 .gitignore 83d22195edc1473673f1bf35307aea6edf3c37e3\n'
             '100644 COPYING fda94b84122f6f36473ca3573794a8f2c4f4a58c\n'
             '100644 MANIFEST.in b724831519904e2bc25373523b368c5d41dc368e\n'
