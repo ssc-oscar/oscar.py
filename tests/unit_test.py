@@ -1,13 +1,16 @@
+
+# cython: language_level=3str
 """
 Unit tests - only to check functions do what they are expected to do.
 Please refrain from checking integrity of the dataset.
 """
+from __future__ import unicode_literals
 
 import pyximport
 # Cython caches compiled files, so even if the main file did change but the
 # test suite didn't, it won't recompile. More details in this SO answer:
 # https://stackoverflow.com/questions/42259741/
-pyximport.install(setup_args={"script_args": ["--force"]}, language_level=3)
+pyximport.install(setup_args={"script_args": ["--force"]}, language_level='3str')
 
 from oscar import *
 from .unit_test_cy import *
@@ -19,10 +22,10 @@ class TestBasics(unittest.TestCase):
         self.assertEqual(repr(ctz), '<Timezone: 09:30>')
 
     def test_parse_commit_date(self):
-        cdate = parse_commit_date('1337145807 +1100')
+        cdate = parse_commit_date('1337145807', '+1100')
         self.assertEqual(cdate.strftime("%Y-%m-%d %H:%M:%S %z"),
                          '2012-05-16 16:23:27 +1100')
-        self.assertIsNone(parse_commit_date('3337145807 +1100'))
+        self.assertIsNone(parse_commit_date('3337145807', '+1100'))
 
 
 class TestHash(unittest.TestCase):
@@ -39,24 +42,99 @@ class TestHash(unittest.TestCase):
         self.assertEqual(self.db[k], b'\x00')
 
         # reading all keys
+        # TODO: re-enable once done debugging
         keys = list(self.db)
         self.assertGreaterEqual(len(keys), 14620535)
 
 
 class TestBase(unittest.TestCase):
+    # there is nothing testable at this class right now
     pass
 
 
 class TestCommit(unittest.TestCase):
-    pass
+    def test_init(self):
+        sha = '05cf84081b63cda822ee407e688269b494a642de'
+        bin_sha = b'\x05\xcf\x84\x08\x1b\x63\xcd\xa8\x22\xee' \
+                  b'\x40\x7e\x68\x82\x69\xb4\x94\xa6\x42\xde'
+        self.assertEqual(GitObject(sha).sha, sha)
+        self.assertEqual(GitObject(sha).bin_sha, bin_sha)
+        self.assertRaises(ValueError, lambda: GitObject('05cf84081b63cda822ee'))
+
+    def test_eq(self):
+        sha = 'f2a7fcdc51450ab03cb364415f14e634fa69b62c'
+        self.assertEqual(Commit(sha), Commit(sha))
+        self.assertNotEqual(Commit(sha), Blob(sha))
+
+    def test_data(self):
+        data = Commit('f2a7fcdc51450ab03cb364415f14e634fa69b62c').data
+        self.assertEqual(
+            b'tree d4ddbae978c9ec2dc3b7b3497c2086ecf7be7d9d\n'
+            b'parent 66acf0a046a02b48e0b32052a17f1e240c2d7356\n'
+            b'author Pavel Puchkin <neoascetic@gmail.com> 1375321509 +1100\n'
+            b'committer Pavel Puchkin <neoascetic@gmail.com> 1375321597 +1100\n'
+            b'\nLicense changed :P\n', data)
 
 
 class TestBlob(unittest.TestCase):
-    pass
+    # GitObject: all, instantiate from str/bytes
+    def test_string_sha(self):
+        self.assertEqual(Blob.string_sha(b'Hello world!'),
+                         '6769dd60bdf536a83c9353272157893043e9f7d0')
+
+    def test_file_sha(self):
+        self.assertEqual(Blob.file_sha('LICENSE'),
+                         '94a9ed024d3859793618152ea559a168bbcbb5e2')
+
+    def test_len(self):
+        sha = '83d22195edc1473673f1bf35307aea6edf3c37e3'
+        self.assertEqual(len(Blob(sha)), 42)
+
+    def test_data(self):
+        # blob has a different .data implementation
+        sha = '83d22195edc1473673f1bf35307aea6edf3c37e3'
+        self.assertEqual(
+            Blob(sha).data, b'*.egg-info/\ndist/\nbuild/\n*.pyc\n*.mo\n*.gz\n')
 
 
 class TestTree(unittest.TestCase):
-    pass
+    def test_data(self):
+        tree = Tree("d4ddbae978c9ec2dc3b7b3497c2086ecf7be7d9d")
+        self.assertEqual(tree.data, (
+            b'100755 .gitignore'
+            b'\x00\x83\xd2!\x95\xed\xc1G6s\xf1\xbf50z\xean\xdf<7\xe3'
+            b'100644 COPYING'
+            b'\x00\xfd\xa9K\x84\x12/o6G<\xa3W7\x94\xa8\xf2\xc4\xf4\xa5\x8c'
+            b'100644 MANIFEST.in'
+            b'\x00\xb7$\x83\x15\x19\x90N+\xc2SsR;6\x8c]A\xdc6\x8e'
+            b'100644 README.rst'
+            b'\x00#JWS\x8f\x15\xd7/\x00`;\xf0\x86\xb4e\xb0\xf2\xcd\xa7\xb5'
+            b'40000 minicms'
+            b'\x00\x95H)\x88z\xf5\xd9\x07\x1a\xa9,Bq3\xca,\xdd\x08\x13\xcc'
+            b'100644 setup.py'
+            b'\x00F\xaa\xf0q\xf1\xb8Y\xc5\xbfE\'3\xc2X<p\xd9,\xd0\xc8'
+        ))
+
+    def test_in(self):
+        tree = Tree('d4ddbae978c9ec2dc3b7b3497c2086ecf7be7d9d')
+        self.assertIn(b'.gitignore', tree)
+        self.assertNotIn(File(b'.keep'), tree)
+        self.assertIn('0046aaf071f1b859c5bf452733c2583c70d92cd0c8', tree)
+        self.assertIn(Blob('0046aaf071f1b859c5bf452733c2583c70d92cd0c8'), tree)
+
+    def test_len(self):
+        tree = Tree('d4ddbae978c9ec2dc3b7b3497c2086ecf7be7d9d')
+        self.assertEqual(len(tree), 6)
+        
+    def test_pprint(self):
+        self.assertEqual(
+            Tree('954829887af5d9071aa92c427133ca2cdd0813cc').str(),
+            '100755 .gitignore 83d22195edc1473673f1bf35307aea6edf3c37e3\n'
+            '100644 COPYING fda94b84122f6f36473ca3573794a8f2c4f4a58c\n'
+            '100644 MANIFEST.in b724831519904e2bc25373523b368c5d41dc368e\n'
+            '100644 README.rst 234a57538f15d72f00603bf086b465b0f2cda7b5\n'
+            '40000 minicms 954829887af5d9071aa92c427133ca2cdd0813cc\n'
+            '100644 setup.py 46aaf071f1b859c5bf452733c2583c70d92cd0c8')
 
 #
 # class TestRelations(unittest.TestCase):

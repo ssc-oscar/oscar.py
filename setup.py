@@ -1,4 +1,5 @@
 
+# cython: language_level=3str
 import re
 from setuptools import Extension, setup
 

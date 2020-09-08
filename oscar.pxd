@@ -1,4 +1,5 @@
 
+# cython: language_level=3str
 from libc.stdint cimport uint32_t
 
 cdef unber(bytes buf)
