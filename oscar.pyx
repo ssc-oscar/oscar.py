@@ -177,23 +177,25 @@ PATHS = _get_paths({
 # Prefixes have been deprecated by replacing them with the string resembling
 # actual URL
 URL_PREFIXES = {
-    'bitbucket.org': b'bitbucket.org',
-    'gitlab.com': b'gitlab.com',
-    'android.googlesource.com': b'android.googlesource.com',
-    'bioconductor.org': b'bioconductor.org',
-    'drupal.com': b'git.drupal.org',
-    'git.eclipse.org': b'git.eclipse.org',
-    'git.kernel.org': b'git.kernel.org',
-    'git.postgresql.org': b'git.postgresql.org',
-    'git.savannah.gnu.org': b'git.savannah.gnu.org',
-    'git.zx2c4.com': b'git.zx2c4.com',
-    'gitlab.gnome.org': b'gitlab.gnome.org',
-    'kde.org': b'anongit.kde.org',
-    'repo.or.cz': b'repo.or.cz',
-    'salsa.debian.org': b'salsa.debian.org',
-    'sourceforge.net': b'git.code.sf.net/p'
+    b'bitbucket.org': b'bitbucket.org',
+    b'gitlab.com': b'gitlab.com',
+    b'android.googlesource.com': b'android.googlesource.com',
+    b'bioconductor.org': b'bioconductor.org',
+    b'drupal.com': b'git.drupal.org',
+    b'git.eclipse.org': b'git.eclipse.org',
+    b'git.kernel.org': b'git.kernel.org',
+    b'git.postgresql.org': b'git.postgresql.org',
+    b'git.savannah.gnu.org': b'git.savannah.gnu.org',
+    b'git.zx2c4.com': b'git.zx2c4.com',
+    b'gitlab.gnome.org': b'gitlab.gnome.org',
+    b'kde.org': b'anongit.kde.org',
+    b'repo.or.cz': b'repo.or.cz',
+    b'salsa.debian.org': b'salsa.debian.org',
+    b'sourceforge.net': b'git.code.sf.net/p'
 }
-
+IGNORED_AUTHORS = (
+    b'GitHub Merge Button <merge-button@github.com>'
+)
 
 class ObjectNotFound(KeyError):
     pass
@@ -1075,7 +1077,7 @@ class Commit(GitObject):
         True
         """
         data = decomp(self.read_tch('commit_projects'))
-        return tuple(project_name for project_name in data.split(b";")
+        return tuple(project_name for project_name in data.split(b';')
                      if project_name and project_name != 'EMPTY')
 
     @property
@@ -1120,7 +1122,7 @@ class Commit(GitObject):
     @cached_property
     def changed_file_names(self):
         data = decomp(self.read_tch('commit_files'))
-        return tuple((data and data.split(";")) or [])
+        return tuple((data and data.split(b';')) or [])
 
     def files_changed(self):
         return (File(filename) for filename in self.changed_file_names)
@@ -1135,6 +1137,7 @@ class Commit(GitObject):
         When this relation passes the test, please replace blob_sha with it
         It should be faster but as of now it is not accurate
         """
+        # still true as of Sep 2020
         warnings.warn(
             'This relation is known to miss every first file in all trees. '
             'Consider using Commit.tree.blobs as a slower but more accurate '
@@ -1211,19 +1214,16 @@ class Project(_Base):
                 author = c.author
             except ObjectNotFound:
                 continue
-            if author != 'GitHub Merge Button <merge-button@github.com>':
+            if author not in IGNORED_AUTHORS:
                 yield c
 
     def __contains__(self, item):
         if isinstance(item, Commit):
             key = item.key
-        elif isinstance(item, str):
-            if isinstance(item, bytes) and len(item) == 20:
-                key = item
-            elif isinstance(item, str) and len(item) == 40:
-                key = binascii.unhexlify(item)
-            else:
-                return False
+        elif isinstance(item, bytes) and len(item) == 20:
+            key = item
+        elif isinstance(item, str) and len(item) == 40:
+            key = binascii.unhexlify(item)
         else:
             return False
         return key in self.commit_shas
@@ -1290,14 +1290,14 @@ class Project(_Base):
     def tail(self):
         """ Get the first commit SHA by following first parents
 
-        >>> Project('user2589_minicms').tail
+        >>> Project(b'user2589_minicms').tail
         '1e971a073f40d74a1e72e07c682e1cba0bae159b'
         """
-        commits = {c.sha: c for c in self.commits}
+        commits = {c.bin_sha: c for c in self.commits}
         pts = set(c.parent_shas[0] for c in commits.values() if c.parent_shas)
-        for sha, c in commits.items():
-            if sha in pts and not c.parent_shas:
-                return sha
+        for bin_sha, c in commits.items():
+            if bin_sha in pts and not c.parent_shas:
+                return bin_sha
 
     @property
     def commits_fp(self):
@@ -1305,14 +1305,16 @@ class Project(_Base):
         https://git-scm.com/docs/git-log#git-log---first-parent .
         Thus, you only get a small subset of the full commit tree:
 
-        >>> p = Project('user2589_minicms')
+        >>> p = Project(b'user2589_minicms')
         >>> set(c.sha for c in p.commits_fp).issubset(p.commit_shas)
         True
 
         In scenarios where branches are not important, it can save a lot
         of computing.
 
-        Note: commits will come in order from the latest to the earliest.
+        Yields:
+            Commit: binary commit shas, following first parent only,
+                from the latest to the earliest.
         """
         # Simplified version of self.head():
         #   - slightly less precise,
@@ -1330,8 +1332,10 @@ class Project(_Base):
 
         # at this point we know all commits are in the dataset
         # (validated in __iter___)
+        result = []
         commits = {c.sha: c for c in self.commits}
         commit = max(commits.values(), key=lambda c: c.authored_at or DAY_Z)
+
         while commit:
             try:  # here there is no guarantee commit is in the dataset
                 first_parent = commit.parent_shas and commit.parent_shas[0]
@@ -1352,18 +1356,21 @@ class Project(_Base):
         'http://github.com/CS340-19/lectures'
         """
         prefix, body = self.uri.split(b'_', 1)
-        if (prefix in URL_PREFIXES
-                and (prefix == b'sourceforge.net' or b'_' in body)):
+        if prefix == b'sourceforge.net':
             platform = URL_PREFIXES[prefix]
+        elif prefix in URL_PREFIXES and b'_' in body:
+            platform = URL_PREFIXES[prefix]
+            body = body.replace(b'_', b'/', 1)
         else:
             platform = b'github.com'
+            body = self.uri.replace(b'_', b'/', 1)
         return b'/'.join((b'https:/', platform, body))
 
     @cached_property
     def author_names(self):
         data = decomp(self.read_tch('project_authors'))
         return tuple(author_name
-                     for author_name in (data and data.split(";")) or []
+                     for author_name in (data and data.split(b';')) or []
                      if author_name and author_name != 'EMPTY')
 
 
@@ -1371,20 +1378,23 @@ class File(_Base):
     """
     Files are initialized with a path, starting from a commit root tree:
 
-        >>> File('.gitignore')  # doctest: +SKIP
-        >>> File('docs/Index.rst')  # doctest: +SKIP
+        >>> File(b'.gitignore')  # doctest: +SKIP
+        >>> File(b'docs/Index.rst')  # doctest: +SKIP
     """
     type = 'file'
     _keys_registry_dtype = 'file_commits'
 
     def __init__(self, path):
+        if isinstance(path, str):
+            path = path.encode('utf8')
         self.path = path
         super(File, self).__init__(path)
 
     @cached_property
-    def authors(self):
+    def author_names(self):
         data = decomp(self.read_tch('file_authors'))
-        return tuple(author for author in (data and data.split(";")))
+        return tuple(author for author in (data and data.split(b';'))
+                     if author not in IGNORED_AUTHORS)
 
     @cached_property
     def commit_shas(self):
@@ -1424,7 +1434,7 @@ class File(_Base):
                 author = c.author
             except ObjectNotFound:
                 continue
-            if author != 'GitHub Merge Button <merge-button@github.com>':
+            if author not in IGNORED_AUTHORS:
                 yield c
 
     def __str__(self):
@@ -1445,6 +1455,8 @@ class Author(_Base):
     _keys_registry_dtype = 'author_commits'
 
     def __init__(self, full_email):
+        if isinstance(full_email, str):
+            full_email = full_email.encode('utf8')
         self.full_email = full_email
         super(Author, self).__init__(full_email)
 
@@ -1462,14 +1474,15 @@ class Author(_Base):
         >>> len(commits[0]) == 40
         True
         """
-        return slice20(self.read_tch('author_commits', silent=True))
+        return slice20(self.read_tch('author_commits'))
 
     @property
     def commits(self):
         """ A generator of all Commit objects authored by the Author
 
-        >>> commits = tuple(Author('user2589 <valiev.m@gmail.com>').commits)
-        >>> len(commits) > 50
+        >>> commits = tuple(
+        ...     Author('user2589 <user2589@users.noreply.github.com>').commits)
+        >>> len(commits) > 40
         True
         >>> isinstance(commits[0], Commit)
         True
@@ -1477,9 +1490,9 @@ class Author(_Base):
         return (Commit(sha) for sha in self.commit_shas)
 
     @cached_property
-    def files(self):
+    def file_names(self):
         data = decomp(self.read_tch('author_files'))
-        return tuple(fname for fname in (data and data.split(";")))
+        return tuple(fname for fname in (data and data.split(b';')))
 
     @cached_property
     def project_names(self):
@@ -1488,8 +1501,8 @@ class Author(_Base):
         """
         data = decomp(self.read_tch('author_projects'))
         return tuple(project_name
-                     for project_name in (data and data.split(";"))
-                     if project_name and project_name != 'EMPTY')
+                     for project_name in (data and data.split(b';'))
+                     if project_name and project_name != b'EMPTY')
 
     # This relation went MIA as of Sep 6 2020
     # @cached_property
