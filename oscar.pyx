@@ -177,21 +177,21 @@ PATHS = _get_paths({
 # Prefixes have been deprecated by replacing them with the string resembling
 # actual URL
 URL_PREFIXES = {
-    'bitbucket.org': 'bitbucket.org',
-    'gitlab.com': 'gitlab.com',
-    'android.googlesource.com': 'android.googlesource.com',
-    'bioconductor.org': 'bioconductor.org',
-    'drupal.com': 'git.drupal.org',
-    'git.eclipse.org': 'git.eclipse.org',
-    'git.kernel.org': 'git.kernel.org',
-    'git.postgresql.org': 'git.postgresql.org',
-    'git.savannah.gnu.org': 'git.savannah.gnu.org',
-    'git.zx2c4.com': 'git.zx2c4.com',
-    'gitlab.gnome.org': 'gitlab.gnome.org',
-    'kde.org': 'anongit.kde.org',
-    'repo.or.cz': 'repo.or.cz',
-    'salsa.debian.org': 'salsa.debian.org',
-    'sourceforge.net': 'git.code.sf.net/p'
+    'bitbucket.org': b'bitbucket.org',
+    'gitlab.com': b'gitlab.com',
+    'android.googlesource.com': b'android.googlesource.com',
+    'bioconductor.org': b'bioconductor.org',
+    'drupal.com': b'git.drupal.org',
+    'git.eclipse.org': b'git.eclipse.org',
+    'git.kernel.org': b'git.kernel.org',
+    'git.postgresql.org': b'git.postgresql.org',
+    'git.savannah.gnu.org': b'git.savannah.gnu.org',
+    'git.zx2c4.com': b'git.zx2c4.com',
+    'gitlab.gnome.org': b'gitlab.gnome.org',
+    'kde.org': b'anongit.kde.org',
+    'repo.or.cz': b'repo.or.cz',
+    'salsa.debian.org': b'salsa.debian.org',
+    'sourceforge.net': b'git.code.sf.net/p'
 }
 
 
@@ -336,6 +336,7 @@ def slice20(bytes raw_data):
 
 
 class CommitTimezone(tzinfo):
+    # TODO: replace with datetime.timezone once Py2 support is ended
     # a lightweight version of pytz._FixedOffset
     def __init__(self, hours, minutes):
         self.offset = timedelta(hours=hours, minutes=minutes)
@@ -379,7 +380,7 @@ def parse_commit_date(bytes timestamp, bytes tz):
     True
     """
     cdef:
-        int sign = -1 if tz.startswith('-') else 1
+        int sign = -1 if tz.startswith(b'-') else 1
         uint32_t ts
         int hours, minutes
     try:
@@ -723,8 +724,8 @@ class Tree(GitObject):
 
         >>> len(Tree("d4ddbae978c9ec2dc3b7b3497c2086ecf7be7d9d"))
         16
-
     """
+
     type = 'tree'
 
     def __iter__(self):
@@ -1189,6 +1190,8 @@ class Project(_Base):
     _keys_registry_dtype = 'project_commits'
 
     def __init__(self, uri):
+        if isinstance(uri, str):
+            uri = uri.encode('ascii')
         self.uri = uri
         super(Project, self).__init__(uri)
 
@@ -1196,7 +1199,7 @@ class Project(_Base):
         """ Generator of all commits in the project.
         Order of commits is not guaranteed
 
-        >>> commits = tuple(Project('user2589_minicms'))
+        >>> commits = tuple(Project(b'user2589_minicms'))
         >>> len(commits) > 60
         True
         >>> isinstance(commits[0], Commit)
@@ -1229,7 +1232,7 @@ class Project(_Base):
     def commit_shas(self):
         """ SHA1 of all commits in the project
 
-        >>> Project('user2589_django-currencies').commit_shas
+        >>> Project(b'user2589_django-currencies').commit_shas
         ...         # doctest: +NORMALIZE_WHITESPACE
         ('2dbcd43f077f2b5511cc107d63a0b9539a6aa2a7',
          '7572fc070c44f85e2a540f9a5a05a95d1dd2662d')
@@ -1348,13 +1351,13 @@ class Project(_Base):
         >>> Project('CS340-19_lectures').url
         'http://github.com/CS340-19/lectures'
         """
-        prefix, body = self.uri.split("_", 1)
+        prefix, body = self.uri.split(b'_', 1)
         if (prefix in URL_PREFIXES
-                and (prefix == 'sourceforge.net' or '_' in body)):
+                and (prefix == b'sourceforge.net' or b'_' in body)):
             platform = URL_PREFIXES[prefix]
         else:
-            platform = 'github.com'
-        return '/'.join(('https:/', platform, body))
+            platform = b'github.com'
+        return b'/'.join((b'https:/', platform, body))
 
     @cached_property
     def author_names(self):
