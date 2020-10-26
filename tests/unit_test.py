@@ -1,3 +1,4 @@
+#!python3
 
 # cython: language_level=3str
 """
@@ -12,10 +13,8 @@ import pyximport
 # https://stackoverflow.com/questions/42259741/
 pyximport.install(setup_args={"script_args": ["--force"]}, language_level='3str')
 
-from datetime import datetime
-
 from oscar import *
-from .unit_test_cy import *
+from unit_test_cy import *
 
 
 class TestBasics(unittest.TestCase):

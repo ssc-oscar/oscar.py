@@ -1,5 +1,6 @@
 
-# cython: language_level=3str
+# cython: language_level=3str, wraparound=False, boundscheck=False, nonecheck=False
+#
 import binascii
 from datetime import datetime, timedelta, tzinfo
 import difflib
@@ -249,20 +250,20 @@ cdef (int, int) lzf_length(bytes raw_data):
     Returns:
          Tuple[int, int]: (header_size, uncompressed_content_length) in bytes
 
-    >>> lzf_length('\xc4\x9b')
+    >>> lzf_length(b'\xc4\x9b')
     (2, 283)
-    >>> lzf_length('\xc3\xa4')
+    >>> lzf_length(b'\xc3\xa4')
     (2, 228)
-    >>> lzf_length('\xc3\x8a')
+    >>> lzf_length(b'\xc3\x8a')
     (2, 202)
-    >>> lzf_length('\xca\x87')
+    >>> lzf_length(b'\xca\x87')
     (2, 647)
-    >>> lzf_length('\xe1\xaf\xa9')
+    >>> lzf_length(b'\xe1\xaf\xa9')
     (3, 7145)
-    >>> lzf_length('\xe0\xa7\x9c')
+    >>> lzf_length(b'\xe0\xa7\x9c')
     (3, 2524)
     """
-    # PY:543ns, Cy: 1usec
+    # PY:725us, Cy:194usec
     cdef:
         # compressed size, header length, uncompressed size
         uint32_t csize=len(raw_data), start=1, usize
@@ -281,6 +282,7 @@ cdef (int, int) lzf_length(bytes raw_data):
         raise ValueError('LZF compressed data header is corrupted')
     return start, usize
 
+
 def decomp(bytes raw_data):
     # type: (bytes) -> bytes
     """ lzf wrapper to handle perl tweaks in Compress::LZF
@@ -294,7 +296,7 @@ def decomp(bytes raw_data):
         str: unpacked data
     """
     if not raw_data:
-        return b""
+        return b''
     if raw_data[0] == 0:
         return raw_data[1:]
     start, usize = lzf_length(raw_data)
@@ -385,10 +387,11 @@ def parse_commit_date(bytes timestamp, bytes tz):
         int sign = -1 if tz.startswith(b'-') else 1
         uint32_t ts
         int hours, minutes
+        uint8_t tz_len = len(tz)
     try:
         ts = int(timestamp)
-        hours = sign * int(tz[-4:-2])
-        minutes = sign * int(tz[-2:])
+        hours = sign * int(tz[tz_len-4:tz_len-2])
+        minutes = sign * int(tz[tz_len-2:])
         dt = datetime.fromtimestamp(ts, CommitTimezone(hours, minutes))
     except (ValueError, OverflowError):
         # i.e. if timestamp or timezone is invalid
@@ -404,7 +407,7 @@ cdef extern from "Python.h":
     object PyBytes_FromStringAndSize(char *s, Py_ssize_t len)
 
 
-cdef extern from 'vendor/tokyocabinet/tchdb.h':
+cdef extern from 'tchdb.h':
     ctypedef struct TCHDB:  # type of structure for a hash database
         pass
 
@@ -747,7 +750,8 @@ class Tree(GitObject):
         True
         """
         cdef const unsigned char[:] data = self.data
-        # TODO: use libgit2 git_tree__parse_raw
+        # libgit2 git_tree__parse_raw will require working with internal git
+        # structures and direct memory management. Nah, just implement it here
 
         cdef:
             uint32_t i = 0
@@ -824,8 +828,8 @@ class Tree(GitObject):
         100644 utils.py 2cfbd298f18a75d1f0f51c2f6a1f2fcdf41a9559
         100644 views.py 973a78a1fe9e69d4d3b25c92b3889f7e91142439
         """
-        return b'\n'.join(b' '.join(line[:-1] + (binascii.hexlify(line[-1]),))
-                          for line in self).decode('ascii')
+        return b'\n'.join(b' '.join((mode, fname, binascii.hexlify(sha)))
+                          for mode, fname, sha in self).decode('ascii')
 
     @cached_property
     def files(self):
@@ -874,6 +878,7 @@ class Commit(GitObject):
     - :data:`committed_at`:   str, unix_epoch+timezone
     """
     type = 'commit'
+    encoding = 'utf8'
 
     def __getattr__(self, attr):
         """ Mimic special properties:
@@ -887,7 +892,6 @@ class Commit(GitObject):
             committed_at:   timezone-aware datetime or None (if invalid)
             signature:      str or None, PGP signature
 
-        TODO: parse commit using libgit2 commit_parse
 
         Commit: https://github.com/user2589/minicms/commit/e38126db
         >>> c = Commit('e38126dbca6572912013621d2aa9e6f7c50f36bc')
@@ -904,6 +908,10 @@ class Commit(GitObject):
         >>> c.committed_at
         datetime.datetime(2012, 5, 19, 1, 14, 8, tzinfo=<Timezone: 11:00>)
         """
+        # using libgit2 commit_parse would be a bit faster, but would require
+        # to face internal git structures with manual memory management.
+        # The probability of introducing bugs and memory leaks isn't worth it
+
         attrs = ('tree', 'parent_shas', 'message', 'full_message', 'author',
                  'committer', 'authored_at', 'committed_at', 'signature')
         if attr not in attrs:
@@ -912,7 +920,113 @@ class Commit(GitObject):
 
         for a in attrs:
             setattr(self, a, None)
+        self._parse()
+        return getattr(self, attr)
 
+    # def _parse2(self):
+    #     # TODO: port to Cython
+    #     # Py: 22.6usec, Cy:
+    #     cdef:
+    #         const unsigned char[:] data = self.data
+    #         uint32_t data_len = len(self.data)
+    #         uint32_t start, end, sol, eol = 101
+    #         list parent_shas = []
+    #         bytes timestamp, timezone
+    #     # fields come in this exact order:
+    #     # tree, parent, author, committer, [gpgsig], [encoding]
+    #     if data[0:5] != b'tree ': raise ValueError('Malformed commit')
+    #     self.tree = Tree(binascii.unhexlify(data[5:5+40]))
+    #
+    #     if data[45:45+8] != b'\nparent ': raise ValueError('Malformed commit')
+    #     parent_shas.append(binascii.unhexlify(data[53:53+40]))
+    #
+    #     if data[93:93+8] != b'\nauthor ': raise ValueError('Malformed commit')
+    #     # eol is initialized at 101 already
+    #     while data[eol] != b'\n': eol += 1
+    #     end = eol - 1
+    #     start = end
+    #     while data[start] != b' ': start -= 1
+    #     timezone = data[start+1:end]
+    #     end = start-1
+    #     start = end
+    #     while data[start] != b' ': start -= 1
+    #     timestamp = data[start+1:end]
+    #     self.authored_at = parse_commit_date(timestamp, timezone)
+    #     self.author = bytes(data[101:start-1])
+    #
+    #     sol = eol
+    #     eol += 1
+    #     if data[sol:sol+11] != b'\ncommitter ': raise ValueError('Malformed commit')
+    #     while data[eol] != b'\n': eol += 1
+    #     end = eol - 1
+    #     start = end
+    #     while data[start] != b' ': start -= 1
+    #     timezone = data[start+1:end]
+    #     end = start-1
+    #     start = end
+    #     while data[start] != b' ': start -= 1
+    #     timestamp = data[start+1:end]
+    #     self.committed_at = parse_commit_date(timestamp, timezone)
+    #     self.committer = bytes(data[101:start-1])
+    #
+    #
+    #     for field, field_len in ((b'tree', 5), (b'parent', 7)):
+    #     for field, field_len in ((b'author', 7), (b'committer', 10)):
+    #
+    #
+    #     self.header = bytes(data[0:i])
+    #     start = i
+    #     self.header, self.full_message = self.data.split(b'\n\n', 1)
+    #     self.message = self.full_message.split(b'\n', 1)[0]
+    #     cdef list parent_shas = []
+    #     cdef bytes signature = None
+    #     cdef bint reading_signature = False
+    #     for line in self.header.split(b'\n'):
+    #         if reading_signature:
+    #             # examples:
+    #             #   1cc6f4418dcc09f64dcbb0410fec76ceaa5034ab
+    #             #   cbbc685c45bdff4da5ea0984f1dd3a73486b4556
+    #             signature += line
+    #             if line.strip() == b'-----END PGP SIGNATURE-----':
+    #                 self.signature = signature
+    #                 reading_signature = False
+    #             continue
+    #
+    #         if line.startswith(b' '):  # mergetag object, not supported (yet?)
+    #             # example: c1313c68c7f784efaf700fbfb771065840fc260a
+    #             continue
+    #
+    #         line = line.strip()
+    #         if not line:  # sometimes there is an empty line after gpgsig
+    #             continue
+    #         try:
+    #             key, value = line.split(b' ', 1)
+    #         except ValueError:
+    #             raise ValueError('Unexpected header in commit ' + self.sha)
+    #         # fields come in this exact order:
+    #         # tree, parent, author, committer, [gpgsig], [encoding]
+    #         if key == b'tree':
+    #             # value is bytes holding hex values -> need to decode
+    #             self.tree = Tree(binascii.unhexlify(value))
+    #         elif key == b'parent':  # multiple parents possible
+    #             parent_shas.append(binascii.unhexlify(value))
+    #         elif key == b'author':
+    #             # author name can have arbitrary number of spaces while
+    #             # timestamp is guaranteed to have one, so rsplit
+    #             self.author, timestamp, timezone = value.rsplit(b' ', 2)
+    #             self.authored_at = parse_commit_date(timestamp, timezone)
+    #         elif key == b'committer':
+    #             # same logic as author
+    #             self.committer, timestamp, timezone = value.rsplit(b' ', 2)
+    #             self.committed_at = parse_commit_date(timestamp, timezone)
+    #         elif key == b'gpgsig':
+    #             signature = value
+    #             reading_signature = True
+    #         elif key == b'encoding':
+    #             self.encoding = value.decode('ascii')
+    #     self.parent_shas = tuple(parent_shas)
+
+    def _parse(self):
         self.header, self.full_message = self.data.split(b'\n\n', 1)
         self.message = self.full_message.split(b'\n', 1)[0]
         cdef list parent_shas = []
@@ -940,7 +1054,8 @@ class Commit(GitObject):
                 key, value = line.split(b' ', 1)
             except ValueError:
                 raise ValueError('Unexpected header in commit ' + self.sha)
-
+            # fields come in this exact order:
+            # tree, parent, author, committer, [gpgsig], [encoding]
             if key == b'tree':
                 # value is bytes holding hex values -> need to decode
                 self.tree = Tree(binascii.unhexlify(value))
@@ -958,9 +1073,9 @@ class Commit(GitObject):
             elif key == b'gpgsig':
                 signature = value
                 reading_signature = True
+            elif key == b'encoding':
+                self.encoding = value.decode('ascii')
         self.parent_shas = tuple(parent_shas)
-
-        return getattr(self, attr)
 
     def __sub__(self, parent, threshold=0.5):
         """ Compare two Commits.
@@ -1284,7 +1399,7 @@ class Project(_Base):
         # in this case, let's just use the latest one
         # actually, storing refs would make it much simpler
         return sorted((commits[sha] for sha in heads),
-                      key=lambda c: c.authored_at or DAY_Z)[-1]
+                      key=lambda c: c.authored_at or DAY_Z)[len(commits)-1]
 
     @cached_property
     def tail(self):
@@ -1509,3 +1624,24 @@ class Author(_Base):
     # def torvald(self):
     #     data = decomp(self.read_tch('author_trpath'))
     #     return tuple(path for path in (data and data.split(";")))
+
+# temporary data for local test
+# TODO: remove once commit parse
+#
+# c = Commit("1cc6f4418dcc09f64dcbb0410fec76ceaa5034ab")
+# c._data = b'tree 0a2def6627be9bf2f3c7c2a84eb1e2feb0e7c03e\n' \
+#           b'parent d55f5fb86e5892dd1673a9c6cf5e3fdff8c5d93b\n' \
+#           b'author AlecGoldstein123 <34690976+AlecGoldstein123@users.noreply.github.com> 1513882101 -0500\n' \
+#           b'committer GitHub <noreply@github.com> 1513882101 -0500\n' \
+#           b'gpgsig -----BEGIN PGP SIGNATURE-----\n' \
+#           b' \n' \
+#           b' wsBcBAABCAAQBQJaPAH1CRBK7hj4Ov3rIwAAdHIIACYBs+bTOv7clJSYr9NT0gbX\n' \
+#           b' zb4XeJJADvDISZUJChwebEENDue5+GX+dX03ILptRizVVnASwNZR30DENeJNcOpw\n' \
+#           b' WqXKho+AV0H0C91x8CIbICnDjdgGdcyKFBCWQ8lBV6BjiRwGXFKJU6dyt480lzs8\n' \
+#           b' Eu2PqpTg59Xr/msd4vTrQofSoRwu8kW8KXBWou6G1f9KVCoOXWvhRmiLngFupyPV\n' \
+#           b' 0jbNLOe6IQ37xrvvSULCiBmemeYfAJSUywMPIPFyUpzZc2+jKDOcxJeKrRxzmQM0\n' \
+#           b' XKeHQIqKSQOVPB/SB7i2Pnxf/UBObaa4kiFoDGHp5IjolgMC+4pFuF2mOE5pbcQ=\n' \
+#           b' =cWKt\n' \
+#           b' -----END PGP SIGNATURE-----\n' \
+#           b' \n\n' \
+#           b'Add files via upload'

@@ -1,9 +1,9 @@
+#!python3
 """
 Unit tests - only to check functions do what they are expected to do.
 Please avoid checking the integrity of the dataset.
 """
 
-from collections import defaultdict
 import unittest
 
 from oscar import *
