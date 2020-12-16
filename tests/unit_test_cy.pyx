@@ -5,9 +5,6 @@ Unit tests - only to check functions do what they are expected to do.
 Please refrain from checking integrity of the dataset.
 """
 
-import pyximport
-pyximport.install(setup_args={"script_args": ["--force"]}, language_level='3str')
-from collections import defaultdict
 import unittest
 
 cimport oscar

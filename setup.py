@@ -4,7 +4,7 @@ import re
 from setuptools import Extension, setup
 
 extensions = [
-    Extension("oscar", sources=["oscar.pyx"], libraries=["tokyocabinet"]),
+    Extension('oscar', sources=['oscar.pyx'], libraries=['tokyocabinet']),
 ]
 
 head = open('oscar.pyx').read(2048)
@@ -20,8 +20,8 @@ requirements = [
 # options reference: https://docs.python.org/2/distutils/
 # see also: https://packaging.python.org/tutorials/distributing-packages/
 setup(
-    name="oscar",
-    description="A Python interface to OSCAR data",
+    name='oscar',
+    description='A Python interface to OSCAR data',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
     classifiers=[  # full list: https://pypi.org/classifiers/

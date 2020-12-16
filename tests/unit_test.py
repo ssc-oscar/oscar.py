@@ -7,11 +7,16 @@ Please refrain from checking integrity of the dataset.
 """
 from __future__ import unicode_literals
 
-import pyximport
 # Cython caches compiled files, so even if the main file did change but the
 # test suite didn't, it won't recompile. More details in this SO answer:
 # https://stackoverflow.com/questions/42259741/
-pyximport.install(setup_args={"script_args": ["--force"]}, language_level='3str')
+import pyximport
+pyximport.install(
+    # build_dir='build',
+    setup_args={"script_args": ["--force"]},
+    inplace=True,
+    language_level='3str'
+)
 
 from oscar import *
 from unit_test_cy import *
@@ -65,26 +70,26 @@ class TestBlob(unittest.TestCase):
     # GitObject: all, instantiate from str/bytes
     def test_string_sha(self):
         self.assertEqual(Blob.string_sha(b'Hello world!'),
-                         '6769dd60bdf536a83c9353272157893043e9f7d0')
+                         u'6769dd60bdf536a83c9353272157893043e9f7d0')
 
     def test_file_sha(self):
         self.assertEqual(Blob.file_sha('LICENSE'),
-                         '94a9ed024d3859793618152ea559a168bbcbb5e2')
+                         u'94a9ed024d3859793618152ea559a168bbcbb5e2')
 
     def test_len(self):
-        sha = '83d22195edc1473673f1bf35307aea6edf3c37e3'
+        sha = u'83d22195edc1473673f1bf35307aea6edf3c37e3'
         self.assertEqual(len(Blob(sha)), 42)
 
     def test_data(self):
         # blob has a different .data implementation
-        sha = '83d22195edc1473673f1bf35307aea6edf3c37e3'
+        sha = u'83d22195edc1473673f1bf35307aea6edf3c37e3'
         self.assertEqual(
             Blob(sha).data, b'*.egg-info/\ndist/\nbuild/\n*.pyc\n*.mo\n*.gz\n')
 
 
 class TestTree(unittest.TestCase):
     def test_data(self):
-        tree = Tree("d4ddbae978c9ec2dc3b7b3497c2086ecf7be7d9d")
+        tree = Tree(u'd4ddbae978c9ec2dc3b7b3497c2086ecf7be7d9d')
         self.assertEqual(tree.data, (
             b'100755 .gitignore'
             b'\x00\x83\xd2!\x95\xed\xc1G6s\xf1\xbf50z\xean\xdf<7\xe3'
@@ -101,48 +106,48 @@ class TestTree(unittest.TestCase):
         ))
 
     def test_files(self):
-        tree = Tree('d4ddbae978c9ec2dc3b7b3497c2086ecf7be7d9d')
+        tree = Tree(u'd4ddbae978c9ec2dc3b7b3497c2086ecf7be7d9d')
         self.assertIn(b'.gitignore', tree.files)
         self.assertNotIn(b'minicms', tree.files)  # folders are not included
 
     def test_in(self):
-        tree = Tree('d4ddbae978c9ec2dc3b7b3497c2086ecf7be7d9d')
+        tree = Tree(u'd4ddbae978c9ec2dc3b7b3497c2086ecf7be7d9d')
         self.assertIn(b'.gitignore', tree)
         self.assertNotIn(File(b'.keep'), tree)
-        self.assertIn('46aaf071f1b859c5bf452733c2583c70d92cd0c8', tree)
-        self.assertIn(Blob('46aaf071f1b859c5bf452733c2583c70d92cd0c8'), tree)
+        self.assertIn(u'46aaf071f1b859c5bf452733c2583c70d92cd0c8', tree)
+        self.assertIn(Blob(u'46aaf071f1b859c5bf452733c2583c70d92cd0c8'), tree)
 
     def test_len(self):
-        tree = Tree('d4ddbae978c9ec2dc3b7b3497c2086ecf7be7d9d')
+        tree = Tree(u'd4ddbae978c9ec2dc3b7b3497c2086ecf7be7d9d')
         self.assertEqual(len(tree), 16)
 
     def test_pprint(self):
         self.assertEqual(
-            Tree('d4ddbae978c9ec2dc3b7b3497c2086ecf7be7d9d').str,
-            '100755 .gitignore 83d22195edc1473673f1bf35307aea6edf3c37e3\n'
-            '100644 COPYING fda94b84122f6f36473ca3573794a8f2c4f4a58c\n'
-            '100644 MANIFEST.in b724831519904e2bc25373523b368c5d41dc368e\n'
-            '100644 README.rst 234a57538f15d72f00603bf086b465b0f2cda7b5\n'
-            '40000 minicms 954829887af5d9071aa92c427133ca2cdd0813cc\n'
-            '100644 setup.py 46aaf071f1b859c5bf452733c2583c70d92cd0c8')
+            Tree(u'd4ddbae978c9ec2dc3b7b3497c2086ecf7be7d9d').str,
+            u'100755 .gitignore 83d22195edc1473673f1bf35307aea6edf3c37e3\n'
+            u'100644 COPYING fda94b84122f6f36473ca3573794a8f2c4f4a58c\n'
+            u'100644 MANIFEST.in b724831519904e2bc25373523b368c5d41dc368e\n'
+            u'100644 README.rst 234a57538f15d72f00603bf086b465b0f2cda7b5\n'
+            u'40000 minicms 954829887af5d9071aa92c427133ca2cdd0813cc\n'
+            u'100644 setup.py 46aaf071f1b859c5bf452733c2583c70d92cd0c8')
 
 
 class TestCommit(unittest.TestCase):
     def test_init(self):
-        sha = '05cf84081b63cda822ee407e688269b494a642de'
+        sha = u'05cf84081b63cda822ee407e688269b494a642de'
         bin_sha = b'\x05\xcf\x84\x08\x1b\x63\xcd\xa8\x22\xee' \
                   b'\x40\x7e\x68\x82\x69\xb4\x94\xa6\x42\xde'
         self.assertEqual(GitObject(sha).sha, sha)
         self.assertEqual(GitObject(sha).bin_sha, bin_sha)
-        self.assertRaises(ValueError, lambda: GitObject('05cf84081b63cda822ee'))
+        self.assertRaises(ValueError, lambda: GitObject(u'05cf84081b63cda822'))
 
     def test_eq(self):
-        sha = 'f2a7fcdc51450ab03cb364415f14e634fa69b62c'
+        sha = u'f2a7fcdc51450ab03cb364415f14e634fa69b62c'
         self.assertEqual(Commit(sha), Commit(sha))
         self.assertNotEqual(Commit(sha), Blob(sha))
 
     def test_data(self):
-        data = Commit('f2a7fcdc51450ab03cb364415f14e634fa69b62c').data
+        data = Commit(u'f2a7fcdc51450ab03cb364415f14e634fa69b62c').data
         self.assertEqual(
             b'tree d4ddbae978c9ec2dc3b7b3497c2086ecf7be7d9d\n'
             b'parent 66acf0a046a02b48e0b32052a17f1e240c2d7356\n'
@@ -151,7 +156,7 @@ class TestCommit(unittest.TestCase):
             b'\nLicense changed :P\n', data)
 
     def test_attrs(self):
-        c = Commit('e38126dbca6572912013621d2aa9e6f7c50f36bc')
+        c = Commit(u'e38126dbca6572912013621d2aa9e6f7c50f36bc')
         self.assertTrue(c.author.startswith(b'Marat'))
         self.assertTrue(c.committer.startswith(b'Marat'))
         self.assertEqual(c.message, b'support no i18n')
@@ -164,11 +169,11 @@ class TestCommit(unittest.TestCase):
         self.assertEqual(c.authored_at.strftime('%Y-%m-%d %H:%M:%S %z'),
                          '2012-05-19 01:14:08 +1100')
         self.assertIsInstance(c.tree, Tree)
-        self.assertEqual(c.tree.sha, '6845f55f47ddfdbe4628a83fdaba35fa4ae3c894')
+        self.assertEqual(c.tree.sha, u'6845f55f47ddfdbe4628a83fdaba35fa4ae3c894')
         self.assertRaises(AttributeError, lambda: c.arbitrary_attr)
         self.assertIsNone(c.signature)
 
-        c = Commit('1cc6f4418dcc09f64dcbb0410fec76ceaa5034ab')
+        c = Commit(u'1cc6f4418dcc09f64dcbb0410fec76ceaa5034ab')
         self.assertIsInstance(c.signature, bytes)
         self.assertGreater(len(c.signature), 450)  # 454 for this commit
 

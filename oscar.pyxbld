@@ -1,0 +1,13 @@
+
+# this file is needed for oscar.pyx to be compiled by tests/unit_test.py
+# because pyximport.install() doesn't take libraries argument
+
+def make_ext(modname, pyxfilename):
+    from distutils.extension import Extension
+    return Extension(name=modname,
+                     sources=[pyxfilename],
+                     libraries=['tokyocabinet'])
+
+
+def make_setup_args():
+    return {"script_args": ["--force"]}

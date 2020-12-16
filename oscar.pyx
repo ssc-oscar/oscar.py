@@ -1,7 +1,8 @@
 
 # cython: language_level=3str, wraparound=False, boundscheck=False, nonecheck=False
-#
+
 import binascii
+from cpython.version cimport PY_MAJOR_VERSION
 from datetime import datetime, timedelta, tzinfo
 import difflib
 from functools import wraps
@@ -24,6 +25,14 @@ __version__ = '1.3.3'
 __author__ = 'Marat (@cmu.edu)'
 __license__ = 'GPL v3'
 
+if PY_MAJOR_VERSION < 3:
+    str_type = unicode
+    bytes_type = str
+else:
+    str_type = str
+    bytes_type = bytes
+
+
 try:
     with open('/etc/hostname') as fh:
         HOSTNAME = fh.read().strip()
@@ -40,6 +49,13 @@ if HOST not in COMMIT_HOSTS:
     warnings.warn('Commit and tree direct content is only available on da4. '
                   'Some functions might not work as expected.\n\n')
 
+# Cython is generally smart enough to convert data[i] to int, but
+# pyximport in Py2 fails to do so, requires to use ord explicitly
+# TODO: get rid of this shame once Py2 support is dropped
+cdef uint8_t nth_byte(bytes data, uint32_t i):
+    if PY_MAJOR_VERSION < 3:
+        return ord(data[i])
+    return data[i]
 
 def _latest_version(path_template):
     if '{ver}' not in path_template:
@@ -60,7 +76,9 @@ def _key_length(str path_template):
     filenames = glob.glob(glob_pattern)
     # key always comes the last, so rsplit is enough to account for two stars
     prefix, postfix = glob_pattern.rsplit('*', 1)
-    str_keys = [fname[len(prefix):-len(postfix)] for fname in filenames]
+    # note that with wraparound=False we can't use negative indexes.
+    # this caused hard to catch bugs before
+    str_keys = [fname[len(prefix):len(fname)-len(postfix)] for fname in filenames]
     keys = [int(key) for key in str_keys if key]
     # Py2/3 compatible version
     return int(log(max(keys or [0]) + 1, 2))
@@ -98,6 +116,8 @@ def _get_paths(dict raw_paths):
             pver = os.environ.get(
                 '_'.join(['OSCAR', ptype.upper(), 'VER']), cat_version)
             path_template = os.path.join(ppath, fname)
+            # TODO: .format with pver and check keys only
+            # this will allow to handle 2-char versions
             key_length = _key_length(path_template)
             if not key_length:
                 warnings.warn("No keys found for path_template %s:\n%s" % (
@@ -108,6 +128,8 @@ def _get_paths(dict raw_paths):
     return paths
 
 
+# note to future self: Python2 uses str (bytes) for os.environ,
+# Python3 uses str (unicode). Don't add Py2/3 compatibility prefixes here
 PATHS = _get_paths({
     'OSCAR_ALL_BLOBS': ('/da4_data/All.blobs/', {
         'commit_sequential_idx': 'commit_{key}.idx',
@@ -268,7 +290,7 @@ cdef (int, int) lzf_length(bytes raw_data):
         # compressed size, header length, uncompressed size
         uint32_t csize=len(raw_data), start=1, usize
         # first byte, mask, buffer iterator placeholder
-        uint8_t lower=raw_data[0], mask=0x80, b
+        uint8_t lower=nth_byte(raw_data, 0), mask=0x80, b
 
     while mask and csize > start and (lower & mask):
         mask >>= 1 + (mask == 0x80)
@@ -297,7 +319,7 @@ def decomp(bytes raw_data):
     """
     if not raw_data:
         return b''
-    if raw_data[0] == 0:
+    if nth_byte(raw_data, 0) == 0:
         return raw_data[1:]
     start, usize = lzf_length(raw_data)
     return lzf.decompress(raw_data[start:], usize)
@@ -403,7 +425,7 @@ def parse_commit_date(bytes timestamp, bytes tz):
 
     return dt
 
-cdef extern from "Python.h":
+cdef extern from 'Python.h':
     object PyBytes_FromStringAndSize(char *s, Py_ssize_t len)
 
 
@@ -427,14 +449,17 @@ cdef extern from 'tchdb.h':
 
 cdef class Hash:
     cdef TCHDB* _db
+    cdef bytes filename
 
     def __cinit__(self, char *path, int mode = HDBOREADER | HDBONOLCK):
         self._db = tchdbnew()
+        self.filename = path
         if self._db is NULL:
             raise MemoryError()
         cdef bint result = tchdbopen(self._db, path, mode)
         if not result:
-            raise IOError('Failed to open .tch file: ' + self._error())
+            raise IOError('Failed to open .tch file "%s": ' % self.filename
+                          + self._error())
 
     def _error(self):
         cdef int code = tchdbecode(self._db)
@@ -448,7 +473,8 @@ cdef class Hash:
             int sp
             bytes key
         if not result:
-            raise IOError('Failed to iterate .tch file: ' + self._error())
+            raise IOError('Failed to iterate .tch file "%s": ' % self.filename
+                          + self._error())
         while True:
             buf = <char *>tchdbiternext(self._db, &sp)
             if buf is NULL:
@@ -476,7 +502,8 @@ cdef class Hash:
     def __del__(self):
         cdef bint result = tchdbclose(self._db)
         if not result:
-            raise IOError('Failed to close .tch: ' + self._error())
+            raise IOError('Failed to close .tch "%s": ' % self.filename
+                          + self._error())
 
     def __dealloc__(self):
         free(self._db)
@@ -527,14 +554,18 @@ class _Base(object):
 
     def __str__(self):
         return (binascii.hexlify(self.key).decode('ascii')
-                if isinstance(self.key, bytes) else self.key)
+                if isinstance(self.key, bytes_type) else self.key)
 
     def resolve_path(self, dtype):
         """ Get path to a file using data type and object key (for sharding)
         """
         path, prefix_length = PATHS[dtype]
 
-        cdef uint8_t p = fnvhash(self.key) if self.use_fnv_keys else self.key[0]
+        cdef uint8_t p
+        if self.use_fnv_keys:
+            p = fnvhash(self.key)
+        else:
+            p = nth_byte(self.key, 0)
         cdef uint8_t prefix = p & (2**prefix_length - 1)
         return path.format(key=prefix)
 
@@ -596,10 +627,10 @@ class GitObject(_Base):
             datafile.close()
 
     def __init__(self, sha):
-        if isinstance(sha, str) and len(sha) == 40:
+        if isinstance(sha, str_type) and len(sha) == 40:
             self.sha = sha
             self.bin_sha = binascii.unhexlify(sha)
-        elif isinstance(sha, bytes) and len(sha) == 20:
+        elif isinstance(sha, bytes_type) and len(sha) == 20:
             self.bin_sha = sha
             self.sha = binascii.hexlify(sha).decode('ascii')
         else:
@@ -749,33 +780,27 @@ class Tree(GitObject):
         ...     for line in Tree("954829887af5d9071aa92c427133ca2cdd0813cc"))
         True
         """
-        cdef const unsigned char[:] data = self.data
-        # libgit2 git_tree__parse_raw will require working with internal git
-        # structures and direct memory management. Nah, just implement it here
+        # unfortunately, Py2 cython doesn't know how to instantiate bytes from
+        # memoryviews. TODO: reuse libgit2 git_tree__parse_raw
+        data = self.data
 
-        cdef:
-            uint32_t i = 0
-            uint32_t start
-            uint32_t data_len = len(self.data)
-            bytes fname
-            bytes sha
-        while i < data_len:
+        i = 0
+        while i < len(data):
             # mode
             start = i
-            while i < data_len and data[i] != b' ':
+            while i < len(data) and nth_byte(data, i) != 32:  # 32 is space
                 i += 1
-            mode = bytes(data[start:i])
+            mode = data[start:i]
             i += 1
             # file name
             start = i
-            while i < data_len and data[i] != 0:
+            while i < len(data) and <char> nth_byte(data, i) != 0:
                 i += 1
-            fname = bytes(data[start:i])
+            fname = data[start:i]
             # sha
             start = i + 1
             i += 21
-            sha = bytes(data[start:min(i, data_len)])
-            yield mode, fname, sha
+            yield mode, fname, data[start:i]
 
     def __len__(self):
         return len(self.files)
@@ -785,9 +810,9 @@ class Tree(GitObject):
             return item.key in self.files
         elif isinstance(item, Blob):
             return item.bin_sha in self.blob_shas
-        elif isinstance(item, str) and len(item) == 40:
+        elif isinstance(item, str_type) and len(item) == 40:
             item = binascii.unhexlify(item)
-        elif not isinstance(item, bytes):
+        elif not isinstance(item, bytes_type):
             return False
 
         return item in self.blob_shas or item in self.files
@@ -1308,7 +1333,7 @@ class Project(_Base):
     _keys_registry_dtype = 'project_commits'
 
     def __init__(self, uri):
-        if isinstance(uri, str):
+        if isinstance(uri, str_type):
             uri = uri.encode('ascii')
         self.uri = uri
         super(Project, self).__init__(uri)
@@ -1335,9 +1360,9 @@ class Project(_Base):
     def __contains__(self, item):
         if isinstance(item, Commit):
             key = item.key
-        elif isinstance(item, bytes) and len(item) == 20:
+        elif isinstance(item, bytes_type) and len(item) == 20:
             key = item
-        elif isinstance(item, str) and len(item) == 40:
+        elif isinstance(item, str_type) and len(item) == 40:
             key = binascii.unhexlify(item)
         else:
             return False
@@ -1500,7 +1525,7 @@ class File(_Base):
     _keys_registry_dtype = 'file_commits'
 
     def __init__(self, path):
-        if isinstance(path, str):
+        if isinstance(path, str_type):
             path = path.encode('utf8')
         self.path = path
         super(File, self).__init__(path)
@@ -1570,7 +1595,7 @@ class Author(_Base):
     _keys_registry_dtype = 'author_commits'
 
     def __init__(self, full_email):
-        if isinstance(full_email, str):
+        if isinstance(full_email, str_type):
             full_email = full_email.encode('utf8')
         self.full_email = full_email
         super(Author, self).__init__(full_email)
