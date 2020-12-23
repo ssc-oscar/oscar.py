@@ -36,11 +36,10 @@ setup(
     # without `cythonize`
     # https://stackoverflow.com/questions/37471313
     setup_requires=['setuptools>=18.0', 'cython'],
-    python_requires='>=3.4',
+    python_requires='>2.6, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*,  <4',
     ext_modules=extensions,
     author_email=kwargs['author'],
     url='https://github.com/ssc-oscar/oscar.py',
     install_requires=requirements,
-    test_suite='test.TestStatus',
     **kwargs
 )
