@@ -136,7 +136,6 @@ PATHS = _get_paths({
         'commit_sequential_bin': 'commit_{key}.bin',
         'tree_sequential_idx': 'tree_{key}.idx',
         'tree_sequential_bin': 'tree_{key}.bin',
-        'tag_data': 'tag_{key}.bin',  # not used yet
         'blob_data': 'blob_{key}.bin',
     }),
     'OSCAR_ALL_SHA1C': ('/fast/All.sha1c', {
@@ -149,11 +148,6 @@ PATHS = _get_paths({
     'OSCAR_ALL_SHA1O': ('/fast/All.sha1o', {
         'blob_offset': 'sha1.blob_{key}.tch',
         # Speed is a bit lower since the content is read from HDD raid
-        # Sep 6 2020: 'commit_offset' and 'tree_offset' files are MIA
-        # TODO: remove once confirmed
-        # 'commit_offset': 'sha1.commit_{key}.tch',
-        # This way to access trees/commits is not used in python implementation
-        # 'tree_offset': 'sha1.tree_{key}.tch',
     }),
     'OSCAR_BASEMAPS': ('/da0_data/basemaps', {
         # relations - good to have but not critical
@@ -166,8 +160,6 @@ PATHS = _get_paths({
         'author_commits': 'a2cFull{ver}.{key}.tch',
         'author_projects': 'a2pFull{ver}.{key}.tch',
         'author_files': 'a2fFull{ver}.{key}.tch',
-        # this points aunlt to the author-created blobs (see b2a)
-        # 'author_blob': 'a2bFull{ver}.{key}.tch',  # MIA as of Sep 6 2020
         'project_authors': 'p2aFull{ver}.{key}.tch',
 
         'commit_blobs': 'c2bFull{ver}.{key}.tch',
@@ -180,19 +172,7 @@ PATHS = _get_paths({
         'file_commits': 'f2cFull{ver}.{key}.tch',
         'file_blobs': 'f2bFull{ver}.{key}.tch',
         'blob_files': 'b2fFull{ver}.{key}.tch',
-
-        # 'author_trpath': 'a2trp{ver}.tch',  # MIA as of Sep 6 2020
-        # another way to get commit parents, currently unused
-        # 'commit_parents': 'c2pcK.{key}.tch'
     }),
-    # These can be used to check if the object exists in WoC
-    'OSCAR_ALL_SHA1': ('/fast/All.sha1', {
-        # SHA1 cache, currently only on da4, da5  668G
-        # 'blob_index_line': 'sha1.blob_{key}.tch',  # missing + unused
-        # 'tree_index_line': 'sha1.tree_{key}.tch',
-        'commit_index_line': 'sha1.commit_{key}.tch',  # unused
-        'tag_index_line': 'sha1.tag_{key}.tch',
-    })
 })
 
 # prefixes used by World of Code to identify source project platforms
@@ -237,11 +217,11 @@ cdef unber(bytes buf):
     Returns:
          str: a list of unpacked values
 
-    >>> unber('\x00\x83M')
+    >>> unber(b'\x00\x83M')
     [0, 461]
-    >>> unber('\x83M\x96\x14')
+    >>> unber(b'\x83M\x96\x14')
     [461, 2836]
-    >>> unber('\x99a\x89\x12')
+    >>> unber(b'\x99a\x89\x12')
     [3297, 1170]
     """
     # PY: 262ns, Cy: 78ns
