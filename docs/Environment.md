@@ -30,10 +30,10 @@ Clone the repo and install dependencies:
     cd oscar.py
     pip install --user --upgrade -r requirements.txt
 
-Note that OSCAR servers are running RHEL and have different big/little endian than
-most conventional Linux distributions.
-Pakcages compiled on Debian-based systems are known not to work with OSCAR
-Tokyo Cabinet files.
+Note that OSCAR servers are running RHEL and have different 
+big/little endian than most conventional Linux distributions.
+Packages compiled on Debian-based systems are known not to work 
+with OSCAR Tokyo Cabinet files. 
 By the same reasons Docker images won't work.
 
 ## Perl
