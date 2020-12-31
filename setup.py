@@ -4,7 +4,11 @@ import re
 from setuptools import Extension, setup
 
 extensions = [
-    Extension('oscar', sources=['oscar.pyx'], libraries=['tokyocabinet']),
+    Extension(
+        'oscar', libraries=['bz2'], include_dirs=['lib'],
+        sources=['oscar.pyx',
+                 'lib/tchdb.c', 'lib/myconf.c', 'lib/tcutil.c', 'lib/md5.c']
+    ),
 ]
 
 head = open('oscar.pyx').read(2048)
@@ -37,6 +41,7 @@ setup(
     # https://stackoverflow.com/questions/37471313
     setup_requires=['setuptools>=18.0', 'cython'],
     python_requires='>2.6, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*,  <4',
+    # py_modules=['oscar.timeline'],
     ext_modules=extensions,
     author_email=kwargs['author'],
     url='https://github.com/ssc-oscar/oscar.py',

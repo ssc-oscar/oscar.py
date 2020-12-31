@@ -18,8 +18,9 @@ import time
 from typing import Dict, Tuple
 import warnings
 
+# if throws "module 'lzf' has no attribute 'decompress'",
+# `pip uninstall lzf && pip install python-lzf`
 import lzf
-
 
 __version__ = '1.3.3'
 __author__ = 'Marat (@cmu.edu)'
@@ -302,6 +303,8 @@ def decomp(bytes raw_data):
     if nth_byte(raw_data, 0) == 0:
         return raw_data[1:]
     start, usize = lzf_length(raw_data)
+    # while it is tempting to include liblzf and link statically, there is
+    # zero advantage comparing to just using python-lzf
     return lzf.decompress(raw_data[start:], usize)
 
 
@@ -428,10 +431,14 @@ cdef extern from 'tchdb.h':
 
 
 cdef class Hash:
+    """Object representing a Tokyocabinet Hash table"""
     cdef TCHDB* _db
     cdef bytes filename
 
-    def __cinit__(self, char *path, int mode = HDBOREADER | HDBONOLCK):
+    def __cinit__(self, char *path, nolock=True):
+        cdef int mode = HDBOREADER
+        if nolock:
+            mode |= HDBONOLCK
         self._db = tchdbnew()
         self.filename = path
         if self._db is NULL:
@@ -803,12 +810,12 @@ class Tree(GitObject):
         iteration, but will recursively include subtrees content.
 
         Yields:
-            Tuple[str, str, str]: (mode, filename, blob/tree sha)
+            Tuple[bytes, bytes, bytes]: (mode, filename, blob/tree sha)
 
-        >>> c = Commit('1e971a073f40d74a1e72e07c682e1cba0bae159b')
+        >>> c = Commit(u'1e971a073f40d74a1e72e07c682e1cba0bae159b')
         >>> len(list(c.tree.traverse()))
         8
-        >>> c = Commit('e38126dbca6572912013621d2aa9e6f7c50f36bc')
+        >>> c = Commit(u'e38126dbca6572912013621d2aa9e6f7c50f36bc')
         >>> len(list(c.tree.traverse()))
         36
         """
