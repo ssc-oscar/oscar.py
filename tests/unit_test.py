@@ -50,15 +50,20 @@ class TestHash(unittest.TestCase):
     # Hence, monolitic test
     def test_hash(self):
         # setup
-        self.db = Hash(b'/fast/All.sha1/sha1.commit_0.tch')
+        # key 114 is from the commit used by TestCommit below, which present
+        # in both test and production environment.
+        # just a reminder, PATHS[data_type] is a (path, key_length) tuple
+        db_path = PATHS['commit_random'][0].format(key=0).encode('ascii')
+        self.db = Hash(db_path)
 
         # reading a single key
-        k = b'\x80\xb4\xca\x99\xf8`Y\x03\xd8\xack\xd9!\xeb\xed\xfd\xfe\xcd\xd6`'
-        self.assertEqual(self.db[k], b'\x00')
+        k = b'test_key'
+        self.assertEqual(self.db[k], b'\x00\x01\x02\x03')
 
         # reading all keys
+        # create_fixtures.py adds more commits to this file to make it up to 1K
         keys = list(self.db)
-        self.assertGreaterEqual(len(keys), 14620535)
+        self.assertGreaterEqual(len(keys), 1000)
 
 
 class TestBase(unittest.TestCase):
@@ -114,6 +119,7 @@ class TestTree(unittest.TestCase):
         tree = Tree(u'd4ddbae978c9ec2dc3b7b3497c2086ecf7be7d9d')
         self.assertIn(b'.gitignore', tree)
         self.assertNotIn(File(b'.keep'), tree)
+        # setup.py blob
         self.assertIn(u'46aaf071f1b859c5bf452733c2583c70d92cd0c8', tree)
         self.assertIn(Blob(u'46aaf071f1b859c5bf452733c2583c70d92cd0c8'), tree)
 
@@ -135,8 +141,7 @@ class TestTree(unittest.TestCase):
 class TestCommit(unittest.TestCase):
     def test_init(self):
         sha = u'05cf84081b63cda822ee407e688269b494a642de'
-        bin_sha = b'\x05\xcf\x84\x08\x1b\x63\xcd\xa8\x22\xee' \
-                  b'\x40\x7e\x68\x82\x69\xb4\x94\xa6\x42\xde'
+        bin_sha = binascii.unhexlify(sha)
         self.assertEqual(GitObject(sha).sha, sha)
         self.assertEqual(GitObject(sha).bin_sha, bin_sha)
         self.assertRaises(ValueError, lambda: GitObject(u'05cf84081b63cda822'))
