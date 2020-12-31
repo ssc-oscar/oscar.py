@@ -5,7 +5,7 @@
 def make_ext(modname, pyxfilename):
     from distutils.extension import Extension
     return Extension(
-        name=modname, libraries=['bz2', 'zlib'], include_dirs=['lib'],
+        name=modname, libraries=['bz2', 'z'], include_dirs=['lib'],
         sources=[pyxfilename,
                  'lib/tchdb.c', 'lib/myconf.c', 'lib/tcutil.c', 'lib/md5.c'],
     )

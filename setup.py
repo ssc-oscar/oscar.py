@@ -5,7 +5,7 @@ from setuptools import Extension, setup
 
 extensions = [
     Extension(
-        'oscar', libraries=['bz2', 'zlib'], include_dirs=['lib'],
+        'oscar', libraries=['bz2', 'z'], include_dirs=['lib'],
         sources=['oscar.pyx',
                  'lib/tchdb.c', 'lib/myconf.c', 'lib/tcutil.c', 'lib/md5.c']
     ),
