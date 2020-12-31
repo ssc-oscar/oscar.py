@@ -40,15 +40,19 @@ try:
 except IOError:
     raise ImportError('Oscar only support Linux hosts so far')
 
-if not re.match(r'da\d.eecs.utk.edu$', HOSTNAME):
-    raise ImportError('Oscar is only available on certain servers at UTK, '
-                      'please modify to match your cluster configuration')
+HOST = HOSTNAME.split('.', 1)[0]
+DOMAIN = HOSTNAME[len(HOST):]
+IS_TEST_ENV = 'OSCAR_TEST' in os.environ
 
-HOST, DOMAIN = HOSTNAME.split('.', 1)
-COMMIT_HOSTS = ('da4', 'da5')
-if HOST not in COMMIT_HOSTS:
-    warnings.warn('Commit and tree direct content is only available on da4. '
-                  'Some functions might not work as expected.\n\n')
+# test environment has 'OSCAR_TEST' environment variable set
+if not IS_TEST_ENV:
+    if not DOMAIN.endswith(r'.eecs.utk.edu$'):
+        raise ImportError('Oscar is only available on certain servers at UTK, '
+                          'please modify to match your cluster configuration')
+
+    if HOST not in ('da4', 'da5'):
+        warnings.warn('Commit and tree direct content is only available on da4.'
+                      ' Some functions might not work as expected.\n\n')
 
 # Cython is generally smart enough to convert data[i] to int, but
 # pyximport in Py2 fails to do so, requires to use ord explicitly
@@ -66,7 +70,7 @@ def _latest_version(path_template):
     filenames = glob.glob(glob_pattern)
     prefix, postfix = glob_pattern.split('*', 1)
     versions = [fname[len(prefix):-len(postfix)] for fname in filenames]
-    return max(versions, key=lambda ver: (len(ver), ver))
+    return max(versions or [''], key=lambda ver: (len(ver), ver))
 
 
 def _key_length(str path_template):
@@ -120,7 +124,7 @@ def _get_paths(dict raw_paths):
             # TODO: .format with pver and check keys only
             # this will allow to handle 2-char versions
             key_length = _key_length(path_template)
-            if not key_length:
+            if not key_length and not IS_TEST_ENV:
                 warnings.warn("No keys found for path_template %s:\n%s" % (
                     ptype, path_template))
             VERSIONS[ptype] = pver
