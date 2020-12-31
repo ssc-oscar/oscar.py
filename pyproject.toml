@@ -1,5 +1,5 @@
 [build-system]
 requires = ["setuptools", "wheel", "Cython"]
 
-[semantic_release]
-version_variable = oscar.py:__version__
+[tool.semantic_release]
+version_variable = ['oscar.py:__version__']
