@@ -18,8 +18,17 @@ jobs:
       with:
         python-version: '3.8'
 
+    - name: Build manylinux package
+      # manylinux2014_x86_64 doesn't support Python 2,
+      # use the default manylinux2010_x86_64
+      uses: RalfG/python-wheels-manylinux-build@v0.3.3
+      with:
+        python-versions: 'cp27-cp27m cp36-cp36m'
+        build-requirements: 'cython setuptools>=18.0'
+        system-packages: 'bzip2-devel zlib-devel'
+
     - name: Python Semantic Release
-      uses: relekang/python-semantic-release@v7.2.1
+      uses: relekang/python-semantic-release@v7.9.0
       with:
         github_token: ${{ secrets.GH_TOKEN }}
         pypi_token: ${{ secrets.PYPI_TOKEN }}

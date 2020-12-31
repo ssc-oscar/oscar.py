@@ -9,9 +9,11 @@ data/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
+*.pyxbldc
 *.py[cod]
 
 # C extensions
+*.c
 *.so
 
 # Distribution / packaging
@@ -23,7 +25,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+#lib/
 lib64/
 parts/
 sdist/

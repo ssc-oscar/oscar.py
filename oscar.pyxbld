@@ -1,0 +1,15 @@
+
+# this file is needed for oscar.pyx to be compiled by tests/unit_test.py
+# because pyximport.install() doesn't take libraries argument
+
+def make_ext(modname, pyxfilename):
+    from distutils.extension import Extension
+    return Extension(
+        name=modname, libraries=['bz2', 'z'], include_dirs=['lib'],
+        sources=[pyxfilename,
+                 'lib/tchdb.c', 'lib/myconf.c', 'lib/tcutil.c', 'lib/md5.c'],
+    )
+
+
+def make_setup_args():
+    return {"script_args": ["--force"]}
