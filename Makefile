@@ -18,7 +18,7 @@ test:
 
 .PHONY: test_local
 test_local:
-	source tests/local_test.env; PYTHONPATH=. python tests/unit_test.py
+	bash -c "source tests/local_test.env; PYTHONPATH=. python tests/unit_test.py"
 
 .PHONY: clean
 clean:

@@ -31,9 +31,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install typing cython setuptools>=18.0
-          # libz is normally present, but not in Github actions
-          # will fail with "oscar.so: undefined symbol: inflate" if missing
-          sudo apt-get update && sudo apt-get install -y libbz2-dev zlib1g-dev libz
+          sudo apt-get update && sudo apt-get install -y libbz2-dev zlib1g-dev zlib
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
       - name: Run tests on Python ${{ matrix.python-version }}
