@@ -125,7 +125,7 @@ class TestTree(unittest.TestCase):
 
     def test_len(self):
         tree = Tree(u'd4ddbae978c9ec2dc3b7b3497c2086ecf7be7d9d')
-        self.assertEqual(len(tree), 16)
+        self.assertEqual(len(tree), 5)
 
     def test_pprint(self):
         self.assertEqual(

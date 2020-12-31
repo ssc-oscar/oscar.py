@@ -842,8 +842,7 @@ class Tree(GitObject):
         It includes recursive files (i.e. files in subdirectories).
         It does NOT include subdirectories themselves.
         """
-        return {fname: sha
-                for mode, fname, sha in self.traverse() if mode != b'40000'}
+        return {fname: sha for mode, fname, sha in self if mode != b'40000'}
 
     @property
     def blob_shas(self):
