@@ -19,8 +19,6 @@ sys.path.insert(0, os.path.abspath('..'))
 
 # -- Project information -----------------------------------------------------
 
-import oscar
-
 project = u'oscar'
 author = u'Marat (@cmu.edu)'
 copyright = u'2018, ' + author
