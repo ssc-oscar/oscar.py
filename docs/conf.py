@@ -19,16 +19,14 @@ sys.path.insert(0, os.path.abspath('..'))
 
 # -- Project information -----------------------------------------------------
 
-import oscar
-
 project = u'oscar'
-copyright = u'2018, Marat (@cmu.edu)'
-author = oscar.__author__
+author = u'Marat (@cmu.edu)'
+copyright = u'2018, ' + author
 
-# The short X.Y version
-version = ".".join(oscar.__version__.split(".", 3)[:2])
 # The full version, including alpha/beta/rc tags
-release = oscar.__version__
+release = u'1.3.3'
+# The short X.Y version
+version = u'.'.join(release.split(u'.', 3)[:2])
 
 
 # -- General configuration ---------------------------------------------------
@@ -108,12 +106,12 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'oscardoc'
+# htmlhelp_basename = 'oscardoc'
 
 
 # -- Options for LaTeX output ------------------------------------------------
 
-latex_elements = {
+# latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
     #
     # 'papersize': 'letterpaper',
@@ -129,25 +127,25 @@ latex_elements = {
     # Latex figure (float) alignment
     #
     # 'figure_align': 'htbp',
-}
+# }
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
-latex_documents = [
-    (master_doc, 'oscar.tex', u'oscar Documentation',
-     u'Marat (@cmu.edu)', 'manual'),
-]
+# latex_documents = [
+#     (master_doc, 'oscar.tex', u'oscar Documentation',
+#      u'Marat (@cmu.edu)', 'manual'),
+# ]
 
 
 # -- Options for manual page output ------------------------------------------
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    (master_doc, 'oscar', u'oscar Documentation',
-     [author], 1)
-]
+# man_pages = [
+#     (master_doc, 'oscar', u'oscar Documentation',
+#      [author], 1)
+# ]
 
 
 # -- Options for Texinfo output ----------------------------------------------
@@ -155,11 +153,11 @@ man_pages = [
 # Grouping the document tree into Texinfo files. List of tuples
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
-texinfo_documents = [
-    (master_doc, 'oscar', u'oscar Documentation',
-     author, 'oscar', 'One line description of project.',
-     'Miscellaneous'),
-]
+# texinfo_documents = [
+#     (master_doc, 'oscar', u'oscar Documentation',
+#      author, 'oscar', 'One line description of project.',
+#      'Miscellaneous'),
+# ]
 
 
 # -- Extension configuration -------------------------------------------------
