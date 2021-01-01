@@ -1,0 +1,135 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Motivation &#8212; oscar 1.3.3 documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <p>As of 1.3 version, <cite>oscar</cite> is compiled from Cython,
+and thus requires few extra build steps.</p>
+<div class="section" id="motivation">
+<h1>Motivation<a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h1>
+<p>The reason for this is that <cite>libtokyocabinet</cite> binding,
+<cite>python-tokyocabinet</cite>, is a C extension that only supports
+Python 2 without any plans to implement Python3 compatibility.
+Several options were considered:</p>
+<ul class="simple">
+<li><p>cffi (C Foreign Functions Interface) - perhaps, the simplest option,
+but it does not support conditional definitions (<cite>#IFDEF</cite>), that are
+actively used in tokyocabinet headers</p></li>
+<li><p>C extension, adapting existing <cite>python-tokyocabinet</cite> code for Python 3.
+It is rather hard to support and even harder to debug; a single
+attempt was scrapped after making a silently failing extension.</p></li>
+<li><p>SWIG, a Google project to generate C/C++ library bindings
+for pretty much any language. Since this library provides 1:1 interface
+to the library methods, Python clients had to be aware of the returned
+C structures used by libtokyocabinet, which was very inconvenient.</p></li>
+<li><p>Cython, a weird mix of Python and C. It allows writing Python interfaces,
+while simultaneously using C functions. This makes it the ideal option
+for our purposes, providing a Python tch file handler holding working
+with libtokyocabinet C structures under the hood.</p></li>
+</ul>
+<p>Cython came a clear winner in this comparison, also helping to speed up
+some utility functions along the way (e.g. <cite>fnvhash</cite>, a pure Python version
+of which was previously used).</p>
+</div>
+<div class="section" id="about-cython">
+<h1>About Cython<a class="headerlink" href="#about-cython" title="Permalink to this headline">¶</a></h1>
+<p>Cython code is first transpiled into C code, which is then compiled into
+a C Python extension (<cite>.so</cite> file on Linux systems). Generally, it does not
+matter which letter of Python was used in the first step</p>
+<p>There are <a class="reference external" href="https://cython.readthedocs.io/en/latest/src/userguide/source_files_and_compilation.html">two main ways to compile</a>
+Cython code, using <cite>cythonize</cite> and <cite>pyximport</cite>. The former one is done explicitly,
+e.g. to build binaries for distribution, while the latter one allows building
+in place.</p>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">oscar</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Marat (@cmu.edu).
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.4.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/build.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,19 +1,17 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Reference &#8212; oscar 1.3.3 documentation</title>
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
    
@@ -38,12 +36,12 @@
 </div>
 <p>This module provides interface to the objects:</p>
 <ul class="simple">
-<li><a class="reference internal" href="#oscar.Project" title="oscar.Project"><code class="xref py py-class docutils literal notranslate"><span class="pre">Project</span></code></a> - represents a repository</li>
-<li><a class="reference internal" href="#oscar.Commit" title="oscar.Commit"><code class="xref py py-class docutils literal notranslate"><span class="pre">Commit</span></code></a> - represents a commit in a repository</li>
-<li><a class="reference internal" href="#oscar.Tree" title="oscar.Tree"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tree</span></code></a> - represents a directory and its content. Each <cite>Commit</cite> has a root tree.</li>
-<li><a class="reference internal" href="#oscar.File" title="oscar.File"><code class="xref py py-class docutils literal notranslate"><span class="pre">File</span></code></a> - represents a file path, including all parent directories/trees</li>
-<li><a class="reference internal" href="#oscar.Blob" title="oscar.Blob"><code class="xref py py-class docutils literal notranslate"><span class="pre">Blob</span></code></a> - Binary Large OBject, represents a file content.</li>
-<li><a class="reference internal" href="#oscar.Author" title="oscar.Author"><code class="xref py py-class docutils literal notranslate"><span class="pre">Author</span></code></a> - represents a combination of author name and email.</li>
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Project</span></code> - represents a repository</p></li>
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Commit</span></code> - represents a commit in a repository</p></li>
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Tree</span></code> - represents a directory and its content. Each <cite>Commit</cite> has a root tree.</p></li>
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">File</span></code> - represents a file path, including all parent directories/trees</p></li>
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Blob</span></code> - Binary Large OBject, represents a file content.</p></li>
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Author</span></code> - represents a combination of author name and email.</p></li>
 </ul>
 <p><cite>Commit</cite>, <cite>Tree</cite> and <cite>Blob</cite> are a straightforward representation of
 objects used by Git internally.
@@ -59,33 +57,12 @@ for <cite>Project</cite> it is the project URI;
 for <cite>File</cite> it is the filename;
 for <cite>Author</cite> it is the author name and email.
 Objects of the same type and having the same key will be considered equivalent:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sha</span> <span class="o">=</span> <span class="s1">&#39;f2a7fcdc51450ab03cb364415f14e634fa69b62c&#39;</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sha</span> <span class="o">=</span> <span class="s1">&#39;f2a7fcdc51450ab03cb364415f14e634fa69b62c&#39;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">Commit</span><span class="p">(</span><span class="n">sha</span><span class="p">)</span> <span class="o">==</span> <span class="n">Commit</span><span class="p">(</span><span class="n">sha</span><span class="p">)</span>
 <span class="go">True</span>
 </pre></div>
 </div>
 <p>It is possible to iterate all objects of a given type using <cite>.all()</cite></p>
-<dl class="classmethod">
-<dt id="oscar._Base.all">
-<em class="property">classmethod </em><code class="descclassname">_Base.</code><code class="descname">all</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/oscar.html#_Base.all"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oscar._Base.all" title="Permalink to this definition">¶</a></dt>
-<dd><p>Iterate all objects of the given type</p>
-<p>This might be useful to get a list of all projects, or a list of
-all file names.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">a generator of <cite>Project</cite> objects</td>
-</tr>
-</tbody>
-</table>
-<p>E.g. to iterate all repositories of user2589 on github:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">project</span> <span class="ow">in</span> <span class="n">Project</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="s1">&#39;user2589_&#39;</span><span class="p">):</span>
-<span class="gp">... </span>    <span class="nb">print</span> <span class="n">project</span><span class="o">.</span><span class="n">uri</span>
-</pre></div>
-</div>
-</dd></dl>
-
 </div>
 <div class="section" id="gitobject-methods">
 <h2>GitObject methods<a class="headerlink" href="#gitobject-methods" title="Permalink to this headline">¶</a></h2>
@@ -93,426 +70,20 @@ all file names.</p>
 <p>All git objects are instantiated by a 40-byte hex string SHA or a 20-byte binary SHA.
 In most cases you will use hex form, the latter way is needed only fore relatively
 rare cases you need to interface with binary data.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Commit</span><span class="p">(</span><span class="s1">&#39;f2a7fcdc51450ab03cb364415f14e634fa69b62c&#39;</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Commit</span><span class="p">(</span><span class="s1">&#39;f2a7fcdc51450ab03cb364415f14e634fa69b62c&#39;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">Commit</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\xf2\xa7\xfc\xdc</span><span class="s1">QE</span><span class="se">\n\xb0</span><span class="s1">&lt;</span><span class="se">\xb3</span><span class="s1">dA_</span><span class="se">\x14\xe6</span><span class="s1">4</span><span class="se">\xfa</span><span class="s1">i</span><span class="se">\xb6</span><span class="s1">,&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Whatever form of SHA was used to instantiate the object, it will have properties:</p>
 <ul class="simple">
-<li><cite>sha</cite> - 40-byte hex string</li>
-<li><cite>bin_sha</cite> - 20 bytes binary string</li>
+<li><p><cite>sha</cite> - 40-byte hex string</p></li>
+<li><p><cite>bin_sha</cite> - 20 bytes binary string</p></li>
 </ul>
 <p>All git objects, when coerced to <cite>str</cite>, will return their internal representation.
 It is mostly important for <cite>Blob</cite> to access the file content.</p>
 </div>
 <div class="section" id="class-reference">
 <h2>Class reference<a class="headerlink" href="#class-reference" title="Permalink to this headline">¶</a></h2>
-<dl class="class">
-<dt id="oscar.Project">
-<em class="property">class </em><code class="descclassname">oscar.</code><code class="descname">Project</code><span class="sig-paren">(</span><em>uri</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oscar.html#Project"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oscar.Project" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="docutils">
-<dt>Projects are initialized with a URI:</dt>
-<dd><ul class="first last simple">
-<li>Github: <cite>{user}_{repo}</cite>, e.g. <cite>user2589_minicms</cite></li>
-<li>Gitlab: <cite>gl_{user}_{repo}</cite></li>
-<li>Bitbucket: <cite>bb_{user}_{repo}</cite></li>
-<li>Bioconductor: <cite>bioconductor.org_{user}_{repo}</cite></li>
-<li>kde: <cite>kde.org_{user}_{repo}</cite></li>
-<li>drupal: <cite>drupal.org_{user}_{repo}</cite></li>
-<li>Googlesouce: <cite>android.googlesource.com_{repo}_{user}</cite></li>
-<li>Linux kernel: <cite>git.kernel.org_{user}_{repo}</cite></li>
-<li>PostgreSQL: <cite>git.postgresql.org_{user}_{repo}</cite></li>
-<li>GNU Savannah: <cite>git.savannah.gnu.org_{user}_{repo}</cite></li>
-<li>ZX2C4: <cite>git.zx2c4.com_{user}_{repo}</cite></li>
-<li>GNOME: <cite>gitlab.gnome.org_{user}_{repo}</cite></li>
-<li>repo.or.cz: <cite>repo.or.cz_{user}_{repo}</cite></li>
-<li>Salsa: <cite>salsa.debian.org_{user}_{repo}</cite></li>
-<li>SourceForge: <cite>sourceforge.net_{user}_{repo}</cite></li>
-</ul>
-</dd>
-</dl>
-<p>Projects are iterable:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">commit</span> <span class="ow">in</span> <span class="n">Project</span><span class="p">(</span><span class="s1">&#39;user2589_minicms&#39;</span><span class="p">):</span>  <span class="c1"># doctest: +SKIP</span>
-<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="n">commit</span><span class="o">.</span><span class="n">sha</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>Commits can be checked for membership in a project, either by their SHA
-hash or by a Commit object itself:</p>
-<blockquote>
-<div>Commit: <a class="reference external" href="https://github.com/user2589/minicms/commit/e38126db">https://github.com/user2589/minicms/commit/e38126db</a>
-&gt;&gt;&gt; sha = ‘e38126dbca6572912013621d2aa9e6f7c50f36bc’
-&gt;&gt;&gt; sha in Project(‘user2589_minicms’)
-True
-&gt;&gt;&gt; Commit(sha) in Project(‘user2589_minicms’)
-True</div></blockquote>
-<dl class="attribute">
-<dt id="oscar.Project.commit_shas">
-<code class="descname">commit_shas</code><a class="headerlink" href="#oscar.Project.commit_shas" title="Permalink to this definition">¶</a></dt>
-<dd><p>SHA1 of all commits in the project</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Project</span><span class="p">(</span><span class="s1">&#39;user2589_django-currencies&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">commit_shas</span>
-<span class="gp">... </span>        <span class="c1"># doctest: +NORMALIZE_WHITESPACE</span>
-<span class="go">(&#39;2dbcd43f077f2b5511cc107d63a0b9539a6aa2a7&#39;,</span>
-<span class="go"> &#39;7572fc070c44f85e2a540f9a5a05a95d1dd2662d&#39;)</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="oscar.Project.commits">
-<code class="descname">commits</code><a class="headerlink" href="#oscar.Project.commits" title="Permalink to this definition">¶</a></dt>
-<dd><p>A generator of all Commit objects in the project.
-It has the same effect as iterating a <cite>Project</cite> instance itself,
-with some additional validation of commit dates.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">tuple</span><span class="p">(</span><span class="n">Project</span><span class="p">(</span><span class="s1">&#39;user2589_django-currencies&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">commits</span><span class="p">)</span>
-<span class="gp">... </span>      <span class="c1"># doctest: +NORMALIZE_WHITESPACE</span>
-<span class="go">(&lt;Commit: 2dbcd43f077f2b5511cc107d63a0b9539a6aa2a7&gt;,</span>
-<span class="go"> &lt;Commit: 7572fc070c44f85e2a540f9a5a05a95d1dd2662d&gt;)</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="oscar.Project.commits_fp">
-<code class="descname">commits_fp</code><a class="headerlink" href="#oscar.Project.commits_fp" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get a commit chain by following only the first parent, to mimic
-<a class="reference external" href="https://git-scm.com/docs/git-log#git-log---first-parent">https://git-scm.com/docs/git-log#git-log—first-parent</a> .
-Thus, you only get a small subset of the full commit tree:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">p</span> <span class="o">=</span> <span class="n">Project</span><span class="p">(</span><span class="s1">&#39;user2589_minicms&#39;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">set</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">sha</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">p</span><span class="o">.</span><span class="n">commits_fp</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">commit_shas</span><span class="p">)</span>
-<span class="go">True</span>
-</pre></div>
-</div>
-<p>In scenarios where branches are not important, it can save a lot
-of computing.</p>
-<p>Note: commits will come in order from the latest to the earliest.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="oscar.Project.head">
-<code class="descname">head</code><a class="headerlink" href="#oscar.Project.head" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the HEAD commit of the repository</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Project</span><span class="p">(</span><span class="s1">&#39;user2589_minicms&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">head</span>
-<span class="go">&lt;Commit: f2a7fcdc51450ab03cb364415f14e634fa69b62c&gt;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">Project</span><span class="p">(</span><span class="s1">&#39;RoseTHERESA_SimpleCMS&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">head</span>
-<span class="go">&lt;Commit: a47afa002ccfd3e23920f323b172f78c5c970250&gt;</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="oscar.Project.tail">
-<code class="descname">tail</code><a class="headerlink" href="#oscar.Project.tail" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the first commit SHA by following first parents</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Project</span><span class="p">(</span><span class="s1">&#39;user2589_minicms&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">tail</span>
-<span class="go">&#39;1e971a073f40d74a1e72e07c682e1cba0bae159b&#39;</span>
-</pre></div>
-</div>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="oscar.Commit">
-<em class="property">class </em><code class="descclassname">oscar.</code><code class="descname">Commit</code><span class="sig-paren">(</span><em>sha</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oscar.html#Commit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oscar.Commit" title="Permalink to this definition">¶</a></dt>
-<dd><p>A git commit object.</p>
-<p>Commits have some special properties.
-Most of object properties provided by this project are lazy, i.e. they are
-computed when you access them for the first time.
-The following <cite>Commit</cite> properties will be instantiated all at once on the
-first access to <em>any</em> of them.</p>
-<ul class="simple">
-<li><code class="xref py py-data docutils literal notranslate"><span class="pre">tree</span></code>:           root <cite>Tree</cite> of the commit</li>
-<li><code class="xref py py-data docutils literal notranslate"><span class="pre">parent_shas</span></code>:    tuple of parent commit sha hashes</li>
-<li><code class="xref py py-data docutils literal notranslate"><span class="pre">message</span></code>:        str, first line of the commit message</li>
-<li><code class="xref py py-data docutils literal notranslate"><span class="pre">full_message</span></code>:   str, full commit message</li>
-<li><code class="xref py py-data docutils literal notranslate"><span class="pre">author</span></code>:         str, Name &lt;email&gt;</li>
-<li><code class="xref py py-data docutils literal notranslate"><span class="pre">authored_at</span></code>:    str, unix_epoch+timezone</li>
-<li><code class="xref py py-data docutils literal notranslate"><span class="pre">committer</span></code>:      str, Name &lt;email&gt;</li>
-<li><code class="xref py py-data docutils literal notranslate"><span class="pre">committed_at</span></code>:   str, unix_epoch+timezone</li>
-</ul>
-<dl class="attribute">
-<dt id="oscar.Commit.blob_shas">
-<code class="descname">blob_shas</code><a class="headerlink" href="#oscar.Commit.blob_shas" title="Permalink to this definition">¶</a></dt>
-<dd><p>SHA hashes of all blobs in the commit</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Commit</span><span class="p">(</span><span class="s1">&#39;af0048f4aac8f4760bf9b816e01524d7fb20a3fc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">blob_shas</span>
-<span class="gp">... </span>       <span class="c1"># doctest: +NORMALIZE_WHITESPACE</span>
-<span class="go">(&#39;b2f49ffef1c8d7ce83a004b34035f917713e2766&#39;,</span>
-<span class="go"> &#39;c92011c5ccc32a9248bd929a6e56f846ac5b8072&#39;,</span>
-<span class="go"> &#39;bf3c2d2df2ef710f995b590ac3e2c851b592c871&#39;)</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="oscar.Commit.blobs">
-<code class="descname">blobs</code><a class="headerlink" href="#oscar.Commit.blobs" title="Permalink to this definition">¶</a></dt>
-<dd><p>A generator of <cite>Blob</cite> objects included in this commit</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">tuple</span><span class="p">(</span><span class="n">Commit</span><span class="p">(</span><span class="s1">&#39;af0048f4aac8f4760bf9b816e01524d7fb20a3fc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">blobs</span><span class="p">)</span>
-<span class="gp">... </span>             <span class="c1"># doctest: +NORMALIZE_WHITESPACE</span>
-<span class="go">(&lt;Blob: b2f49ffef1c8d7ce83a004b34035f917713e2766&gt;,</span>
-<span class="go"> &lt;Blob: c92011c5ccc32a9248bd929a6e56f846ac5b8072&gt;,</span>
-<span class="go"> &lt;Blob: bf3c2d2df2ef710f995b590ac3e2c851b592c871&gt;)</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="oscar.Commit.child_shas">
-<code class="descname">child_shas</code><a class="headerlink" href="#oscar.Commit.child_shas" title="Permalink to this definition">¶</a></dt>
-<dd><p>Children commit binary sha hashes.
-Basically, this is a reverse parent_shas</p>
-<p>Commit: <a class="reference external" href="https://github.com/user2589/minicms/commit/1e971a07">https://github.com/user2589/minicms/commit/1e971a07</a>
-&gt;&gt;&gt; Commit(‘1e971a073f40d74a1e72e07c682e1cba0bae159b’).child_shas
-(‘9bd02434b834979bb69d0b752a403228f2e385e8’,)</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="oscar.Commit.children">
-<code class="descname">children</code><a class="headerlink" href="#oscar.Commit.children" title="Permalink to this definition">¶</a></dt>
-<dd><p>A generator of children <cite>Commit</cite> objects</p>
-<p>Commit: <a class="reference external" href="https://github.com/user2589/minicms/commit/1e971a07">https://github.com/user2589/minicms/commit/1e971a07</a>
-&gt;&gt;&gt; tuple(Commit(‘1e971a073f40d74a1e72e07c682e1cba0bae159b’).children)
-(&lt;Commit: 9bd02434b834979bb69d0b752a403228f2e385e8&gt;,)</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="oscar.Commit.parents">
-<code class="descname">parents</code><a class="headerlink" href="#oscar.Commit.parents" title="Permalink to this definition">¶</a></dt>
-<dd><p>A generator of parent commits.
-If you only need hashes (and not <cite>Commit</cite> objects),
-use <cite>.parent_sha</cite> instead</p>
-<p>Commit: <a class="reference external" href="https://github.com/user2589/minicms/commit/e38126db">https://github.com/user2589/minicms/commit/e38126db</a>
-&gt;&gt;&gt; c = Commit(‘e38126dbca6572912013621d2aa9e6f7c50f36bc’)
-&gt;&gt;&gt; tuple(c.parents)
-(&lt;Commit: ab124ab4baa42cd9f554b7bb038e19d4e3647957&gt;,)</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="oscar.Commit.project_names">
-<code class="descname">project_names</code><a class="headerlink" href="#oscar.Commit.project_names" title="Permalink to this definition">¶</a></dt>
-<dd><p>URIs of projects including this commit.
-This property can be used to find all forks of a project
-by its first commit.</p>
-<p>Commit: <a class="reference external" href="https://github.com/user2589/minicms/commit/f2a7fcdc">https://github.com/user2589/minicms/commit/f2a7fcdc</a>
-&gt;&gt;&gt; c = Commit(‘f2a7fcdc51450ab03cb364415f14e634fa69b62c’)
-&gt;&gt;&gt; isinstance(c.project_names, tuple)
-True
-&gt;&gt;&gt; len(c.project_names) &gt; 0
-True
-&gt;&gt;&gt; ‘user2589_minicms’ in c.project_names
-True</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="oscar.Commit.projects">
-<code class="descname">projects</code><a class="headerlink" href="#oscar.Commit.projects" title="Permalink to this definition">¶</a></dt>
-<dd><p>A generator of <cite>Project</cite> s, in which this commit is included.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="oscar.Tree">
-<em class="property">class </em><code class="descclassname">oscar.</code><code class="descname">Tree</code><span class="sig-paren">(</span><em>sha</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oscar.html#Tree"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oscar.Tree" title="Permalink to this definition">¶</a></dt>
-<dd><p>A representation of git tree object, basically - a directory.</p>
-<p>Trees are iterable. Each element of the iteration is a 3-tuple:
-<cite>(mode, filename, sha)</cite></p>
-<ul class="simple">
-<li><dl class="first docutils">
-<dt><cite>mode</cite> is an ASCII decimal <strong>string</strong> similar to file mode</dt>
-<dd>in Unix systems. Subtrees always have mode “40000”</dd>
-</dl>
-</li>
-<li><cite>filename</cite> is a string filename, not including directories</li>
-<li><cite>sha</cite> is a 40 bytes hex string representing file content Blob SHA</li>
-</ul>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">iteration is not recursive.
-For a recursive walk, use Tree.traverse() or Tree.files</p>
-</div>
-<p>Both files and blobs can be checked for membership,
-either by their id (filename or SHA) or a corresponding object:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">tree</span> <span class="o">=</span> <span class="n">Tree</span><span class="p">(</span><span class="s2">&quot;d4ddbae978c9ec2dc3b7b3497c2086ecf7be7d9d&quot;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="s1">&#39;.gitignore&#39;</span> <span class="ow">in</span> <span class="n">tree</span>
-<span class="go">True</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">File</span><span class="p">(</span><span class="s1">&#39;.keep&#39;</span><span class="p">)</span> <span class="ow">in</span> <span class="n">tree</span>
-<span class="go">False</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="s1">&#39;83d22195edc1473673f1bf35307aea6edf3c37e3&#39;</span> <span class="ow">in</span> <span class="n">tree</span>
-<span class="go">True</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">Blob</span><span class="p">(</span><span class="s1">&#39;83d22195edc1473673f1bf35307aea6edf3c37e3&#39;</span><span class="p">)</span> <span class="ow">in</span> <span class="n">tree</span>
-<span class="go">True</span>
-</pre></div>
-</div>
-<p><cite>len(tree)</cite> returns the number of files under the tree, including files in
-subtrees but not the subtrees themselves:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">Tree</span><span class="p">(</span><span class="s2">&quot;d4ddbae978c9ec2dc3b7b3497c2086ecf7be7d9d&quot;</span><span class="p">))</span>
-<span class="go">16</span>
-</pre></div>
-</div>
-<dl class="attribute">
-<dt id="oscar.Tree.blob_shas">
-<code class="descname">blob_shas</code><a class="headerlink" href="#oscar.Tree.blob_shas" title="Permalink to this definition">¶</a></dt>
-<dd><p>A tuple of all file content shas, including files in subdirectories</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="oscar.Tree.blobs">
-<code class="descname">blobs</code><a class="headerlink" href="#oscar.Tree.blobs" title="Permalink to this definition">¶</a></dt>
-<dd><p>A generator of Blob objects with file content.
-It does include files in subdirectories.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">tuple</span><span class="p">(</span><span class="n">Tree</span><span class="p">(</span><span class="s1">&#39;d20520ef8c1537a42628b72d481b8174c0a1de84&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">blobs</span>
-<span class="gp">... </span>      <span class="p">)</span>  <span class="c1"># doctest: +ELLIPSIS, +NORMALIZE_WHITESPACE</span>
-<span class="go">(&lt;Blob: 2bdf5d686c6cd488b706be5c99c3bb1e166cf2f6&gt;, ...,</span>
-<span class="go"> &lt;Blob: c006bef767d08b41633b380058a171b7786b71ab&gt;)</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="oscar.Tree.files">
-<code class="descname">files</code><a class="headerlink" href="#oscar.Tree.files" title="Permalink to this definition">¶</a></dt>
-<dd><p>A dict of all files and their content/blob sha under this tree.
-It includes recursive files (i.e. files in subdirectories).
-It does NOT include subdirectories themselves.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="oscar.Tree.traverse">
-<code class="descname">traverse</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/oscar.html#Tree.traverse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oscar.Tree.traverse" title="Permalink to this definition">¶</a></dt>
-<dd><p>Recursively traverse the tree
-This will generate 3-tuples of the same format as direct tree
-iteration, but will recursively include subtrees content.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">generator of (mode, filename, blob/tree sha)</td>
-</tr>
-</tbody>
-</table>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">c</span> <span class="o">=</span> <span class="n">Commit</span><span class="p">(</span><span class="s2">&quot;1e971a073f40d74a1e72e07c682e1cba0bae159b&quot;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">()))</span>
-<span class="go">8</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">c</span> <span class="o">=</span> <span class="n">Commit</span><span class="p">(</span><span class="s1">&#39;e38126dbca6572912013621d2aa9e6f7c50f36bc&#39;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">()))</span>
-<span class="go">36</span>
-</pre></div>
-</div>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="oscar.File">
-<em class="property">class </em><code class="descclassname">oscar.</code><code class="descname">File</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oscar.html#File"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oscar.File" title="Permalink to this definition">¶</a></dt>
-<dd><p>Files are initialized with a path, starting from a commit root tree:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">File</span><span class="p">(</span><span class="s1">&#39;.gitignore&#39;</span><span class="p">)</span>  <span class="c1"># doctest: +SKIP</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">File</span><span class="p">(</span><span class="s1">&#39;docs/Index.rst&#39;</span><span class="p">)</span>  <span class="c1"># doctest: +SKIP</span>
-</pre></div>
-</div>
-<dl class="attribute">
-<dt id="oscar.File.commit_shas">
-<code class="descname">commit_shas</code><a class="headerlink" href="#oscar.File.commit_shas" title="Permalink to this definition">¶</a></dt>
-<dd><p>SHA1 of all commits changing this file</p>
-<p><strong>NOTE: this relation considers only diff with the first parent,
-which substantially limits its application</strong></p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">commits</span> <span class="o">=</span> <span class="n">File</span><span class="p">(</span><span class="s1">&#39;minicms/templatetags/minicms_tags.py&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">commit_shas</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">commits</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
-<span class="go">True</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">isinstance</span><span class="p">(</span><span class="n">commits</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span>
-<span class="go">True</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">isinstance</span><span class="p">(</span><span class="n">commits</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">str</span><span class="p">)</span>
-<span class="go">True</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">commits</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="mi">40</span>
-<span class="go">True</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="oscar.File.commits">
-<code class="descname">commits</code><a class="headerlink" href="#oscar.File.commits" title="Permalink to this definition">¶</a></dt>
-<dd><p>All commits changing the file</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">cs</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">File</span><span class="p">(</span><span class="s1">&#39;minicms/templatetags/minicms_tags.py&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">commits</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">cs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
-<span class="go">True</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">isinstance</span><span class="p">(</span><span class="n">cs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">Commit</span><span class="p">)</span>
-<span class="go">True</span>
-</pre></div>
-</div>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="oscar.Blob">
-<em class="property">class </em><code class="descclassname">oscar.</code><code class="descname">Blob</code><span class="sig-paren">(</span><em>sha</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oscar.html#Blob"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oscar.Blob" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="attribute">
-<dt id="oscar.Blob.commit_shas">
-<code class="descname">commit_shas</code><a class="headerlink" href="#oscar.Blob.commit_shas" title="Permalink to this definition">¶</a></dt>
-<dd><p>SHAs of Commits in which this blob have been
-introduced or modified.</p>
-<p><strong>NOTE: commits removing this blob are not included</strong></p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="oscar.Blob.commits">
-<code class="descname">commits</code><a class="headerlink" href="#oscar.Blob.commits" title="Permalink to this definition">¶</a></dt>
-<dd><p>Commits where this blob has been added or changed</p>
-<p><strong>NOTE: commits removing this blob are not included</strong></p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="oscar.Blob.data">
-<code class="descname">data</code><a class="headerlink" href="#oscar.Blob.data" title="Permalink to this definition">¶</a></dt>
-<dd><p>Content of the blob</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="oscar.Author">
-<em class="property">class </em><code class="descclassname">oscar.</code><code class="descname">Author</code><span class="sig-paren">(</span><em>full_email</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oscar.html#Author"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oscar.Author" title="Permalink to this definition">¶</a></dt>
-<dd><p>Authors are initialized with a combination of name and email, as they
-appear in git configuration.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Author</span><span class="p">(</span><span class="s1">&#39;John Doe &lt;john.doe@aol.com&gt;&#39;</span><span class="p">)</span>  <span class="c1"># doctest: +SKIP</span>
-</pre></div>
-</div>
-<p>At this point we don’t have a relation to map all aliases of the same
-author, so keep in mind this object represents an alias, not a person.</p>
-<dl class="attribute">
-<dt id="oscar.Author.commit_shas">
-<code class="descname">commit_shas</code><a class="headerlink" href="#oscar.Author.commit_shas" title="Permalink to this definition">¶</a></dt>
-<dd><p>SHA1 of all commits authored by the Author</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">commits</span> <span class="o">=</span> <span class="n">Author</span><span class="p">(</span><span class="s1">&#39;user2589 &lt;valiev.m@gmail.com&gt;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">commit_shas</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">commits</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">50</span>
-<span class="go">True</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">isinstance</span><span class="p">(</span><span class="n">commits</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span>
-<span class="go">True</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">isinstance</span><span class="p">(</span><span class="n">commits</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">str</span><span class="p">)</span>
-<span class="go">True</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">commits</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="mi">40</span>
-<span class="go">True</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="oscar.Author.commits">
-<code class="descname">commits</code><a class="headerlink" href="#oscar.Author.commits" title="Permalink to this definition">¶</a></dt>
-<dd><p>A generator of all Commit objects authored by the Author</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">commits</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">Author</span><span class="p">(</span><span class="s1">&#39;user2589 &lt;valiev.m@gmail.com&gt;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">commits</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">commits</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">50</span>
-<span class="go">True</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">isinstance</span><span class="p">(</span><span class="n">commits</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">Commit</span><span class="p">)</span>
-<span class="go">True</span>
-</pre></div>
-</div>
-</dd></dl>
-
-</dd></dl>
-
 </div>
 </div>
 
@@ -542,17 +113,15 @@ author, so keep in mind this object represents an alias, not a person.</p>
 </ul>
 </div>
 <div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
+  <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
+      <input type="text" name="q" aria-labelledby="searchlabel" />
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+<script>$('#searchbox').show(0);</script>
 
 
 
@@ -569,7 +138,7 @@ author, so keep in mind this object represents an alias, not a person.</p>
       &copy;2018, Marat (@cmu.edu).
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.4.1</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

@@ -1,0 +1,140 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>How to contribute &#8212; oscar 1.3.3 documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="how-to-contribute">
+<h1>How to contribute<a class="headerlink" href="#how-to-contribute" title="Permalink to this headline">¶</a></h1>
+<p><cite>master</cite> is for releases only. Development happens on feature branches,
+which stem from <cite>dev</cite> branch and merge back. Once in a while <cite>dev</cite> is merged
+to master, producing a new release. This rule is mostly because of the server
+layout preventing us from running unit tests automatically.</p>
+<p>We use <a class="reference external" href="https://www.conventionalcommits.org">conventional commits</a> message
+convention. This means that you MUST prepend commit messages with one of:
+- <strong>fix:</strong> in case the change fixes a problem without changing any interfaces.</p>
+<blockquote>
+<div><p>Example commit message: <cite>fix: missing clickhouse-driver dependency (closes #123)</cite>.</p>
+</div></blockquote>
+<ul class="simple">
+<li><dl class="simple">
+<dt><strong>feat:</strong> the change implements a new feature, without affecting existing</dt><dd><p>interfaces. Example: <cite>feat: implement author timeline</cite>.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>chore:</strong> the change does not affect functionality, e.g. PEP8 fixes.</dt><dd><p>E.g.: <cite>chore: PEP8 fixes</cite></p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>docs:</strong>: similar to <cite>chore:</cite> but explicitly related to documentation.</dt><dd><p>E.g.: <cite>docs: add timeline usage examples</cite></p>
+</dd>
+</dl>
+</li>
+<li><p><strong>refactor:</strong> similar to <cite>chore:</cite></p></li>
+</ul>
+<p>In case of breaking changes (i.e. if any interfaces were changed, breaking
+backward compatibility), commit message should contain <strong>BREAKING CHANGE</strong>
+in the footer, or have an exclamation mark after prefix, e.g.:</p>
+<blockquote>
+<div><p><cite>feat!: drop support for deprectated parameters</cite></p>
+</div></blockquote>
+<p>Commit messages will be used to automatically bump version. <cite>fix</cite>, <cite>chore</cite>, <cite>docs</cite>
+will produce patch versions, <cite>feat</cite> will result in a minor version bump, and in
+case of breaking changes the major version will be incremented.
+As a consequence, <strong>you must never change version number manually</strong>.</p>
+<p>Not following these procedures might take your pull request extra time to
+review and in some cases will require rewriting the commit history.</p>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">oscar</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Marat (@cmu.edu).
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.4.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/contribute.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
