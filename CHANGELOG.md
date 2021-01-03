@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v2.0.1 (2021-01-03)
+### Fix
+* Version bump ([`6eef010`](https://github.com/ssc-oscar/oscar.py/commit/6eef010bae395f6c0a02901ec4998d142ff11d7f))
+
 ## v2.0.0 (2021-01-03)
 ### Feature
 * Include statically linked libtokyocabinet support ([`97db8b4`](https://github.com/ssc-oscar/oscar.py/commit/97db8b4164e21ff299daf4aacffabd06d7a017ea))
