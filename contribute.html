@@ -14,6 +14,7 @@
     <script src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Reference" href="index.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -43,12 +44,13 @@ via pull requests. Every pull request triggers unit testing, every merge trigger
 a release.</p>
 <p>To generate release notes, we use <a class="reference external" href="https://www.conventionalcommits.org">conventional commits</a>,
 a convention to commit messages. In a nutshell, it means commit messages should
-be prefixed with one of:
-- <strong>fix:</strong> in case the change fixes a problem without changing any interfaces.</p>
-<blockquote>
-<div><p>Example commit message: <cite>fix: missing clickhouse-driver dependency (closes #123)</cite>.</p>
-</div></blockquote>
+be prefixed with one of:</p>
 <ul>
+<li><dl class="simple">
+<dt><strong>fix:</strong> in case the change fixes a problem without changing any interfaces.</dt><dd><p>Example commit message: <cite>fix: missing clickhouse-driver dependency (closes #123)</cite>.</p>
+</dd>
+</dl>
+</li>
 <li><dl class="simple">
 <dt><strong>feat:</strong> the change implements a new feature, without affecting existing</dt><dd><p>interfaces. Example: <cite>feat: implement author timeline</cite>.</p>
 </dd>
@@ -125,12 +127,13 @@ offers support for such packages. Building is done via <a class="reference exter
 a special Docker image, and is automated via GitHub action.</p>
 <p>To build package locally,</p>
 <ol class="arabic simple">
-<li><dl class="simple">
-<dt>clone the corresponding GitHub action repository,</dt><dd><p><cite>git clone git&#64;github.com:RalfG/python-wheels-manylinux-build.git</cite>,
-check out the desired tag (e.g. <cite>git checkout v0.3.3</cite>).</p>
-</dd>
-</dl>
-</li>
+<li><p>clone the corresponding GitHub action repository,</p></li>
+</ol>
+<blockquote>
+<div><p><cite>git clone git&#64;github.com:RalfG/python-wheels-manylinux-build.git</cite>,</p>
+</div></blockquote>
+<ol class="arabic simple" start="2">
+<li><p>check out the desired tag if necessary, e.g. <cite>git checkout v0.3.3</cite></p></li>
 <li><p>build Docker image: <cite>docker build -t manylinux2010 .</cite></p></li>
 <li><p>run the image: <cite>make build_manylinux</cite></p></li>
 </ol>
@@ -152,17 +155,17 @@ variables, stored in <cite>tests/local_test.env</cite>.
 To tests locally,</p>
 <ol class="arabic simple">
 <li><p>set environment variables, <cite>source tests/local_test.env</cite></p></li>
-<li><dl class="simple">
-<dt>clean up previously compiled binaries to avoid Py2/3 compatibility issues:</dt><dd><p><cite>make clean</cite></p>
-</dd>
-</dl>
-</li>
-<li><dl class="simple">
-<dt>run the test script: <cite>PYTHONPATH=. python tests/unit_test.py</cite>. Don’t forget to</dt><dd><p>replace <cite>python</cite> with a specific version if testing against non-default Python)</p>
-</dd>
-</dl>
-</li>
+<li><p>clean up previously compiled binaries to avoid Py2/3 compatibility issues:</p></li>
 </ol>
+<blockquote>
+<div><p><cite>make clean</cite></p>
+</div></blockquote>
+<ol class="arabic simple" start="3">
+<li><p>run the test script: <cite>PYTHONPATH=. python tests/unit_test.py</cite>. Don’t forget to</p></li>
+</ol>
+<blockquote>
+<div><p>replace <cite>python</cite> with a specific version if testing against non-default Python)</p>
+</div></blockquote>
 <p><cite>make test_local</cite> is a shortcut for this, except it will always use the default
 Python and thus doesn’t need to clean.</p>
 <p>Unit tests for Cython functions (i.e., defined with <cite>cdef</cite>) are stored in a
@@ -173,17 +176,6 @@ and <cite>tests/unit_test_cy.pyx</cite> as an example of how it is organized.</p
 <p>To avoid manual compilation with <cite>cythonize</cite>, Cython tests are compiled with
 <cite>pyximport</cite>, an in-place JIT compiler. Thus, at the beginning of every test suite,
 install <cite>pyximport</cite>:</p>
-<p><a href="#id1"><span class="problematic" id="id2">``</span></a><a href="#id3"><span class="problematic" id="id4">`</span></a>python
-import pyximport
-pyximport.install(</p>
-<blockquote>
-<div><p># build_dir=’build’,
-setup_args={“script_args”: [“–force”]},
-inplace=True,
-language_level=’3str’</p>
-</div></blockquote>
-<div class="section" id="id5">
-<h2>)<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h2>
 <p>To tell <cite>pyximport</cite> where to find sources and libraries for the main module,
 there is a special file <cite>oscar.pyxbld</cite>. It is important to keep it consistent
 with the <cite>Extension</cite> parameters in <cite>setup.py</cite>. If you can <cite>make build</cite> but unit
@@ -196,7 +188,6 @@ functions will grow bigger with your help.</p>
 servers (preferably, <cite>da4</cite>), clone the repository and run <cite>make test</cite>. If the
 result is different from your local run, perhaps it’s time to update fixtures
 and/or tests.</p>
-</div>
 </div>
 
 
@@ -216,11 +207,18 @@ and/or tests.</p>
 
 
 <h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">How to contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#about-cython">About Cython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#compiling-and-packaging">Compiling and packaging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#testing">Testing</a></li>
+</ul>
 
 <div class="relations">
 <h3>Related Topics</h3>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Reference</a></li>
   </ul></li>
 </ul>
 </div>
