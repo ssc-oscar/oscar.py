@@ -5,3 +5,5 @@ requires = ["setuptools>=18.0", "wheel", "Cython"]
 version_variable = ['oscar.pyx:__version__', 'docs/conf.py:release']
 # build is performed by manylinux, so skip here
 build_command = ''
+# remove_dist deletes all pre-existing files in dist/, including built by manylinux
+remove_dist = false
