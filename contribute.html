@@ -30,48 +30,173 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="how-to-contribute">
+  <p>Starting version 1.3, <cite>oscar</cite> is compiled from Cython, a language closely
+resembling Python but with optional strong typing to improve performance.
+Building Cython packages requires few extra build steps, as explained below.</p>
+<p>In addition, automation in this project relies on few assumptions which you are
+expected to follow. Below you can find their brief description and the motivation
+behind.</p>
+<div class="section" id="how-to-contribute">
 <h1>How to contribute<a class="headerlink" href="#how-to-contribute" title="Permalink to this headline">¶</a></h1>
-<p><cite>master</cite> is for releases only. Development happens on feature branches,
-which stem from <cite>dev</cite> branch and merge back. Once in a while <cite>dev</cite> is merged
-to master, producing a new release. This rule is mostly because of the server
-layout preventing us from running unit tests automatically.</p>
-<p>We use <a class="reference external" href="https://www.conventionalcommits.org">conventional commits</a> message
-convention. This means that you MUST prepend commit messages with one of:
+<p>All the development is done on feature branches, which are then merged to <cite>master</cite>
+via pull requests. Every pull request triggers unit testing, every merge triggers
+a release.</p>
+<p>To generate release notes, we use <a class="reference external" href="https://www.conventionalcommits.org">conventional commits</a>,
+a convention to commit messages. In a nutshell, it means commit messages should
+be prefixed with one of:
 - <strong>fix:</strong> in case the change fixes a problem without changing any interfaces.</p>
 <blockquote>
 <div><p>Example commit message: <cite>fix: missing clickhouse-driver dependency (closes #123)</cite>.</p>
 </div></blockquote>
-<ul class="simple">
+<ul>
 <li><dl class="simple">
 <dt><strong>feat:</strong> the change implements a new feature, without affecting existing</dt><dd><p>interfaces. Example: <cite>feat: implement author timeline</cite>.</p>
 </dd>
 </dl>
 </li>
-<li><dl class="simple">
-<dt><strong>chore:</strong> the change does not affect functionality, e.g. PEP8 fixes.</dt><dd><p>E.g.: <cite>chore: PEP8 fixes</cite></p>
+<li><dl>
+<dt>other prefixes, e.g. <cite>chore:</cite>, <cite>refactor:</cite>, <cite>docs:</cite>, <cite>test:</cite>, <cite>ci:</cite>, etc.</dt><dd><ul class="simple">
+<li><p>these will not be included in release notes and will not trigger a new</p></li>
+</ul>
+<p>release without new features or fixes added, unless contain breaking changes
+(see below).</p>
 </dd>
 </dl>
 </li>
-<li><dl class="simple">
-<dt><strong>docs:</strong>: similar to <cite>chore:</cite> but explicitly related to documentation.</dt><dd><p>E.g.: <cite>docs: add timeline usage examples</cite></p>
-</dd>
-</dl>
-</li>
-<li><p><strong>refactor:</strong> similar to <cite>chore:</cite></p></li>
 </ul>
 <p>In case of breaking changes (i.e. if any interfaces were changed, breaking
-backward compatibility), commit message should contain <strong>BREAKING CHANGE</strong>
-in the footer, or have an exclamation mark after prefix, e.g.:</p>
+backward compatibility), commit message should include an exclamation mark before
+the semicolon, or contain <strong>BREAKING CHANGE</strong> in the footer, e.g.:</p>
 <blockquote>
 <div><p><cite>feat!: drop support for deprectated parameters</cite></p>
 </div></blockquote>
-<p>Commit messages will be used to automatically bump version. <cite>fix</cite>, <cite>chore</cite>, <cite>docs</cite>
-will produce patch versions, <cite>feat</cite> will result in a minor version bump, and in
-case of breaking changes the major version will be incremented.
-As a consequence, <strong>you must never change version number manually</strong>.</p>
+<p><cite>fix</cite>, <cite>chore</cite>, <cite>docs</cite> commits will produce patch versions, <cite>feat</cite> will result
+in a minor version bump, and in case of breaking changes the major version will
+be incremented. As a consequence, <strong>you must never change version number manually</strong>.</p>
 <p>Not following these procedures might take your pull request extra time to
 review and in some cases will require rewriting the commit history.</p>
+</div>
+<div class="section" id="about-cython">
+<h1>About Cython<a class="headerlink" href="#about-cython" title="Permalink to this headline">¶</a></h1>
+<p>The reason to use Cython was primarily Python 3 support. WoC data is stored
+in tokyocabinet (.tch) files, without native Python support.
+<cite>libtokyocabinet</cite> binding, <cite>python-tokyocabinet</cite>, is a C extension supporting
+Python 2 only, and lack of development activity suggests updating it for Py 3
+is hardly considered. So, our options to interface <cite>libtokyocabinet</cite> were:</p>
+<ul class="simple">
+<li><p>cffi (C Foreign Functions Interface) - perhaps, the simplest option,
+but it does not support conditional definitions (<cite>#IFDEF</cite>), that are
+actively used in tokyocabinet headers</p></li>
+<li><p>C extension, adapting existing <cite>python-tokyocabinet</cite> code for Python 3.
+It is rather hard to support and even harder to debug; a single
+attempt was scrapped after making a silently failing extension.</p></li>
+<li><p>SWIG, a Google project to generate C/C++ library bindings
+for pretty much any language. Since this library provides 1:1 interface
+to the library methods, Python clients had to be aware of the returned
+C structures used by libtokyocabinet, which was very inconvenient.</p></li>
+<li><p>Cython, a weird mix of Python and C. It allows writing Python interfaces,
+while simultaneously using C functions. This makes it the ideal option
+for our purposes, providing a Python tch file handler holding working
+with libtokyocabinet C structures under the hood.</p></li>
+</ul>
+<p>Cython came a clear winner in this comparison, also helping to speed up
+some utility functions along the way (e.g. <cite>fnvhash</cite>, a pure Python version
+of which was previously used).</p>
+</div>
+<div class="section" id="compiling-and-packaging">
+<h1>Compiling and packaging<a class="headerlink" href="#compiling-and-packaging" title="Permalink to this headline">¶</a></h1>
+<p>To compile oscar locally, run:
+<cite>python setup.py build_ext –inplace</cite>. To explicitly specify python version,
+replace <cite>pyhon</cite>, with the appropriate version, e.g. <cite>python2</cite>.
+There shorter alias for this command, <cite>make build</cite>, will always use the default
+Python.</p>
+<p>If you are building for several Python versions in a row without changing the
+code (e.g. to check if it compiles at all), make sure you clean up first by
+running <cite>make clean</cite>.
+Compilation is cached when possible, and will be omitted if the input hasn’t
+changed - the compiler is not aware that the resulting <cite>.so</cite> file exposes
+different interfaces. You will get a lot of angry messages about missing
+interfaces and symbols when import with the same Python version which “compiled”
+this <cite>.so</cite> just a second ago in this case.</p>
+<p>Packaging is slightly more complicated than just compiling since oscar needs to
+support at least Python 2.7 and 3.6 simultaneously, meaning we need to package
+multiple binaries. Fortunately, <a class="reference external" href="https://www.python.org/dev/peps/pep-0513/">PEP 513</a>
+offers support for such packages. Building is done via <a class="reference external" href="https://github.com/pypa/manylinux">manylinux</a>,
+a special Docker image, and is automated via GitHub action.</p>
+<p>To build package locally,</p>
+<ol class="arabic simple">
+<li><dl class="simple">
+<dt>clone the corresponding GitHub action repository,</dt><dd><p><cite>git clone git&#64;github.com:RalfG/python-wheels-manylinux-build.git</cite>,
+check out the desired tag (e.g. <cite>git checkout v0.3.3</cite>).</p>
+</dd>
+</dl>
+</li>
+<li><p>build Docker image: <cite>docker build -t manylinux2010 .</cite></p></li>
+<li><p>run the image: <cite>make build_manylinux</cite></p></li>
+</ol>
+</div>
+<div class="section" id="testing">
+<h1>Testing<a class="headerlink" href="#testing" title="Permalink to this headline">¶</a></h1>
+<p>Every push to oscar repository is automatically tested; on top, you might want
+to test locally before making a commit to avoid awkward followup fixes and a
+bunch of angry emails from GitHub actions bot telling how you broke the build.
+Unit tests are tedious to write, but will save a lot of your time in the long run.
+First thing to know about  unit tests, please DO write them - future you will be
+grateful. Second, there are a couple things about testing Cython code against a
+remote dataset.</p>
+<p>To run tests locally, <cite>make test_local</cite>.
+WoC files are only available on UTK servers only, so to make local testing
+possible, there is a small subset of the data in <cite>tests/fixtures</cite>. Changing
+oscar paths to point at these fixtures requires setting some environment
+variables, stored in <cite>tests/local_test.env</cite>.
+To tests locally,</p>
+<ol class="arabic simple">
+<li><p>set environment variables, <cite>source tests/local_test.env</cite></p></li>
+<li><dl class="simple">
+<dt>clean up previously compiled binaries to avoid Py2/3 compatibility issues:</dt><dd><p><cite>make clean</cite></p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>run the test script: <cite>PYTHONPATH=. python tests/unit_test.py</cite>. Don’t forget to</dt><dd><p>replace <cite>python</cite> with a specific version if testing against non-default Python)</p>
+</dd>
+</dl>
+</li>
+</ol>
+<p><cite>make test_local</cite> is a shortcut for this, except it will always use the default
+Python and thus doesn’t need to clean.</p>
+<p>Unit tests for Cython functions (i.e., defined with <cite>cdef</cite>) are stored in a
+separate <cite>.pyx</cite> file, which is imported from the regular <cite>.py</cite> test suite.
+Cython code can only be accessed from Cython files, which cannot executed as a
+Python script. Thus, we have to store them separately - see <cite>tests/unit_test.py</cite>
+and <cite>tests/unit_test_cy.pyx</cite> as an example of how it is organized.</p>
+<p>To avoid manual compilation with <cite>cythonize</cite>, Cython tests are compiled with
+<cite>pyximport</cite>, an in-place JIT compiler. Thus, at the beginning of every test suite,
+install <cite>pyximport</cite>:</p>
+<p><a href="#id1"><span class="problematic" id="id2">``</span></a><a href="#id3"><span class="problematic" id="id4">`</span></a>python
+import pyximport
+pyximport.install(</p>
+<blockquote>
+<div><p># build_dir=’build’,
+setup_args={“script_args”: [“–force”]},
+inplace=True,
+language_level=’3str’</p>
+</div></blockquote>
+<div class="section" id="id5">
+<h2>)<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h2>
+<p>To tell <cite>pyximport</cite> where to find sources and libraries for the main module,
+there is a special file <cite>oscar.pyxbld</cite>. It is important to keep it consistent
+with the <cite>Extension</cite> parameters in <cite>setup.py</cite>. If you can <cite>make build</cite> but unit
+tests fail to compile it, this is the first place to check.</p>
+<p>Cython functions being tested should be exposed in <cite>oscar.pxd</cite> -
+a Cython equivalent of a header file. If tests cannot find some function that is
+defined in oscar, check it is included there. Hopefully, the list of tested
+functions will grow bigger with your help.</p>
+<p>Finally, unit and integration tests can also be run on real data. On one of UTK
+servers (preferably, <cite>da4</cite>), clone the repository and run <cite>make test</cite>. If the
+result is different from your local run, perhaps it’s time to update fixtures
+and/or tests.</p>
+</div>
 </div>
 
 
