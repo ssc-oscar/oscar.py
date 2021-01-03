@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v2.0.2 (2021-01-03)
+### Fix
+* Prevent semantic-release from deleting built packages ([`ba7f468`](https://github.com/ssc-oscar/oscar.py/commit/ba7f46839213f88cf080f851c459c2d9c0b636bf))
+
 ## v2.0.1 (2021-01-03)
 ### Fix
 * Version bump ([`6eef010`](https://github.com/ssc-oscar/oscar.py/commit/6eef010bae395f6c0a02901ec4998d142ff11d7f))
