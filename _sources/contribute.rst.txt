@@ -45,7 +45,7 @@ About Cython
 ------------
 
 The reason to use Cython was primarily Python 3 support. WoC data is stored
-in tokyocabinet (.tch) files, without native Python support.
+in tokyocabinet (.tch) files, note natively supported by Python.
 `libtokyocabinet` binding, `python-tokyocabinet`, is a C extension supporting
 Python 2 only, and lack of development activity suggests updating it for Py 3
 is hardly considered. So, our options to interface `libtokyocabinet` were:
@@ -62,8 +62,8 @@ is hardly considered. So, our options to interface `libtokyocabinet` were:
   C structures used by libtokyocabinet, which was very inconvenient.
 - Cython, a weird mix of Python and C. It allows writing Python interfaces,
   while simultaneously using C functions. This makes it the ideal option
-  for our purposes, providing a Python tch file handler holding working
-  with libtokyocabinet C structures under the hood.
+  for our purposes, providing a Python `.tch` file handler working
+  with `libtokyocabinet` C structures under the hood.
 
 Cython came a clear winner in this comparison, also helping to speed up
 some utility functions along the way (e.g. `fnvhash`, a pure Python version
