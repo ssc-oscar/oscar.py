@@ -2,6 +2,14 @@
 
 <!--next-version-placeholder-->
 
+## v2.0.3 (2021-01-03)
+### Fix
+* Yet another ci debugging commit ([`4aa52f3`](https://github.com/ssc-oscar/oscar.py/commit/4aa52f36352494630870596ef4f1095064baf174))
+* Remove non-manylinux binaries to fix release uploads ([`79ed5ee`](https://github.com/ssc-oscar/oscar.py/commit/79ed5ee28639e90ab82bb3865f578c3196b0a188))
+
+### Documentation
+* Readability fixes ([`7ee4f49`](https://github.com/ssc-oscar/oscar.py/commit/7ee4f490f8950f8fde4dd29f666daad283428e55))
+
 ## v2.0.2 (2021-01-03)
 ### Fix
 * Prevent semantic-release from deleting built packages ([`ba7f468`](https://github.com/ssc-oscar/oscar.py/commit/ba7f46839213f88cf080f851c459c2d9c0b636bf))

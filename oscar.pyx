@@ -22,7 +22,7 @@ import warnings
 # `pip uninstall lzf && pip install python-lzf`
 import lzf
 
-__version__ = '2.0.2'
+__version__ = '2.0.3'
 __author__ = 'marat@cmu.edu'
 __license__ = 'GPL v3'
 
