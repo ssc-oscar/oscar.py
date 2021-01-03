@@ -20,17 +20,16 @@ a convention to commit messages. In a nutshell, it means commit messages should
 be prefixed with one of:
 
 - **fix:** in case the change fixes a problem without changing any interfaces.
-    Example commit message: `fix: missing clickhouse-driver dependency (closes #123)`.
+  Example commit message: `fix: missing clickhouse-driver dependency (closes #123)`.
 - **feat:** the change implements a new feature, without affecting existing
-    interfaces. Example: `feat: implement author timeline`.
+  interfaces. Example: `feat: implement author timeline`.
 - other prefixes, e.g. `chore:`, `refactor:`, `docs:`, `test:`, `ci:`, etc.
-    - these will not be included in release notes and will not trigger a new
-    release without new features or fixes added, unless contain breaking changes
-    (see below).
+  - these will not be included in release notes and will not trigger a new
+  release without new features or fixes added, unless contain breaking changes
+  (see below).
 
-In case of breaking changes (i.e. if any interfaces were changed, breaking
-backward compatibility), commit message should include an exclamation mark before
-the semicolon, or contain **BREAKING CHANGE** in the footer, e.g.:
+In case of breaking changes, commit message should include an exclamation mark
+before the semicolon, or contain **BREAKING CHANGE** in the footer, e.g.:
 
     `feat!: drop support for deprectated parameters`
 
