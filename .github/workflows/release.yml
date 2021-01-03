@@ -27,6 +27,11 @@ jobs:
         build-requirements: 'cython setuptools>=18.0'
         system-packages: 'bzip2-devel zlib-devel'
 
+    - name: Remove non-manylinux binaries
+      # these are side products of manylinux, but are not supported by PyPI
+      # they will brake package upload later on if not removed
+      run: find dist/ -type f ! -iname '*-manylinux*.whl' -delete
+
     - name: Python Semantic Release
       uses: relekang/python-semantic-release@v7.9.0
       # docs: https://python-semantic-release.readthedocs.io/en/latest/automatic-releases/github-actions.html
