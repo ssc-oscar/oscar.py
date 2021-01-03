@@ -3,6 +3,7 @@
 import re
 from setuptools import Extension, setup
 
+# IMPORTANT: update oscar.pyxbld if changing any of the Extension parameters
 extensions = [
     Extension(
         'oscar', libraries=['bz2', 'z'], include_dirs=['lib'],
