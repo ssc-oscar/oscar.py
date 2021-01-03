@@ -3,3 +3,5 @@ requires = ["setuptools>=18.0", "wheel", "Cython"]
 
 [tool.semantic_release]
 version_variable = ['oscar.pyx:__version__', 'docs/conf.py:release']
+# build is performed by manylinux, so skip here
+build_command = ''
