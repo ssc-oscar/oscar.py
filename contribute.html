@@ -45,30 +45,18 @@ a release.</p>
 <p>To generate release notes, we use <a class="reference external" href="https://www.conventionalcommits.org">conventional commits</a>,
 a convention to commit messages. In a nutshell, it means commit messages should
 be prefixed with one of:</p>
-<ul>
-<li><dl class="simple">
-<dt><strong>fix:</strong> in case the change fixes a problem without changing any interfaces.</dt><dd><p>Example commit message: <cite>fix: missing clickhouse-driver dependency (closes #123)</cite>.</p>
-</dd>
-</dl>
-</li>
-<li><dl class="simple">
-<dt><strong>feat:</strong> the change implements a new feature, without affecting existing</dt><dd><p>interfaces. Example: <cite>feat: implement author timeline</cite>.</p>
-</dd>
-</dl>
-</li>
-<li><dl>
-<dt>other prefixes, e.g. <cite>chore:</cite>, <cite>refactor:</cite>, <cite>docs:</cite>, <cite>test:</cite>, <cite>ci:</cite>, etc.</dt><dd><ul class="simple">
-<li><p>these will not be included in release notes and will not trigger a new</p></li>
+<ul class="simple">
+<li><p><strong>fix:</strong> in case the change fixes a problem without changing any interfaces.
+Example commit message: <cite>fix: missing clickhouse-driver dependency (closes #123)</cite>.</p></li>
+<li><p><strong>feat:</strong> the change implements a new feature, without affecting existing
+interfaces. Example: <cite>feat: implement author timeline</cite>.</p></li>
+<li><p>other prefixes, e.g. <cite>chore:</cite>, <cite>refactor:</cite>, <cite>docs:</cite>, <cite>test:</cite>, <cite>ci:</cite>, etc.
+- these will not be included in release notes and will not trigger a new
+release without new features or fixes added, unless contain breaking changes
+(see below).</p></li>
 </ul>
-<p>release without new features or fixes added, unless contain breaking changes
-(see below).</p>
-</dd>
-</dl>
-</li>
-</ul>
-<p>In case of breaking changes (i.e. if any interfaces were changed, breaking
-backward compatibility), commit message should include an exclamation mark before
-the semicolon, or contain <strong>BREAKING CHANGE</strong> in the footer, e.g.:</p>
+<p>In case of breaking changes, commit message should include an exclamation mark
+before the semicolon, or contain <strong>BREAKING CHANGE</strong> in the footer, e.g.:</p>
 <blockquote>
 <div><p><cite>feat!: drop support for deprectated parameters</cite></p>
 </div></blockquote>
