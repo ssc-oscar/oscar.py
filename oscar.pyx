@@ -23,7 +23,7 @@ import warnings
 import lzf
 
 __version__ = '1.3.3'
-__author__ = 'Marat (@cmu.edu)'
+__author__ = 'marat@cmu.edu'
 __license__ = 'GPL v3'
 
 if PY_MAJOR_VERSION < 3:
