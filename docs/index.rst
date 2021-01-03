@@ -9,6 +9,8 @@ Reference
 .. toctree::
    :maxdepth: 2
 
+   contribute
+
 
 This module provides interface to the objects:
 

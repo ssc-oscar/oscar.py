@@ -18,6 +18,7 @@ a release.
 To generate release notes, we use `conventional commits <https://www.conventionalcommits.org>`_,
 a convention to commit messages. In a nutshell, it means commit messages should
 be prefixed with one of:
+
 - **fix:** in case the change fixes a problem without changing any interfaces.
     Example commit message: `fix: missing clickhouse-driver dependency (closes #123)`.
 - **feat:** the change implements a new feature, without affecting existing
@@ -96,10 +97,10 @@ a special Docker image, and is automated via GitHub action.
 To build package locally,
 
 1. clone the corresponding GitHub action repository,
-    `git clone git@github.com:RalfG/python-wheels-manylinux-build.git`,
-    check out the desired tag (e.g. `git checkout v0.3.3`).
-2. build Docker image: `docker build -t manylinux2010 .`
-3. run the image: `make build_manylinux`
+  `git clone git@github.com:RalfG/python-wheels-manylinux-build.git`,
+2. check out the desired tag if necessary, e.g. `git checkout v0.3.3`
+3. build Docker image: `docker build -t manylinux2010 .`
+4. run the image: `make build_manylinux`
 
 
 Testing
@@ -122,9 +123,9 @@ To tests locally,
 
 1. set environment variables, `source tests/local_test.env`
 2. clean up previously compiled binaries to avoid Py2/3 compatibility issues:
-    `make clean`
+  `make clean`
 3. run the test script: `PYTHONPATH=. python tests/unit_test.py`. Don't forget to
-    replace `python` with a specific version if testing against non-default Python)
+  replace `python` with a specific version if testing against non-default Python)
 
 `make test_local` is a shortcut for this, except it will always use the default
 Python and thus doesn't need to clean.
@@ -139,15 +140,14 @@ To avoid manual compilation with `cythonize`, Cython tests are compiled with
 `pyximport`, an in-place JIT compiler. Thus, at the beginning of every test suite,
 install `pyximport`:
 
-```python
-import pyximport
-pyximport.install(
-    # build_dir='build',
-    setup_args={"script_args": ["--force"]},
-    inplace=True,
-    language_level='3str'
-)
-```
+.. code-block:: python
+    import pyximport
+    pyximport.install(
+        # build_dir='build',
+        setup_args={"script_args": ["--force"]},
+        inplace=True,
+        language_level='3str'
+    )
 
 To tell `pyximport` where to find sources and libraries for the main module,
 there is a special file `oscar.pyxbld`. It is important to keep it consistent
