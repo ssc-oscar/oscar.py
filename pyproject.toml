@@ -3,7 +3,7 @@ requires = ["setuptools>=18.0", "wheel", "Cython"]
 
 [tool.semantic_release]
 version_variable = ['oscar.pyx:__version__', 'docs/conf.py:release']
-# wheel build is performed by manylinux, so leave only sdist here
-build_command = 'python setup.py sdist'
+# wheel build is performed by manylinux, so just skip it
+build_command = ''
 # remove_dist deletes all pre-existing files in dist/, including built by manylinux
 remove_dist = false
