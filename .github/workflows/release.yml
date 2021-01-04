@@ -23,7 +23,7 @@ jobs:
       # use the default manylinux2010_x86_64
       uses: RalfG/python-wheels-manylinux-build@v0.3.3
       with:
-        python-versions: 'cp27-cp27m cp36-cp36m'
+        python-versions: 'cp27-cp27mu cp36-cp36mu'
         build-requirements: 'cython setuptools>=18.0'
         system-packages: 'bzip2-devel zlib-devel'
 
