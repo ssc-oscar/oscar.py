@@ -2,6 +2,11 @@
 
 <!--next-version-placeholder-->
 
+## v2.0.4 (2021-01-04)
+### Fix
+* Apparently only Python2 needs *mu tag, Python3 should use *m one ([`3754db1`](https://github.com/ssc-oscar/oscar.py/commit/3754db15c043a5e4f181b6e788ba5259c7b1fbc2))
+* Use wide unicode tags for wheels (cp27mu and cp36mu, as most Linux distributions use those) ([`afc609b`](https://github.com/ssc-oscar/oscar.py/commit/afc609b98012196ce7d7093a5a94b777642e83cf))
+
 ## v2.0.3 (2021-01-03)
 ### Fix
 * Yet another ci debugging commit ([`4aa52f3`](https://github.com/ssc-oscar/oscar.py/commit/4aa52f36352494630870596ef4f1095064baf174))
