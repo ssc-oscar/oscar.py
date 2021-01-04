@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v2.0.5 (2021-01-04)
+### Fix
+* Prevent semantic release from ruining manylinux builds ([`0cf11ec`](https://github.com/ssc-oscar/oscar.py/commit/0cf11ecf8e07928d62eebfda883997c64b349481))
+
 ## v2.0.4 (2021-01-04)
 ### Fix
 * Apparently only Python2 needs *mu tag, Python3 should use *m one ([`3754db1`](https://github.com/ssc-oscar/oscar.py/commit/3754db15c043a5e4f181b6e788ba5259c7b1fbc2))
