@@ -70,7 +70,7 @@ some utility functions along the way (e.g. `fnvhash`, a pure Python version
 of which was previously used).
 
 Compiling and packaging
-----------------------
+-----------------------
 
 To compile oscar locally, run:
 `python setup.py build_ext --inplace`. To explicitly specify python version,
@@ -95,11 +95,11 @@ a special Docker image, and is automated via GitHub action.
 
 To build package locally,
 
-1. clone the corresponding GitHub action repository,
-  `git clone git@github.com:RalfG/python-wheels-manylinux-build.git`,
-2. check out the desired tag if necessary, e.g. `git checkout v0.3.3`
-3. build Docker image: `docker build -t manylinux2010 .`
-4. run the image: `make build_manylinux`
+#. clone the corresponding GitHub action repository,
+   `git clone git@github.com:RalfG/python-wheels-manylinux-build.git`,
+#. check out the desired tag if necessary, e.g. `git checkout v0.3.3`
+#. build Docker image: `docker build -t manylinux2010 .`
+#. run the image: `make build_manylinux`
 
 
 Testing
@@ -120,11 +120,11 @@ oscar paths to point at these fixtures requires setting some environment
 variables, stored in `tests/local_test.env`.
 To tests locally,
 
-1. set environment variables, `source tests/local_test.env`
-2. clean up previously compiled binaries to avoid Py2/3 compatibility issues:
-  `make clean`
-3. run the test script: `PYTHONPATH=. python tests/unit_test.py`. Don't forget to
-  replace `python` with a specific version if testing against non-default Python)
+#. set environment variables, `source tests/local_test.env`
+#. clean up previously compiled binaries to avoid Py2/3 compatibility issues: `make clean`
+#. run the test script: `PYTHONPATH=. python tests/unit_test.py`.
+   Don't forget to replace `python` with a specific version if testing
+   against non-default Python)
 
 `make test_local` is a shortcut for this, except it will always use the default
 Python and thus doesn't need to clean.
@@ -140,6 +140,7 @@ To avoid manual compilation with `cythonize`, Cython tests are compiled with
 install `pyximport`:
 
 .. code-block:: python
+
     import pyximport
     pyximport.install(
         # build_dir='build',

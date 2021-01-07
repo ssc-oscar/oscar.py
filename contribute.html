@@ -115,12 +115,8 @@ offers support for such packages. Building is done via <a class="reference exter
 a special Docker image, and is automated via GitHub action.</p>
 <p>To build package locally,</p>
 <ol class="arabic simple">
-<li><p>clone the corresponding GitHub action repository,</p></li>
-</ol>
-<blockquote>
-<div><p><cite>git clone git&#64;github.com:RalfG/python-wheels-manylinux-build.git</cite>,</p>
-</div></blockquote>
-<ol class="arabic simple" start="2">
+<li><p>clone the corresponding GitHub action repository,
+<cite>git clone git&#64;github.com:RalfG/python-wheels-manylinux-build.git</cite>,</p></li>
 <li><p>check out the desired tag if necessary, e.g. <cite>git checkout v0.3.3</cite></p></li>
 <li><p>build Docker image: <cite>docker build -t manylinux2010 .</cite></p></li>
 <li><p>run the image: <cite>make build_manylinux</cite></p></li>
@@ -143,17 +139,11 @@ variables, stored in <cite>tests/local_test.env</cite>.
 To tests locally,</p>
 <ol class="arabic simple">
 <li><p>set environment variables, <cite>source tests/local_test.env</cite></p></li>
-<li><p>clean up previously compiled binaries to avoid Py2/3 compatibility issues:</p></li>
+<li><p>clean up previously compiled binaries to avoid Py2/3 compatibility issues: <cite>make clean</cite></p></li>
+<li><p>run the test script: <cite>PYTHONPATH=. python tests/unit_test.py</cite>.
+Don’t forget to replace <cite>python</cite> with a specific version if testing
+against non-default Python)</p></li>
 </ol>
-<blockquote>
-<div><p><cite>make clean</cite></p>
-</div></blockquote>
-<ol class="arabic simple" start="3">
-<li><p>run the test script: <cite>PYTHONPATH=. python tests/unit_test.py</cite>. Don’t forget to</p></li>
-</ol>
-<blockquote>
-<div><p>replace <cite>python</cite> with a specific version if testing against non-default Python)</p>
-</div></blockquote>
 <p><cite>make test_local</cite> is a shortcut for this, except it will always use the default
 Python and thus doesn’t need to clean.</p>
 <p>Unit tests for Cython functions (i.e., defined with <cite>cdef</cite>) are stored in a
@@ -164,6 +154,15 @@ and <cite>tests/unit_test_cy.pyx</cite> as an example of how it is organized.</p
 <p>To avoid manual compilation with <cite>cythonize</cite>, Cython tests are compiled with
 <cite>pyximport</cite>, an in-place JIT compiler. Thus, at the beginning of every test suite,
 install <cite>pyximport</cite>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyximport</span>
+<span class="n">pyximport</span><span class="o">.</span><span class="n">install</span><span class="p">(</span>
+    <span class="c1"># build_dir=&#39;build&#39;,</span>
+    <span class="n">setup_args</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;script_args&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;--force&quot;</span><span class="p">]},</span>
+    <span class="n">inplace</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+    <span class="n">language_level</span><span class="o">=</span><span class="s1">&#39;3str&#39;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
 <p>To tell <cite>pyximport</cite> where to find sources and libraries for the main module,
 there is a special file <cite>oscar.pyxbld</cite>. It is important to keep it consistent
 with the <cite>Extension</cite> parameters in <cite>setup.py</cite>. If you can <cite>make build</cite> but unit
@@ -236,7 +235,7 @@ and/or tests.</p>
       &copy;2018, Marat (@cmu.edu).
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.4.1</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.4.3</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
