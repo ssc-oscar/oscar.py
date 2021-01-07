@@ -71,7 +71,7 @@ jobs:
           # sphinx uses Python3, so make it explicit
           python3 setup.py build_ext --inplace
           export PATH=~/.local/bin:$PATH
-          sphinx-build -M html "docs" "docs/build"
+          make html
 
       - name: Upload pages git gh-pages branch
         run: |
