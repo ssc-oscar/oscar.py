@@ -60,12 +60,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
+
       - name: Build pages with sphinx
         run: |
           python3 -m pip install --upgrade pip setuptools wheel
           # basically, make install_dev but explicitly use pip3
           pip3 install requests sphinx sphinx-autobuild
           if [ -f requirements.txt ]; then pip3 install -r requirements.txt; fi
+          # `make build` uses default python, which is often Python2
+          # sphinx uses Python3, so make it explicit
+          python3 setup.py build_ext --inplace
           export PATH=~/.local/bin:$PATH
           sphinx-build -M html "docs" "docs/build"
 
