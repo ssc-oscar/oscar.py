@@ -27,3 +27,7 @@ clean:
 	find -name "*.pyo" -delete
 	find -name "*.pyc" -delete
 	find -name __pycache__ -delete
+
+.PHONY: html
+html:
+	PYTHONPATH=. OSCAR_TEST=1 sphinx-build -M html "docs" "docs/build"

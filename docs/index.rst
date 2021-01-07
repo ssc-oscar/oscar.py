@@ -83,7 +83,7 @@ Class reference
     :members: parents, project_names, projects, child_shas, children, blob_shas, blobs
 
 .. autoclass:: Tree
-    :members: traverse, files, blob_shas, blobs, parent_tree_shas, parent_trees
+    :members: traverse, files, blob_shas, blobs
 
 .. autoclass:: File
     :members: commit_shas, commits
