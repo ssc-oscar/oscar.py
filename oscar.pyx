@@ -46,7 +46,7 @@ IS_TEST_ENV = 'OSCAR_TEST' in os.environ
 
 # test environment has 'OSCAR_TEST' environment variable set
 if not IS_TEST_ENV:
-    if not DOMAIN.endswith(r'.eecs.utk.edu$'):
+    if not DOMAIN.endswith(r'.eecs.utk.edu'):
         raise ImportError('Oscar is only available on certain servers at UTK, '
                           'please modify to match your cluster configuration')
 
