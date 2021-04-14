@@ -42,7 +42,7 @@ setup(
     # without `cythonize`
     # https://stackoverflow.com/questions/37471313
     setup_requires=['setuptools>=18.0', 'cython'],
-    python_requires='>3.5, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*,  <4',
+    python_requires='>2.6, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*,  <4',
     # py_modules=['oscar.timeline'],
     ext_modules=extensions,
     author_email=kwargs['author'],
