@@ -8,7 +8,7 @@ build:
 # https://github.com/RalfG/python-wheels-manylinux-build
 .PHONY: build_manylinux
 build_manylinux:
-	docker run --rm -e PLAT=manylinux2014_x86_64 -v `pwd`:/github/workspace/ manylinux2014 "cp27-cp27m cp36-cp36m" "cython setuptools>=18.0" "bzip2-devel zlib-devel"
+	docker run --rm -e PLAT=manylinux2010_x86_64 -v `pwd`:/github/workspace/ manylinux2010 "cp27-cp27m cp36-cp36m" "cython setuptools>=18.0" "bzip2-devel zlib-devel"
 
 .PHONY: test
 test:
