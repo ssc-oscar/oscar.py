@@ -9,9 +9,12 @@ to one of the WoC servers.
 ### Installation
 
 Normally it is preinstalled on WoC servers. To install manually, 
-e.g. to a virtual environment not using system packages, just use pip:
+e.g. to a virtual environment not using system packages, just use:
 
-    pip install oscar
+```shell
+python setup.py build_ext
+python3 setup.py install --user
+```
 
 Installing from sources requires extra tools to compile (cython, 
 manylinux docker image etc), but still possible. Refer to the 
