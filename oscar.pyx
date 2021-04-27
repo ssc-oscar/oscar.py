@@ -158,7 +158,7 @@ PATHS = _get_paths({
         # relations - good to have but not critical
         'commit_projects': 'c2pFull{ver}.{key}.tch',
         'commit_children': 'c2ccFull{ver}.{key}.tch',
-        'commit_time_author': 'c2taFull{ver}.{key}.tch',
+        'commit_data': 'c2datFull{ver}.{key}.tch',
         'commit_root': 'c2rFull{ver}.{key}.tch',
         'commit_head': 'c2hFull{ver}.{key}.tch',
         'commit_parent': 'c2pcFull{ver}.{key}.tch',
@@ -171,9 +171,9 @@ PATHS = _get_paths({
         'commit_files': 'c2fFull{ver}.{key}.tch',
         'project_commits': 'p2cFull{ver}.{key}.tch',
         'blob_commits': 'b2cFull{ver}.{key}.tch',
-        # this actually points to the first time/author/commit only
-        'blob_author': 'b2aFull{ver}.{key}.tch',
-        'file_authors': 'f2aFull{ver}.{key}.tch',
+        # this points to the first time/author/commit
+        'blob_first_author': 'b2faFull{ver}.{key}.tch',
+        'file_authors': 'f2aFull{ver}.{key}.tch', 
         'file_commits': 'f2cFull{ver}.{key}.tch',
         'file_blobs': 'f2bFull{ver}.{key}.tch',
         'blob_files': 'b2fFull{ver}.{key}.tch',
@@ -717,6 +717,17 @@ class Blob(GitObject):
         **NOTE: commits removing this blob are not included**
         """
         return (Commit(bin_sha) for bin_sha in self.commit_shas)
+
+    @cached_property
+    def first_author(self):
+        """ get time, first author and first commit for the blob
+        """
+        buf = self .read_tch ('blob_first_author')
+        buf0 = buf [0:len(buf)-21]
+        cmt_sha = buf [(len(buf)-20):len(buf)]
+        (Time, Author) = buf0 .decode('ascii') .split(";")
+        return (Time, Author, cmt_sha .hex())
+
 
 
 class Tree(GitObject):
@@ -1520,11 +1531,14 @@ class File(_Base):
         self.path = path
         super(File, self).__init__(path)
 
+    """
+    deprecated due to current lack of use cases
     @cached_property
     def author_names(self):
         data = decomp(self.read_tch('file_authors'))
         return tuple(author for author in (data and data.split(b';'))
                      if author not in IGNORED_AUTHORS)
+    """
 
     @cached_property
     def commit_shas(self):
