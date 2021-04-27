@@ -8,7 +8,7 @@ extensions = [
     Extension(
         'oscar', libraries=['bz2', 'z'], include_dirs=['lib'],
         sources=['oscar.pyx',
-                 'lib/tchdb.c', 'lib/myconf.c', 'lib/tcutil.c', 'lib/md5.c'], extra_compile_args=['-std=c99']
+                 'lib/tchdb.c', 'lib/myconf.c', 'lib/tcutil.c', 'lib/md5.c'], extra_compile_args=['-std=gnu11']
     ),
 ]
 
