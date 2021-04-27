@@ -8,4 +8,4 @@ WORKDIR /home/python
 
 COPY oscar.pyx  oscar.pyxbld requirements.txt setup.py tests/ docs/ Makefile  ./
 
-RUN python -m pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
