@@ -2,6 +2,26 @@
 
 <!--next-version-placeholder-->
 
+## v2.1.0 (2021-04-29)
+### Feature
+* Added first author property to Blob class ([`da1a0bc`](https://github.com/ssc-oscar/oscar.py/commit/da1a0bc6d5fd79512618026db5fb30ce213edfac))
+
+### Fix
+* Trying to fix build by dropping py2 ([`103ad5b`](https://github.com/ssc-oscar/oscar.py/commit/103ad5b796cbc6b8514f494bf3da2dddd76ae62e))
+* Manylinux is not on default docker registry ([`afef5dd`](https://github.com/ssc-oscar/oscar.py/commit/afef5dd971f1cdd6ace9c2be67bc12de5f927e53))
+* Fixing docker image to manylinux2010 and using std=g11 flag instead of c99 ([`24f6dac`](https://github.com/ssc-oscar/oscar.py/commit/24f6dac2a8f5b7e621dcadf0444884d9d7a64948))
+* Giving up on manylinux2010 until fix is found: use userland install ([`6f7ca49`](https://github.com/ssc-oscar/oscar.py/commit/6f7ca49d5f8bb215e5b8a63c23feefca95b051ca))
+* Moving back to unsupported manylinux2010 to try to fix build error ([`583dcc9`](https://github.com/ssc-oscar/oscar.py/commit/583dcc93d3fbdd3a0e996ccae9db33bfa5eb5885))
+* Moving back to unsupported manylinux2010 to try to fix build error ([`aa2ded7`](https://github.com/ssc-oscar/oscar.py/commit/aa2ded73333653941017398e71372f7fcba36642))
+* Moving back to unsupported manylinux2010 to try to fix build error ([`0c9d6bb`](https://github.com/ssc-oscar/oscar.py/commit/0c9d6bb47105b3c99b25c997498a13029cde2917))
+* Dropping c99 to avoid posix incompatibilities ([`96d6f8e`](https://github.com/ssc-oscar/oscar.py/commit/96d6f8ec8045ecbd8b9adb2e7b2485a34e65720a))
+* Dropping c99 to avoid posix incompatibilities ([`d7ed3fb`](https://github.com/ssc-oscar/oscar.py/commit/d7ed3fb10929ca8bc911c7dfa5dc77640a18578a))
+
+### Documentation
+* Disable production warnings in pages build environment ([`8cde418`](https://github.com/ssc-oscar/oscar.py/commit/8cde418bc00db8dbb1e8e5268fba5a6ddf63e2bf))
+* Make oscar importable by sphinx ([`307dcc4`](https://github.com/ssc-oscar/oscar.py/commit/307dcc4b13ca82fd10e2a754d18369455ba9cd65))
+* Fix classes autodoc ([`285b5b6`](https://github.com/ssc-oscar/oscar.py/commit/285b5b626e3d0efbd0aa5e7baf9f2862d0ef330a))
+
 ## v2.0.5 (2021-01-04)
 ### Fix
 * Prevent semantic release from ruining manylinux builds ([`0cf11ec`](https://github.com/ssc-oscar/oscar.py/commit/0cf11ecf8e07928d62eebfda883997c64b349481))
