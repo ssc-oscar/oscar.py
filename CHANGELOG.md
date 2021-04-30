@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v2.2.0 (2021-04-30)
+### Feature
+* Add c2dat lookup to Commit class: it may be better suited as a standalone function for bulk lookup of commit properties without instantiating any commits ([`4737f10`](https://github.com/ssc-oscar/oscar.py/commit/4737f102066a926f1703ff94498b4550ab9d5632))
+
 ## v2.1.0 (2021-04-29)
 ### Feature
 * Added first author property to Blob class ([`da1a0bc`](https://github.com/ssc-oscar/oscar.py/commit/da1a0bc6d5fd79512618026db5fb30ce213edfac))
