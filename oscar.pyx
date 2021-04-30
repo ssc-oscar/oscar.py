@@ -1298,6 +1298,14 @@ class Commit(GitObject):
         return (Blob(bin_sha) for bin_sha in self.blob_shas)
 
     @cached_property
+    def attributes(self):
+        """  pre-parsed from the commit commit binary sha hashes.uthor Time, Author time zone, author, tree, parents (colon separated)
+        >>> oscar.Commit("80b4ca99f8605903d8ac6bd921ebedfdfecdd660").attributes
+        ['1432848535', '-0400', 'Robert Lefebvre <robert.lefebvre@gmail.com>', '8a08c812a15051605da7c594b970cad57ec07e3b', 'd24664ccf959bd6e5bacb8ad2c0ceebcdcc8551c']
+        """
+        return self .read_tch ('commit_data') .decode('ascii') .split(";")
+
+    @cached_property
     def files(self):
         data = decomp(self.read_tch('commit_files'))
         return tuple(file_name

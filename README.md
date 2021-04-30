@@ -12,7 +12,7 @@ Normally it is preinstalled on WoC servers. To install manually,
 e.g. to a virtual environment not using system packages, just use:
 
 ```shell
-python setup.py build_ext
+python3 setup.py build_ext
 python3 setup.py install --user
 ```
 
