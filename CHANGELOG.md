@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v2.2.1 (2021-06-09)
+### Fix
+* Python2 build ([`d65fb40`](https://github.com/ssc-oscar/oscar.py/commit/d65fb40ef3c127ca000a750d088d58ed17dd2dc0))
+
 ## v2.2.0 (2021-04-30)
 ### Feature
 * Add c2dat lookup to Commit class: it may be better suited as a standalone function for bulk lookup of commit properties without instantiating any commits ([`4737f10`](https://github.com/ssc-oscar/oscar.py/commit/4737f102066a926f1703ff94498b4550ab9d5632))
