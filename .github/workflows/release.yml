@@ -21,9 +21,9 @@ jobs:
     - name: Build manylinux package
       # manylinux2014_x86_64 doesn't support Python 2,
       # use the default manylinux2010_x86_64
-      uses: RalfG/python-wheels-manylinux-build@v0.3.3
+      uses: user2589/python-wheels-manylinux-build@master
       with:
-        python-versions: 'cp36-cp36m'
+        python-versions: 'cp27-cp27mu cp36-cp36m'
         build-requirements: 'cython setuptools>=18.0'
         system-packages: 'bzip2-devel zlib-devel'
 

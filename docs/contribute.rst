@@ -96,9 +96,9 @@ a special Docker image, and is automated via GitHub action.
 To build package locally,
 
 #. clone the corresponding GitHub action repository,
-   `git clone git@github.com:RalfG/python-wheels-manylinux-build.git`,
-#. check out the desired tag if necessary, e.g. `git checkout v0.3.3`
-#. build Docker image: `docker build -t manylinux2010 .`
+   `git clone git@github.com:user2589/python-wheels-manylinux-build.git`,
+#. check out the desired tag if necessary, e.g. `git checkout v0.3.4`
+#. build Docker image: `docker build -t ython-wheels-manylinux-build .`
 #. run the image: `make build_manylinux`
 
 
