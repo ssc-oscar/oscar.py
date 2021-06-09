@@ -4,11 +4,12 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
     <title>Reference &#8212; oscar 1.3.3 documentation</title>
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
@@ -31,7 +32,7 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="reference">
+  <section id="reference">
 <h1>Reference<a class="headerlink" href="#reference" title="Permalink to this headline">¶</a></h1>
 <div class="toctree-wrapper compound">
 <ul>
@@ -55,7 +56,7 @@ objects used by Git internally.
 It will be helpful to read <a class="reference external" href="https://git-scm.com/book/en/v2/Git-Internals-Git-Objects">Chapter 2</a>
 of <a class="reference external" href="https://git-scm.com/book/en/v2/">Pro Git book</a> (free and Open Source)
 for better understanding of these objects.</p>
-<div class="section" id="module-oscar">
+<section id="module-oscar">
 <span id="common-methods"></span><h2>Common methods<a class="headerlink" href="#module-oscar" title="Permalink to this headline">¶</a></h2>
 <p>All objects have a unique key.
 For git objects (<cite>Commit</cite>, <cite>Tree</cite>, <cite>Blob</cite>)
@@ -71,8 +72,8 @@ Objects of the same type and having the same key will be considered equivalent:<
 </div>
 <p>It is possible to iterate all objects of a given type using <cite>.all()</cite></p>
 <dl class="py method">
-<dt id="oscar._Base.all">
-<em class="property"><span class="pre">classmethod</span> </em><code class="sig-prename descclassname"><span class="pre">_Base.</span></code><code class="sig-name descname"><span class="pre">all</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#oscar._Base.all" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="oscar._Base.all">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-prename descclassname"><span class="pre">_Base.</span></span><span class="sig-name descname"><span class="pre">all</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#oscar._Base.all" title="Permalink to this definition">¶</a></dt>
 <dd><p>E.g. to iterate all repositories of user2589 on github:</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">project</span> <span class="ow">in</span> <span class="n">Project</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="s1">&#39;user2589_&#39;</span><span class="p">):</span>
 <span class="gp">... </span>    <span class="nb">print</span> <span class="n">project</span><span class="o">.</span><span class="n">uri</span>
@@ -80,8 +81,8 @@ Objects of the same type and having the same key will be considered equivalent:<
 </div>
 </dd></dl>
 
-</div>
-<div class="section" id="gitobject-methods">
+</section>
+<section id="gitobject-methods">
 <h2>GitObject methods<a class="headerlink" href="#gitobject-methods" title="Permalink to this headline">¶</a></h2>
 <p>These methods are shared by <cite>Commit</cite>, <cite>Tree</cite>, <cite>Blob</cite>.</p>
 <p>All git objects are instantiated by a 40-byte hex string SHA or a 20-byte binary SHA.
@@ -98,12 +99,12 @@ rare cases you need to interface with binary data.</p>
 </ul>
 <p>All git objects, when coerced to <cite>str</cite>, will return their internal representation.
 It is mostly important for <cite>Blob</cite> to access the file content.</p>
-</div>
-<div class="section" id="class-reference">
+</section>
+<section id="class-reference">
 <h2>Class reference<a class="headerlink" href="#class-reference" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
-<dt id="oscar.Project">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">oscar.</span></code><code class="sig-name descname"><span class="pre">Project</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">uri</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oscar.Project" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="oscar.Project">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">oscar.</span></span><span class="sig-name descname"><span class="pre">Project</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">uri</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oscar.Project" title="Permalink to this definition">¶</a></dt>
 <dd><p>Projects are iterable:</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">commit</span> <span class="ow">in</span> <span class="n">Project</span><span class="p">(</span><span class="s1">&#39;user2589_minicms&#39;</span><span class="p">):</span>  
 <span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="n">commit</span><span class="o">.</span><span class="n">sha</span><span class="p">)</span>
@@ -119,9 +120,9 @@ True
 &gt;&gt;&gt; Commit(sha) in Project(‘user2589_minicms’)
 True</p>
 </div></blockquote>
-<dl class="py method">
-<dt id="oscar.Project.commit_shas">
-<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">commit_shas</span></code><a class="headerlink" href="#oscar.Project.commit_shas" title="Permalink to this definition">¶</a></dt>
+<dl class="py property">
+<dt class="sig sig-object py" id="oscar.Project.commit_shas">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">commit_shas</span></span><a class="headerlink" href="#oscar.Project.commit_shas" title="Permalink to this definition">¶</a></dt>
 <dd><p>SHA1 of all commits in the project</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Project</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;user2589_django-currencies&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">commit_shas</span>
 <span class="gp">... </span>        
@@ -131,9 +132,9 @@ True</p>
 </div>
 </dd></dl>
 
-<dl class="py method">
-<dt id="oscar.Project.commits">
-<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">commits</span></code><a class="headerlink" href="#oscar.Project.commits" title="Permalink to this definition">¶</a></dt>
+<dl class="py property">
+<dt class="sig sig-object py" id="oscar.Project.commits">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">commits</span></span><a class="headerlink" href="#oscar.Project.commits" title="Permalink to this definition">¶</a></dt>
 <dd><p>A generator of all Commit objects in the project.
 It has the same effect as iterating a <cite>Project</cite> instance itself,
 with some additional validation of commit dates.</p>
@@ -145,9 +146,9 @@ with some additional validation of commit dates.</p>
 </div>
 </dd></dl>
 
-<dl class="py method">
-<dt id="oscar.Project.commits_fp">
-<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">commits_fp</span></code><a class="headerlink" href="#oscar.Project.commits_fp" title="Permalink to this definition">¶</a></dt>
+<dl class="py property">
+<dt class="sig sig-object py" id="oscar.Project.commits_fp">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">commits_fp</span></span><a class="headerlink" href="#oscar.Project.commits_fp" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get a commit chain by following only the first parent, to mimic
 <a class="reference external" href="https://git-scm.com/docs/git-log#git-log---first-parent">https://git-scm.com/docs/git-log#git-log—first-parent</a> .
 Thus, you only get a small subset of the full commit tree:</p>
@@ -169,9 +170,9 @@ of computing.</p>
 </dl>
 </dd></dl>
 
-<dl class="py method">
-<dt id="oscar.Project.head">
-<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">head</span></code><a class="headerlink" href="#oscar.Project.head" title="Permalink to this definition">¶</a></dt>
+<dl class="py property">
+<dt class="sig sig-object py" id="oscar.Project.head">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">head</span></span><a class="headerlink" href="#oscar.Project.head" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the HEAD commit of the repository</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Project</span><span class="p">(</span><span class="s1">&#39;user2589_minicms&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">head</span>
 <span class="go">&lt;Commit: f2a7fcdc51450ab03cb364415f14e634fa69b62c&gt;</span>
@@ -181,9 +182,9 @@ of computing.</p>
 </div>
 </dd></dl>
 
-<dl class="py method">
-<dt id="oscar.Project.tail">
-<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">tail</span></code><a class="headerlink" href="#oscar.Project.tail" title="Permalink to this definition">¶</a></dt>
+<dl class="py property">
+<dt class="sig sig-object py" id="oscar.Project.tail">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">tail</span></span><a class="headerlink" href="#oscar.Project.tail" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the first commit SHA by following first parents</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Project</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;user2589_minicms&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">tail</span>
 <span class="go">&#39;1e971a073f40d74a1e72e07c682e1cba0bae159b&#39;</span>
@@ -194,8 +195,8 @@ of computing.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt id="oscar.Commit">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">oscar.</span></code><code class="sig-name descname"><span class="pre">Commit</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sha</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oscar.Commit" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="oscar.Commit">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">oscar.</span></span><span class="sig-name descname"><span class="pre">Commit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sha</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oscar.Commit" title="Permalink to this definition">¶</a></dt>
 <dd><p>A git commit object.</p>
 <p>Commits have some special properties.
 Most of object properties provided by this project are lazy, i.e. they are
@@ -212,9 +213,9 @@ first access to <em>any</em> of them.</p>
 <li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">committer</span></code>:      str, Name &lt;email&gt;</p></li>
 <li><p><code class="xref py py-data docutils literal notranslate"><span class="pre">committed_at</span></code>:   str, unix_epoch+timezone</p></li>
 </ul>
-<dl class="py method">
-<dt id="oscar.Commit.blob_shas">
-<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">blob_shas</span></code><a class="headerlink" href="#oscar.Commit.blob_shas" title="Permalink to this definition">¶</a></dt>
+<dl class="py property">
+<dt class="sig sig-object py" id="oscar.Commit.blob_shas">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">blob_shas</span></span><a class="headerlink" href="#oscar.Commit.blob_shas" title="Permalink to this definition">¶</a></dt>
 <dd><p>SHA hashes of all blobs in the commit</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Commit</span><span class="p">(</span><span class="s1">&#39;af0048f4aac8f4760bf9b816e01524d7fb20a3fc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">blob_shas</span>
 <span class="gp">... </span>       
@@ -225,9 +226,9 @@ first access to <em>any</em> of them.</p>
 </div>
 </dd></dl>
 
-<dl class="py method">
-<dt id="oscar.Commit.blobs">
-<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">blobs</span></code><a class="headerlink" href="#oscar.Commit.blobs" title="Permalink to this definition">¶</a></dt>
+<dl class="py property">
+<dt class="sig sig-object py" id="oscar.Commit.blobs">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">blobs</span></span><a class="headerlink" href="#oscar.Commit.blobs" title="Permalink to this definition">¶</a></dt>
 <dd><p>A generator of <cite>Blob</cite> objects included in this commit</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">tuple</span><span class="p">(</span><span class="n">Commit</span><span class="p">(</span><span class="s1">&#39;af0048f4aac8f4760bf9b816e01524d7fb20a3fc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">blobs</span><span class="p">)</span>
 <span class="gp">... </span>             
@@ -238,9 +239,9 @@ first access to <em>any</em> of them.</p>
 </div>
 </dd></dl>
 
-<dl class="py method">
-<dt id="oscar.Commit.child_shas">
-<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">child_shas</span></code><a class="headerlink" href="#oscar.Commit.child_shas" title="Permalink to this definition">¶</a></dt>
+<dl class="py property">
+<dt class="sig sig-object py" id="oscar.Commit.child_shas">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">child_shas</span></span><a class="headerlink" href="#oscar.Commit.child_shas" title="Permalink to this definition">¶</a></dt>
 <dd><p>Children commit binary sha hashes.
 Basically, this is a reverse parent_shas</p>
 <p>Commit: <a class="reference external" href="https://github.com/user2589/minicms/commit/1e971a07">https://github.com/user2589/minicms/commit/1e971a07</a>
@@ -248,18 +249,18 @@ Basically, this is a reverse parent_shas</p>
 (‘9bd02434b834979bb69d0b752a403228f2e385e8’,)</p>
 </dd></dl>
 
-<dl class="py method">
-<dt id="oscar.Commit.children">
-<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">children</span></code><a class="headerlink" href="#oscar.Commit.children" title="Permalink to this definition">¶</a></dt>
+<dl class="py property">
+<dt class="sig sig-object py" id="oscar.Commit.children">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">children</span></span><a class="headerlink" href="#oscar.Commit.children" title="Permalink to this definition">¶</a></dt>
 <dd><p>A generator of children <cite>Commit</cite> objects</p>
 <p>Commit: <a class="reference external" href="https://github.com/user2589/minicms/commit/1e971a07">https://github.com/user2589/minicms/commit/1e971a07</a>
 &gt;&gt;&gt; tuple(Commit(‘1e971a073f40d74a1e72e07c682e1cba0bae159b’).children)
 (&lt;Commit: 9bd02434b834979bb69d0b752a403228f2e385e8&gt;,)</p>
 </dd></dl>
 
-<dl class="py method">
-<dt id="oscar.Commit.parents">
-<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">parents</span></code><a class="headerlink" href="#oscar.Commit.parents" title="Permalink to this definition">¶</a></dt>
+<dl class="py property">
+<dt class="sig sig-object py" id="oscar.Commit.parents">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">parents</span></span><a class="headerlink" href="#oscar.Commit.parents" title="Permalink to this definition">¶</a></dt>
 <dd><p>A generator of parent commits.
 If you only need hashes (and not <cite>Commit</cite> objects),
 use <cite>.parent_sha</cite> instead</p>
@@ -269,9 +270,9 @@ use <cite>.parent_sha</cite> instead</p>
 (&lt;Commit: ab124ab4baa42cd9f554b7bb038e19d4e3647957&gt;,)</p>
 </dd></dl>
 
-<dl class="py method">
-<dt id="oscar.Commit.project_names">
-<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">project_names</span></code><a class="headerlink" href="#oscar.Commit.project_names" title="Permalink to this definition">¶</a></dt>
+<dl class="py property">
+<dt class="sig sig-object py" id="oscar.Commit.project_names">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">project_names</span></span><a class="headerlink" href="#oscar.Commit.project_names" title="Permalink to this definition">¶</a></dt>
 <dd><p>URIs of projects including this commit.
 This property can be used to find all forks of a project
 by its first commit.</p>
@@ -285,17 +286,17 @@ True
 True</p>
 </dd></dl>
 
-<dl class="py method">
-<dt id="oscar.Commit.projects">
-<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">projects</span></code><a class="headerlink" href="#oscar.Commit.projects" title="Permalink to this definition">¶</a></dt>
+<dl class="py property">
+<dt class="sig sig-object py" id="oscar.Commit.projects">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">projects</span></span><a class="headerlink" href="#oscar.Commit.projects" title="Permalink to this definition">¶</a></dt>
 <dd><p>A generator of <cite>Project</cite> s, in which this commit is included.</p>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
-<dt id="oscar.Tree">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">oscar.</span></code><code class="sig-name descname"><span class="pre">Tree</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sha</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oscar.Tree" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="oscar.Tree">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">oscar.</span></span><span class="sig-name descname"><span class="pre">Tree</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sha</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oscar.Tree" title="Permalink to this definition">¶</a></dt>
 <dd><p>A representation of git tree object, basically - a directory.</p>
 <p>Trees are iterable. Each element of the iteration is a 3-tuple:
 <cite>(mode, filename, sha)</cite></p>
@@ -332,15 +333,15 @@ subtrees but not the subtrees themselves:</p>
 <span class="go">16</span>
 </pre></div>
 </div>
-<dl class="py method">
-<dt id="oscar.Tree.blob_shas">
-<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">blob_shas</span></code><a class="headerlink" href="#oscar.Tree.blob_shas" title="Permalink to this definition">¶</a></dt>
+<dl class="py property">
+<dt class="sig sig-object py" id="oscar.Tree.blob_shas">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">blob_shas</span></span><a class="headerlink" href="#oscar.Tree.blob_shas" title="Permalink to this definition">¶</a></dt>
 <dd><p>A tuple of all file content shas, including files in subdirectories</p>
 </dd></dl>
 
-<dl class="py method">
-<dt id="oscar.Tree.blobs">
-<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">blobs</span></code><a class="headerlink" href="#oscar.Tree.blobs" title="Permalink to this definition">¶</a></dt>
+<dl class="py property">
+<dt class="sig sig-object py" id="oscar.Tree.blobs">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">blobs</span></span><a class="headerlink" href="#oscar.Tree.blobs" title="Permalink to this definition">¶</a></dt>
 <dd><p>A generator of Blob objects with file content.
 It does include files in subdirectories.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">tuple</span><span class="p">(</span><span class="n">Tree</span><span class="p">(</span><span class="s1">&#39;d20520ef8c1537a42628b72d481b8174c0a1de84&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">blobs</span>
@@ -351,17 +352,17 @@ It does include files in subdirectories.</p>
 </div>
 </dd></dl>
 
-<dl class="py method">
-<dt id="oscar.Tree.files">
-<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">files</span></code><a class="headerlink" href="#oscar.Tree.files" title="Permalink to this definition">¶</a></dt>
+<dl class="py property">
+<dt class="sig sig-object py" id="oscar.Tree.files">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">files</span></span><a class="headerlink" href="#oscar.Tree.files" title="Permalink to this definition">¶</a></dt>
 <dd><p>A dict of all files and their content/blob sha under this tree.
 It includes recursive files (i.e. files in subdirectories).
 It does NOT include subdirectories themselves.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="oscar.Tree.traverse">
-<code class="sig-name descname"><span class="pre">traverse</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#oscar.Tree.traverse" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="oscar.Tree.traverse">
+<span class="sig-name descname"><span class="pre">traverse</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#oscar.Tree.traverse" title="Permalink to this definition">¶</a></dt>
 <dd><p>Recursively traverse the tree
 This will generate 3-tuples of the same format as direct tree
 iteration, but will recursively include subtrees content.</p>
@@ -383,16 +384,16 @@ iteration, but will recursively include subtrees content.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt id="oscar.File">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">oscar.</span></code><code class="sig-name descname"><span class="pre">File</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oscar.File" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="oscar.File">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">oscar.</span></span><span class="sig-name descname"><span class="pre">File</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oscar.File" title="Permalink to this definition">¶</a></dt>
 <dd><p>Files are initialized with a path, starting from a commit root tree:</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">File</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;.gitignore&#39;</span><span class="p">)</span>  
 <span class="gp">&gt;&gt;&gt; </span><span class="n">File</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;docs/Index.rst&#39;</span><span class="p">)</span>  
 </pre></div>
 </div>
-<dl class="py method">
-<dt id="oscar.File.commit_shas">
-<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">commit_shas</span></code><a class="headerlink" href="#oscar.File.commit_shas" title="Permalink to this definition">¶</a></dt>
+<dl class="py property">
+<dt class="sig sig-object py" id="oscar.File.commit_shas">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">commit_shas</span></span><a class="headerlink" href="#oscar.File.commit_shas" title="Permalink to this definition">¶</a></dt>
 <dd><p>SHA1 of all commits changing this file</p>
 <p><strong>NOTE: this relation considers only diff with the first parent,
 which substantially limits its application</strong></p>
@@ -409,9 +410,9 @@ which substantially limits its application</strong></p>
 </div>
 </dd></dl>
 
-<dl class="py method">
-<dt id="oscar.File.commits">
-<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">commits</span></code><a class="headerlink" href="#oscar.File.commits" title="Permalink to this definition">¶</a></dt>
+<dl class="py property">
+<dt class="sig sig-object py" id="oscar.File.commits">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">commits</span></span><a class="headerlink" href="#oscar.File.commits" title="Permalink to this definition">¶</a></dt>
 <dd><p>All commits changing the file</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">cs</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">File</span><span class="p">(</span><span class="s1">&#39;minicms/templatetags/minicms_tags.py&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">commits</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">cs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
@@ -425,34 +426,34 @@ which substantially limits its application</strong></p>
 </dd></dl>
 
 <dl class="py class">
-<dt id="oscar.Blob">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">oscar.</span></code><code class="sig-name descname"><span class="pre">Blob</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sha</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oscar.Blob" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="py method">
-<dt id="oscar.Blob.commit_shas">
-<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">commit_shas</span></code><a class="headerlink" href="#oscar.Blob.commit_shas" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="oscar.Blob">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">oscar.</span></span><span class="sig-name descname"><span class="pre">Blob</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sha</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oscar.Blob" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py property">
+<dt class="sig sig-object py" id="oscar.Blob.commit_shas">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">commit_shas</span></span><a class="headerlink" href="#oscar.Blob.commit_shas" title="Permalink to this definition">¶</a></dt>
 <dd><p>SHAs of Commits in which this blob have been
 introduced or modified.</p>
 <p><strong>NOTE: commits removing this blob are not included</strong></p>
 </dd></dl>
 
-<dl class="py method">
-<dt id="oscar.Blob.commits">
-<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">commits</span></code><a class="headerlink" href="#oscar.Blob.commits" title="Permalink to this definition">¶</a></dt>
+<dl class="py property">
+<dt class="sig sig-object py" id="oscar.Blob.commits">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">commits</span></span><a class="headerlink" href="#oscar.Blob.commits" title="Permalink to this definition">¶</a></dt>
 <dd><p>Commits where this blob has been added or changed</p>
 <p><strong>NOTE: commits removing this blob are not included</strong></p>
 </dd></dl>
 
-<dl class="py method">
-<dt id="oscar.Blob.data">
-<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">data</span></code><a class="headerlink" href="#oscar.Blob.data" title="Permalink to this definition">¶</a></dt>
+<dl class="py property">
+<dt class="sig sig-object py" id="oscar.Blob.data">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">data</span></span><a class="headerlink" href="#oscar.Blob.data" title="Permalink to this definition">¶</a></dt>
 <dd><p>Content of the blob</p>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
-<dt id="oscar.Author">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">oscar.</span></code><code class="sig-name descname"><span class="pre">Author</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">full_email</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oscar.Author" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="oscar.Author">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">oscar.</span></span><span class="sig-name descname"><span class="pre">Author</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">full_email</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#oscar.Author" title="Permalink to this definition">¶</a></dt>
 <dd><p>Authors are initialized with a combination of name and email, as they
 appear in git configuration.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Author</span><span class="p">(</span><span class="s1">&#39;John Doe &lt;john.doe@aol.com&gt;&#39;</span><span class="p">)</span>  
@@ -460,9 +461,9 @@ appear in git configuration.</p>
 </div>
 <p>At this point we don’t have a relation to map all aliases of the same
 author, so keep in mind this object represents an alias, not a person.</p>
-<dl class="py method">
-<dt id="oscar.Author.commit_shas">
-<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">commit_shas</span></code><a class="headerlink" href="#oscar.Author.commit_shas" title="Permalink to this definition">¶</a></dt>
+<dl class="py property">
+<dt class="sig sig-object py" id="oscar.Author.commit_shas">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">commit_shas</span></span><a class="headerlink" href="#oscar.Author.commit_shas" title="Permalink to this definition">¶</a></dt>
 <dd><p>SHA1 of all commits authored by the Author</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">commits</span> <span class="o">=</span> <span class="n">Author</span><span class="p">(</span><span class="s1">&#39;user2589 &lt;valiev.m@gmail.com&gt;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">commit_shas</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">commits</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">50</span>
@@ -477,9 +478,9 @@ author, so keep in mind this object represents an alias, not a person.</p>
 </div>
 </dd></dl>
 
-<dl class="py method">
-<dt id="oscar.Author.commits">
-<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">commits</span></code><a class="headerlink" href="#oscar.Author.commits" title="Permalink to this definition">¶</a></dt>
+<dl class="py property">
+<dt class="sig sig-object py" id="oscar.Author.commits">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">commits</span></span><a class="headerlink" href="#oscar.Author.commits" title="Permalink to this definition">¶</a></dt>
 <dd><p>A generator of all Commit objects authored by the Author</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">commits</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
 <span class="gp">... </span>    <span class="n">Author</span><span class="p">(</span><span class="s1">&#39;user2589 &lt;user2589@users.noreply.github.com&gt;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">commits</span><span class="p">)</span>
@@ -493,8 +494,8 @@ author, so keep in mind this object represents an alias, not a person.</p>
 
 </dd></dl>
 
-</div>
-</div>
+</section>
+</section>
 
 
           </div>
@@ -554,7 +555,7 @@ author, so keep in mind this object represents an alias, not a person.</p>
       &copy;2018, Marat (@cmu.edu).
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.4</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.0.2</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
