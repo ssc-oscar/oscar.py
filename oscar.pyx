@@ -1053,7 +1053,10 @@ class Commit(GitObject):
     #     self.parent_shas = tuple(parent_shas)
 
     def _parse(self):
-        self.header, self.full_message = self.data.split(b'\n\n', 1)
+        try:
+            self.header, self.full_message = self.data.split(b'\n\n', 1)
+        except ValueError:   # Sometimes self.data == b''
+            raise ObjectNotFound()
         self.message = self.full_message.split(b'\n', 1)[0]
         cdef list parent_shas = []
         cdef bytes signature = None
