@@ -81,10 +81,11 @@ actively used in tokyocabinet headers</p></li>
 <li><p>C extension, adapting existing <cite>python-tokyocabinet</cite> code for Python 3.
 It is rather hard to support and even harder to debug; a single
 attempt was scrapped after making a silently failing extension.</p></li>
-<li><p>SWIG, a Google project to generate C/C++ library bindings
+<li><p><a class="reference external" href="http://swig.org">SWIG</a> (and its successor, <a class="reference external" href="https://github.com/google/clif">CLIF</a>),
+a Google project to generate C/C++ library bindings
 for pretty much any language. Since this library provides 1:1 interface
 to the library methods, Python clients had to be aware of the returned
-C structures used by libtokyocabinet, which was very inconvenient.</p></li>
+C structures used by libtokyocabinet, which too inconvenient.</p></li>
 <li><p>Cython, a weird mix of Python and C. It allows writing Python interfaces,
 while simultaneously using C functions. This makes it the ideal option
 for our purposes, providing a Python <cite>.tch</cite> file handler working
@@ -119,7 +120,7 @@ a special Docker image, and is automated via GitHub action.</p>
 <li><p>clone the corresponding GitHub action repository,
 <cite>git clone git&#64;github.com:user2589/python-wheels-manylinux-build.git</cite>,</p></li>
 <li><p>check out the desired tag if necessary, e.g. <cite>git checkout v0.3.4</cite></p></li>
-<li><p>build Docker image: <cite>docker build -t ython-wheels-manylinux-build .</cite></p></li>
+<li><p>build Docker image: <cite>docker build -t python-wheels-manylinux-build .</cite></p></li>
 <li><p>run the image: <cite>make build_manylinux</cite></p></li>
 </ol>
 </section>
@@ -214,7 +215,7 @@ and/or tests.</p>
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
@@ -236,7 +237,7 @@ and/or tests.</p>
       &copy;2018, Marat (@cmu.edu).
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.0.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.1.1</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

@@ -56,10 +56,11 @@ is hardly considered. So, our options to interface `libtokyocabinet` were:
 - C extension, adapting existing `python-tokyocabinet` code for Python 3.
   It is rather hard to support and even harder to debug; a single
   attempt was scrapped after making a silently failing extension.
-- SWIG, a Google project to generate C/C++ library bindings
+- `SWIG <http://swig.org>`_ (and its successor, `CLIF <https://github.com/google/clif>`_),
+  a Google project to generate C/C++ library bindings
   for pretty much any language. Since this library provides 1:1 interface
   to the library methods, Python clients had to be aware of the returned
-  C structures used by libtokyocabinet, which was very inconvenient.
+  C structures used by libtokyocabinet, which too inconvenient.
 - Cython, a weird mix of Python and C. It allows writing Python interfaces,
   while simultaneously using C functions. This makes it the ideal option
   for our purposes, providing a Python `.tch` file handler working
@@ -98,7 +99,7 @@ To build package locally,
 #. clone the corresponding GitHub action repository,
    `git clone git@github.com:user2589/python-wheels-manylinux-build.git`,
 #. check out the desired tag if necessary, e.g. `git checkout v0.3.4`
-#. build Docker image: `docker build -t ython-wheels-manylinux-build .`
+#. build Docker image: `docker build -t python-wheels-manylinux-build .`
 #. run the image: `make build_manylinux`
 
 
