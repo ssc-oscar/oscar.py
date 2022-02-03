@@ -111,7 +111,6 @@ def _get_paths(dict raw_paths):
         cat_path_prefix = os.environ.get(category, path_prefix)
         cat_version = os.environ.get(category + '_VER') or _latest_version(
             os.path.join(cat_path_prefix, list(filenames.values())[0]))
-
         if cat_path_prefix.startswith(local_data_prefix):
             cat_path_prefix = '/data' + cat_path_prefix[len(local_data_prefix):]
 
@@ -125,8 +124,16 @@ def _get_paths(dict raw_paths):
             # this will allow to handle 2-char versions
             key_length = _key_length(path_template)
             if not key_length and not IS_TEST_ENV:
-                warnings.warn("No keys found for path_template %s:\n%s" % (
-                    ptype, path_template))
+                ppath = ppath .replace('da5','da4')
+                path_template = os.path.join(ppath, fname)
+                key_length = _key_length(path_template)
+                if not key_length:
+                  ppath = ppath .replace('da4','da3')
+                  path_template = os.path.join(ppath, fname)
+                  key_length = _key_length(path_template)
+                  if not key_length:
+                    warnings.warn("No keys found for path_template %s:\n%s" % (
+                      ptype, path_template))
             VERSIONS[ptype] = pver
             paths[ptype] = (
                 path_template.format(ver=pver, key='{key}'), key_length)
@@ -136,25 +143,25 @@ def _get_paths(dict raw_paths):
 # note to future self: Python2 uses str (bytes) for os.environ,
 # Python3 uses str (unicode). Don't add Py2/3 compatibility prefixes here
 PATHS = _get_paths({
-    'OSCAR_ALL_BLOBS': ('/da4_data/All.blobs/', {
+    'OSCAR_ALL_BLOBS': ('/da5_data/All.blobs/', {
         'commit_sequential_idx': 'commit_{key}.idx',
         'commit_sequential_bin': 'commit_{key}.bin',
         'tree_sequential_idx': 'tree_{key}.idx',
         'tree_sequential_bin': 'tree_{key}.bin',
         'blob_data': 'blob_{key}.bin',
     }),
-    'OSCAR_ALL_SHA1C': ('/fast/All.sha1c', {
+    'OSCAR_ALL_SHA1C': ('/da5_fast/All.sha1c', {
         # critical - random access to trees and commits: only on da4 and da5
         # - performance is best when /fast is on SSD raid
         'commit_random': 'commit_{key}.tch',
         'tree_random': 'tree_{key}.tch',
     }),
     # all three are available on da[3-5]
-    'OSCAR_ALL_SHA1O': ('/fast/All.sha1o', {
+    'OSCAR_ALL_SHA1O': ('/da4_fast/All.sha1o', {
         'blob_offset': 'sha1.blob_{key}.tch',
         # Speed is a bit lower since the content is read from HDD raid
     }),
-    'OSCAR_BASEMAPS': ('/da0_data/basemaps', {
+    'OSCAR_BASEMAPS': ('/da5_fast', {
         # relations - good to have but not critical
         'commit_projects': 'c2pFull{ver}.{key}.tch',
         'commit_children': 'c2ccFull{ver}.{key}.tch',
