@@ -49,7 +49,7 @@ It is possible to iterate all objects of a given type using `.all()`
 
     E.g. to iterate all repositories of user2589 on github:
 
-    >>> for project in Project.all('user2589_'):
+    >>> for project in Project.all():
     ...     print project.uri
 
 GitObject methods
@@ -62,7 +62,7 @@ In most cases you will use hex form, the latter way is needed only fore relative
 rare cases you need to interface with binary data.
 
     >>> Commit('f2a7fcdc51450ab03cb364415f14e634fa69b62c')
-    >>> Commit('\xf2\xa7\xfc\xdcQE\n\xb0<\xb3dA_\x14\xe64\xfai\xb6,')
+    >>> Commit(b'\xf2\xa7\xfc\xdcQE\n\xb0<\xb3dA_\x14\xe64\xfai\xb6,')
 
 Whatever form of SHA was used to instantiate the object, it will have properties:
 
