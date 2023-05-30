@@ -148,6 +148,8 @@ PATHS = _get_paths({
         'commit_sequential_bin': 'commit_{key}.bin',
         'tree_sequential_idx': 'tree_{key}.idx',
         'tree_sequential_bin': 'tree_{key}.bin',
+        'blob_sequential_idx': 'blob_{key}.idx',
+        'blob_sequential_bin': 'blob_{key}.bin',
         'blob_data': 'blob_{key}.bin',
     }),
     'OSCAR_ALL_SHA1C': ('/da5_fast/All.sha1c', {
@@ -180,7 +182,7 @@ PATHS = _get_paths({
         'blob_commits': 'b2cFull{ver}.{key}.tch',
         # this points to the first time/author/commit
         'blob_first_author': 'b2faFull{ver}.{key}.tch',
-        'file_authors': 'f2aFull{ver}.{key}.tch', 
+        'file_authors': 'f2aFull{ver}.{key}.tch',
         'file_commits': 'f2cFull{ver}.{key}.tch',
         'file_blobs': 'f2bFull{ver}.{key}.tch',
         'blob_files': 'b2fFull{ver}.{key}.tch',
@@ -589,7 +591,7 @@ class _Base(object):
 
         base_path, prefix_length = PATHS[cls._keys_registry_dtype]
         for file_prefix in range(2 ** prefix_length):
-            for key in _get_tch(base_path.format(key=file_prefix)):
+            for key in _get_tch(base_path.format(key=file_prefix).encode('ascii')):
                 yield key
 
     @classmethod
@@ -609,17 +611,17 @@ class GitObject(_Base):
         for key in range(2**prefix_length):
             idx_path = base_idx_path.format(key=key)
             bin_path = base_bin_path.format(key=key)
-            datafile = open(bin_path)
+            datafile = open(bin_path, "rb")
             for line in open(idx_path):
                 chunks = line.strip().split(";")
                 offset, comp_length, sha = chunks[1:4]
                 if len(chunks) > 4:  # cls.type == "blob":
                     # usually, it's true for blobs;
                     # however, some blobs follow common pattern
-                    sha = chunks[5]
+                    sha = chunks[4]
 
                 obj = cls(sha)
-                obj.data = decomp(datafile.read(int(comp_length)))
+                # obj.data = decomp(datafile.read(int(comp_length)))
 
                 yield obj
             datafile.close()
@@ -1313,13 +1315,13 @@ class Commit(GitObject):
         >>> oscar.Commit("80b4ca99f8605903d8ac6bd921ebedfdfecdd660").attributes
         ['1432848535', '-0400', 'Robert Lefebvre <robert.lefebvre@gmail.com>', '8a08c812a15051605da7c594b970cad57ec07e3b', 'd24664ccf959bd6e5bacb8ad2c0ceebcdcc8551c']
         """
-        return self .read_tch ('commit_data') .decode('ascii') .split(";")
+        return self.read_tch ('commit_data').decode('ascii').split(";")
 
     @cached_property
     def files(self):
         data = decomp(self.read_tch('commit_files'))
         return tuple(file_name
-                     for file_name in (data and data.split(";")) or []
+                     for file_name in (data and data.split(b";")) or []
                      if file_name and file_name != 'EMPTY')
 
 
