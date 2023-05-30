@@ -32,9 +32,18 @@ jobs:
       # they will brake package upload later on if not removed
       run: sudo find dist/ -type f ! -iname '*-manylinux*.whl' -delete
 
+    - name: Configure git
+      # https://github.com/python-semantic-release/python-semantic-release/issues/560
+      # Context:
+      # https://github.com/python-semantic-release/python-semantic-release/commit/2a55f68e2b3cb9ffa9204c00ddbf12706af5c070
+      # older version of semantic release is used because of compatibility
+      # issues with older Python
+      run: |
+        git config --system --add safe.directory "*"
+
     - name: Python Semantic Release
-      uses: relekang/python-semantic-release@v7.9.0
       # docs: https://python-semantic-release.readthedocs.io/en/latest/automatic-releases/github-actions.html
+      uses:  python-semantic-release/python-semantic-release@v7.9.0
       with:
         github_token: ${{ secrets.GH_TOKEN }}
         pypi_token: ${{ secrets.PYPI_TOKEN }}
