@@ -132,8 +132,24 @@ def _get_paths(dict raw_paths):
                   path_template = os.path.join(ppath, fname)
                   key_length = _key_length(path_template)
                   if not key_length:
-                    warnings.warn("No keys found for path_template %s:\n%s" % (
-                      ptype, path_template))
+                    ppath = ppath .replace('da3_fast','da7_data/basemaps')
+                    path_template = os.path.join(ppath, fname)
+                    key_length = _key_length(path_template)
+                    if not key_length:
+                      ppath = ppath .replace('da7','da0')
+                      path_template = os.path.join(ppath, fname)
+                      key_length = _key_length(path_template)
+                      if not key_length:
+                        ppath = ppath .replace('da0','da5')
+                        path_template = os.path.join(ppath, fname)
+                        key_length = _key_length(path_template)
+                        if not key_length:
+                          ppath = ppath .replace('da5','da8')
+                          path_template = os.path.join(ppath, fname)
+                          key_length = _key_length(path_template)
+                          if not key_length:
+                            warnings.warn("No keys found for path_template %s:\n%s" % (
+                               ptype, path_template))
             VERSIONS[ptype] = pver
             paths[ptype] = (
                 path_template.format(ver=pver, key='{key}'), key_length)
