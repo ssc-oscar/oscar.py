@@ -104,10 +104,7 @@ def _key_length(str path_template):
     # re_pattern = path_template.format(key='(\d+)', ver='([A-Za-z0-9]+)')
     # _matched = re.match(re_pattern, 'c2cFull{ver}.0.tch')
 
-
-# this dict is only for debugging purposes and it is not used anywhere
 VERSIONS = {}  # type: Dict[str, str]
-
 
 def _get_paths(dict raw_paths):
     # type: (Dict[str, Tuple[str, Dict[str, str]]]) -> Dict[str, Tuple[bytes, int]]
@@ -133,42 +130,74 @@ def _get_paths(dict raw_paths):
         for ptype, fname in filenames.items():
             ppath = os.environ.get(
                 '_'.join(['OSCAR', ptype.upper()]), cat_path_prefix)
-            pver = os.environ.get(
-                '_'.join(['OSCAR', ptype.upper(), 'VER']), cat_version)
-            path_template = os.path.join(ppath, fname)
-            # TODO: .format with pver and check keys only
-            # this will allow to handle 2-char versions
-            key_length = _key_length(path_template)
-            if not key_length and not IS_TEST_ENV:
-                ppath = ppath .replace('da5','da4')
+            for replace_from, replace_to in [
+                ('da5', 'da4'),
+                ('da4', 'da3'),
+                ('da3_fast', 'da7_data/basemaps'),
+                ('da7', 'da0'),
+                ('da0', 'da5'),
+                ('da5', 'da8'),
+                ('da8', 'never_gonna_happen'),
+            ]:
+                # get the latest version for the current mapping
+                path_template = os.path.join(ppath, fname)
+                pver = os.environ.get(
+                    '_'.join(['OSCAR', ptype.upper(), 'VER']), 
+                    _latest_version(path_template) or cat_version)
                 path_template = os.path.join(ppath, fname)
                 key_length = _key_length(path_template)
-                if not key_length:
-                  ppath = ppath .replace('da4','da3')
-                  path_template = os.path.join(ppath, fname)
-                  key_length = _key_length(path_template)
-                  if not key_length:
-                    ppath = ppath .replace('da3_fast','da7_data/basemaps')
-                    path_template = os.path.join(ppath, fname)
-                    key_length = _key_length(path_template)
-                    if not key_length:
-                      ppath = ppath .replace('da7','da0')
-                      path_template = os.path.join(ppath, fname)
-                      key_length = _key_length(path_template)
-                      if not key_length:
-                        ppath = ppath .replace('da0','da5')
-                        path_template = os.path.join(ppath, fname)
-                        key_length = _key_length(path_template)
-                        if not key_length:
-                          ppath = ppath .replace('da5','da8')
-                          path_template = os.path.join(ppath, fname)
-                          key_length = _key_length(path_template)
-                          if not key_length:
-                            warnings.warn("No keys found for path_template %s:\n%s" % (
-                               ptype, path_template))
-            VERSIONS[ptype] = pver
-            paths[ptype] = (
-                path_template.format(ver=pver, key='{key}'), key_length)
+
+                # match
+                if key_length:
+                    if ptype in VERSIONS and VERSIONS[ptype] > pver:
+                        warnings.warn(
+                            "Skipping older version of %s: %s > %s" % (
+                                ptype, VERSIONS[ptype], pver))
+                        continue
+                    VERSIONS[ptype] = pver
+                    paths[ptype] = (
+                        path_template.format(ver=pver, key='{key}'), key_length)
+                    break
+                # mismatch
+                ppath = ppath.replace(replace_from, replace_to)
+            
+            else:
+                warnings.warn("No keys found for path_template %s:\n%s" % (
+                    ptype, path_template))
+
+            # # TODO: .format with pver and check keys only
+            # # this will allow to handle 2-char versions
+            # key_length = _key_length(path_template)
+            # if not key_length and not IS_TEST_ENV:
+            #     ppath = ppath .replace('da5','da4')
+            #     path_template = os.path.join(ppath, fname)
+            #     key_length = _key_length(path_template)
+            #     if not key_length:
+            #       ppath = ppath .replace('da4','da3')
+            #       path_template = os.path.join(ppath, fname)
+            #       key_length = _key_length(path_template)
+            #       if not key_length:
+            #         ppath = ppath .replace('da3_fast','da7_data/basemaps')
+            #         path_template = os.path.join(ppath, fname)
+            #         key_length = _key_length(path_template)
+            #         if not key_length:
+            #           ppath = ppath .replace('da7','da0')
+            #           path_template = os.path.join(ppath, fname)
+            #           key_length = _key_length(path_template)
+            #           if not key_length:
+            #             ppath = ppath .replace('da0','da5')
+            #             path_template = os.path.join(ppath, fname)
+            #             key_length = _key_length(path_template)
+            #             if not key_length:
+            #               ppath = ppath .replace('da5','da8')
+            #               path_template = os.path.join(ppath, fname)
+            #               key_length = _key_length(path_template)
+            #               if not key_length:
+            #                 warnings.warn("No keys found for path_template %s:\n%s" % (
+            #                    ptype, path_template))
+            # VERSIONS[ptype] = pver
+            # paths[ptype] = (
+            #     path_template.format(ver=pver, key='{key}'), key_length)
     return paths
 
 
