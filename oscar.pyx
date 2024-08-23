@@ -79,14 +79,30 @@ def _key_length(str path_template):
         return 0
     glob_pattern = path_template.format(key='*', ver='*')
     filenames = glob.glob(glob_pattern)
+
+    # check emptiness of filenames otherwise we can't use filenames[0]
+    if not filenames:
+        # warnings.warn("No files found for %s" % (glob_pattern))
+        return 0
+
     # key always comes the last, so rsplit is enough to account for two stars
     prefix, postfix = glob_pattern.rsplit('*', 1)
+
+    # quirk for multi-char versions: match the last digit of the prefix
+    _prefix_len = len(prefix)
+    while _prefix_len < len(filenames[0]) - 2:
+        if filenames[0][_prefix_len - 1] == prefix[len(prefix) - 1]:
+            break
+        _prefix_len += 1
+
     # note that with wraparound=False we can't use negative indexes.
     # this caused hard to catch bugs before
-    str_keys = [fname[len(prefix):len(fname)-len(postfix)] for fname in filenames]
+    str_keys = [fname[_prefix_len:len(fname)-len(postfix)] for fname in filenames]
     keys = [int(key) for key in str_keys if key]
     # Py2/3 compatible version
     return int(log(max(keys or [0]) + 1, 2))
+    # re_pattern = path_template.format(key='(\d+)', ver='([A-Za-z0-9]+)')
+    # _matched = re.match(re_pattern, 'c2cFull{ver}.0.tch')
 
 
 # this dict is only for debugging purposes and it is not used anywhere
