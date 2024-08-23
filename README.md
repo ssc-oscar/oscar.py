@@ -1,5 +1,7 @@
 # Python interface for OSCAR data
 
+> [!NOTE]
+> New projects may want to use the [python-woc](https://github.com/ssc-oscar/python-woc) package instead. It's fast, easy to install, and provides a more complete interface to the data.
 
 This is a convenience library to access World of Code data
 (WoC; it was referred internally as oscar while development, hence the name). 
